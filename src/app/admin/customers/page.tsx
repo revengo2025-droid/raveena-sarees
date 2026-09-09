@@ -1,0 +1,142 @@
+"use client";
+
+import React, { useState } from "react";
+import { Users, Search, Mail, Phone, MapPin, Sparkles } from "lucide-react";
+import { useApp } from "@/lib/store";
+import { formatINR } from "@/lib/utils";
+
+export default function AdminCustomersPage() {
+  const { orders } = useApp();
+  const [search, setSearch] = useState("");
+
+  // Aggregate distinct customers from orders and user
+  const customers = [
+    {
+      id: "cust-1",
+      name: "Ananya Reddy",
+      email: "ananya.reddy@example.com",
+      phone: "+91 98765 43210",
+      city: "Hyderabad",
+      state: "Telangana",
+      tier: "Royal Bridal Patron",
+      ordersCount: orders.length || 1,
+      totalSpend: orders.reduce((sum, o) => sum + o.totalAmount, 0) || 28999,
+      joined: "Nov 2025",
+    },
+    {
+      id: "cust-2",
+      name: "Deepika Rao",
+      email: "deepika.rao@example.com",
+      phone: "+91 98451 22334",
+      city: "Bengaluru",
+      state: "Karnataka",
+      tier: "Silk Connoisseur",
+      ordersCount: 3,
+      totalSpend: 78500,
+      joined: "Dec 2025",
+    },
+    {
+      id: "cust-3",
+      name: "Dr. Shalini Varma",
+      email: "dr.shalini@example.com",
+      phone: "+91 97890 55443",
+      city: "Chennai",
+      state: "Tamil Nadu",
+      tier: "Bridal Collector",
+      ordersCount: 2,
+      totalSpend: 91500,
+      joined: "Jan 2026",
+    },
+    {
+      id: "cust-4",
+      name: "Sunita Deshmukh",
+      email: "sunita.d@example.com",
+      phone: "+91 98200 11998",
+      city: "Mumbai",
+      state: "Maharashtra",
+      tier: "Privilege Member",
+      ordersCount: 1,
+      totalSpend: 22999,
+      joined: "Feb 2026",
+    },
+  ];
+
+  const filtered = customers.filter(
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.email.toLowerCase().includes(search.toLowerCase()) ||
+      c.city.toLowerCase().includes(search.toLowerCase()) ||
+      c.phone.includes(search)
+  );
+
+  return (
+    <div className="space-y-6 font-sans">
+      <div className="border-b border-[#222] pb-6">
+        <h1 className="text-2xl sm:text-3xl font-serif text-white font-normal">
+          Royal Patron Directory
+        </h1>
+        <p className="text-xs text-gray-400 mt-1">
+          Review VIP client profiles, bridal purchase histories, and lifetime patron values.
+        </p>
+      </div>
+
+      <div className="bg-[#121212] p-4 rounded-2xl border border-[#222] flex items-center justify-between">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+          <input
+            type="text"
+            placeholder="Search patron by name, email, phone, or city..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-[#1A1A1A] border border-[#333] rounded-xl py-2 pl-10 pr-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+          />
+        </div>
+        <span className="text-xs text-[#F5DE88] font-semibold">
+          {filtered.length} Registered Patrons
+        </span>
+      </div>
+
+      <div className="bg-[#121212] border border-[#222] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="text-[10px] uppercase font-bold text-gray-400 bg-[#161616] border-b border-[#262626]">
+              <tr>
+                <th className="py-3 px-4">Patron Name</th>
+                <th className="py-3 px-4">Contact Details</th>
+                <th className="py-3 px-4">Location</th>
+                <th className="py-3 px-4">Patron Tier</th>
+                <th className="py-3 px-4">Total Orders</th>
+                <th className="py-3 px-4">Lifetime Spend</th>
+                <th className="py-3 px-4">Member Since</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1A1A1A]">
+              {filtered.map((c) => (
+                <tr key={c.id} className="hover:bg-[#151515] transition-colors">
+                  <td className="py-3.5 px-4 font-bold text-white text-sm">{c.name}</td>
+                  <td className="py-3.5 px-4">
+                    <p className="text-gray-300">{c.email}</p>
+                    <p className="text-[10px] text-gray-500">{c.phone}</p>
+                  </td>
+                  <td className="py-3.5 px-4 text-gray-300">
+                    {c.city}, {c.state}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold bg-[#D4AF37]/15 text-[#F5DE88] border border-[#D4AF37]/30">
+                      {c.tier}
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 font-bold text-white">{c.ordersCount}</td>
+                  <td className="py-3.5 px-4 font-bold text-[#F5DE88]">
+                    {formatINR(c.totalSpend)}
+                  </td>
+                  <td className="py-3.5 px-4 text-gray-400">{c.joined}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,699 @@
+"use client";
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import {
+  SareeProduct,
+  Category,
+  CartItem,
+  SavedAddress,
+  Order,
+  Coupon,
+  Review,
+  UserProfile,
+  FilterState,
+  OrderStatus,
+} from "./types";
+import {
+  INITIAL_PRODUCTS,
+  INITIAL_CATEGORIES,
+  INITIAL_COUPONS,
+  INITIAL_REVIEWS,
+} from "./mockData";
+import { generateOrderNumber, generateTrackingNumber, getEstimatedDeliveryDate } from "./utils";
+
+interface Toast {
+  id: string;
+  type: "success" | "error" | "info";
+  message: string;
+}
+
+interface AppContextType {
+  // Products & Categories
+  products: SareeProduct[];
+  categories: Category[];
+  addProduct: (product: Omit<SareeProduct, "id" | "createdAt">) => void;
+  updateProduct: (id: string, updates: Partial<SareeProduct>) => void;
+  deleteProduct: (id: string) => void;
+  addCategory: (category: Omit<Category, "id">) => void;
+  deleteCategory: (id: string) => void;
+  getProductBySlug: (slug: string) => SareeProduct | undefined;
+  getProductById: (id: string) => SareeProduct | undefined;
+
+  // Cart
+  cart: CartItem[];
+  addToCart: (product: SareeProduct, quantity?: number, selectedColor?: string) => void;
+  updateCartQuantity: (productId: string, quantity: number, selectedColor?: string) => void;
+  removeFromCart: (productId: string, selectedColor?: string) => void;
+  clearCart: () => void;
+  isCartDrawerOpen: boolean;
+  setIsCartDrawerOpen: (open: boolean) => void;
+  cartSubtotal: number;
+  cartDiscount: number;
+  cartTotal: number;
+  freeShippingThreshold: number;
+  appliedCoupon: Coupon | null;
+  applyCoupon: (code: string) => { success: boolean; message: string };
+  removeCoupon: () => void;
+  giftWrap: boolean;
+  setGiftWrap: (wrap: boolean) => void;
+  giftMessage: string;
+  setGiftMessage: (msg: string) => void;
+  giftWrapFee: number;
+  coupons: Coupon[];
+  addCoupon: (coupon: Omit<Coupon, "id">) => void;
+  toggleCouponStatus: (id: string) => void;
+
+  // Wishlist
+  wishlist: string[]; // product IDs
+  toggleWishlist: (productId: string) => void;
+  isInWishlist: (productId: string) => boolean;
+
+  // Recently Viewed
+  recentlyViewed: SareeProduct[];
+  addToRecentlyViewed: (product: SareeProduct) => void;
+
+  // Quick View Modal
+  quickViewProduct: SareeProduct | null;
+  setQuickViewProduct: (product: SareeProduct | null) => void;
+
+  // User Auth & Profiles
+  user: UserProfile | null;
+  login: (email: string, role?: "customer" | "admin") => void;
+  logout: () => void;
+  savedAddresses: SavedAddress[];
+  addAddress: (address: Omit<SavedAddress, "id">) => SavedAddress;
+  updateAddress: (id: string, updates: Partial<SavedAddress>) => void;
+  deleteAddress: (id: string) => void;
+
+  // Orders
+  orders: Order[];
+  placeOrder: (orderDetails: {
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    shippingAddress: SavedAddress;
+    paymentMethod: "razorpay" | "upi" | "card" | "netbanking" | "cod";
+    paymentId?: string;
+  }) => Order;
+  updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string, courierPartner?: string) => void;
+  getOrderById: (orderId: string) => Order | undefined;
+  getOrderByNumber: (orderNumber: string) => Order | undefined;
+
+  // Reviews
+  reviews: Review[];
+  addReview: (review: Omit<Review, "id" | "createdAt" | "status">) => void;
+  updateReviewStatus: (id: string, status: "approved" | "rejected") => void;
+
+  // Toasts
+  toasts: Toast[];
+  showToast: (message: string, type?: "success" | "error" | "info") => void;
+  removeToast: (id: string) => void;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // State Initialization
+  const [products, setProducts] = useState<SareeProduct[]>(INITIAL_PRODUCTS);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
+  const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<SareeProduct[]>([]);
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState<boolean>(false);
+  const [quickViewProduct, setQuickViewProduct] = useState<SareeProduct | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [giftWrap, setGiftWrap] = useState<boolean>(false);
+  const [giftMessage, setGiftMessage] = useState<string>("");
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  // Default User (Simulated Logged-in Customer with easy admin toggle)
+  const [user, setUser] = useState<UserProfile | null>({
+    id: "usr-001",
+    email: "ananya.reddy@example.com",
+    fullName: "Ananya Reddy",
+    phone: "+91 98765 43210",
+    role: "customer",
+    joinedDate: "2025-11-10",
+    avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+  });
+
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([
+    {
+      id: "addr-01",
+      name: "Ananya Reddy",
+      phone: "+91 98765 43210",
+      street: "Main Road, Near Temple, Marthadi",
+      landmark: "Bejjur Mandal",
+      city: "Komaram Bheem Asifabad",
+      state: "Telangana",
+      pincode: "504224",
+      isDefault: true,
+      type: "Home",
+    },
+    {
+      id: "addr-02",
+      name: "Ananya Reddy (Work)",
+      phone: "+91 98765 43210",
+      street: "Cyber Towers, 5th Floor, Hitec City",
+      landmark: "Opposite Cyber Gateway",
+      city: "Hyderabad",
+      state: "Telangana",
+      pincode: "500081",
+      isDefault: false,
+      type: "Work",
+    },
+  ]);
+
+  const [orders, setOrders] = useState<Order[]>([
+    {
+      id: "ord-101",
+      orderNumber: "RS-892144-4921",
+      userId: "usr-001",
+      customerName: "Ananya Reddy",
+      customerEmail: "ananya.reddy@example.com",
+      customerPhone: "+91 98765 43210",
+      shippingAddress: {
+        id: "addr-01",
+        name: "Ananya Reddy",
+        phone: "+91 98765 43210",
+        street: "Main Road, Near Temple, Marthadi",
+        landmark: "Bejjur Mandal",
+        city: "Komaram Bheem Asifabad",
+        state: "Telangana",
+        pincode: "504224",
+        isDefault: true,
+        type: "Home",
+      },
+      items: [
+        {
+          productId: "saree-01",
+          productName: "Royal Crimson & Gold Temple Border Kanjivaram Silk Saree",
+          sku: "RAV-KNJ-001",
+          selectedColor: "Crimson Red",
+          price: 2499,
+          quantity: 1,
+          imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80",
+        },
+      ],
+      subtotal: 2499,
+      discountAmount: 250,
+      shippingFee: 0,
+      giftWrapFee: 150,
+      totalAmount: 2399,
+      paymentMethod: "razorpay",
+      paymentStatus: "paid",
+      paymentId: "pay_RAV982347293",
+      orderStatus: "shipped",
+      courierPartner: "BlueDart Express",
+      trackingNumber: "BLU892348201IN",
+      trackingUrl: "https://www.bluedart.com/tracking",
+      giftWrap: true,
+      giftMessage: "With heartfelt blessings for your upcoming celebration!",
+      appliedCoupon: "RAVINA10",
+      createdAt: "2026-02-26T10:15:00Z",
+      estimatedDelivery: "2 Mar, 2026",
+    },
+  ]);
+
+  // Load / Persist localStorage
+  useEffect(() => {
+    try {
+      const savedCart = localStorage.getItem("ravina_cart");
+      if (savedCart) setCart(JSON.parse(savedCart));
+
+      const savedWishlist = localStorage.getItem("ravina_wishlist");
+      if (savedWishlist) setWishlist(JSON.parse(savedWishlist));
+
+      const savedRecently = localStorage.getItem("ravina_recent");
+      if (savedRecently) setRecentlyViewed(JSON.parse(savedRecently));
+
+      const savedOrders = localStorage.getItem("ravina_orders");
+      if (savedOrders) setOrders(JSON.parse(savedOrders));
+
+      const customProducts = localStorage.getItem("ravina_custom_products");
+      if (customProducts) {
+        const parsed: SareeProduct[] = JSON.parse(customProducts);
+        const merged = [...parsed];
+        for (const initP of INITIAL_PRODUCTS) {
+          const idx = merged.findIndex((p) => p.id === initP.id);
+          if (idx === -1) {
+            merged.push(initP);
+          } else {
+            merged[idx] = initP;
+          }
+        }
+        setProducts(merged);
+      } else {
+        setProducts(INITIAL_PRODUCTS);
+      }
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ravina_cart", JSON.stringify(cart));
+    } catch {}
+  }, [cart]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ravina_wishlist", JSON.stringify(wishlist));
+    } catch {}
+  }, [wishlist]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ravina_orders", JSON.stringify(orders));
+    } catch {}
+  }, [orders]);
+
+  // Toast System
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    const id = Date.now().toString() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      removeToast(id);
+    }, 4000);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Cart Calculations
+  const cartSubtotal = cart.reduce((acc, item) => {
+    const effectivePrice = item.product.discountPrice || item.product.price;
+    return acc + effectivePrice * item.quantity;
+  }, 0);
+
+  const freeShippingThreshold = 2500;
+  const giftWrapFee = giftWrap ? 150 : 0;
+
+  // Calculate discount from applied coupon
+  let cartDiscount = 0;
+  if (appliedCoupon && cartSubtotal >= appliedCoupon.minOrderValue) {
+    if (appliedCoupon.discountType === "percentage") {
+      const computed = (cartSubtotal * appliedCoupon.discountValue) / 100;
+      cartDiscount = appliedCoupon.maxDiscount ? Math.min(computed, appliedCoupon.maxDiscount) : computed;
+    } else {
+      cartDiscount = appliedCoupon.discountValue;
+    }
+  }
+
+  const shippingFee = cartSubtotal >= freeShippingThreshold || cartSubtotal === 0 ? 0 : 150;
+  const cartTotal = Math.max(0, cartSubtotal - cartDiscount + shippingFee + giftWrapFee);
+
+  // Cart Operations
+  const addToCart = (product: SareeProduct, quantity = 1, selectedColor?: string) => {
+    const color = selectedColor || product.primaryColor || product.availableColors[0] || "Default";
+    setCart((prev) => {
+      const existingIndex = prev.findIndex(
+        (item) => item.product.id === product.id && item.selectedColor === color
+      );
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += quantity;
+        return updated;
+      } else {
+        return [...prev, { product, quantity, selectedColor: color }];
+      }
+    });
+    showToast(`"${product.name.slice(0, 30)}..." added to your bag`, "success");
+    setIsCartDrawerOpen(true);
+  };
+
+  const updateCartQuantity = (productId: string, quantity: number, selectedColor?: string) => {
+    if (quantity <= 0) {
+      removeFromCart(productId, selectedColor);
+      return;
+    }
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.product.id === productId && (!selectedColor || item.selectedColor === selectedColor)) {
+          return { ...item, quantity };
+        }
+        return item;
+      })
+    );
+  };
+
+  const removeFromCart = (productId: string, selectedColor?: string) => {
+    setCart((prev) =>
+      prev.filter(
+        (item) => !(item.product.id === productId && (!selectedColor || item.selectedColor === selectedColor))
+      )
+    );
+    showToast("Item removed from bag", "info");
+  };
+
+  const clearCart = () => {
+    setCart([]);
+    setAppliedCoupon(null);
+    setGiftWrap(false);
+  };
+
+  const applyCoupon = (code: string) => {
+    const cleanCode = code.trim().toUpperCase();
+    const found = coupons.find((c) => c.code.toUpperCase() === cleanCode && c.isActive);
+    if (!found) {
+      showToast("Invalid or expired promo code", "error");
+      return { success: false, message: "Invalid promo code." };
+    }
+    if (cartSubtotal < found.minOrderValue) {
+      showToast(`Requires minimum order of ₹${found.minOrderValue.toLocaleString("en-IN")}`, "error");
+      return {
+        success: false,
+        message: `Add items worth ₹${(found.minOrderValue - cartSubtotal).toLocaleString("en-IN")} more to use this code.`,
+      };
+    }
+    setAppliedCoupon(found);
+    showToast(`Code "${found.code}" applied! You saved on this order.`, "success");
+    return { success: true, message: `Coupon applied: ${found.description}` };
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    showToast("Promo code removed", "info");
+  };
+
+  // Wishlist Operations
+  const toggleWishlist = (productId: string) => {
+    setWishlist((prev) => {
+      const exists = prev.includes(productId);
+      if (exists) {
+        showToast("Removed from your Royal Wishlist", "info");
+        return prev.filter((id) => id !== productId);
+      } else {
+        showToast("Added to your Royal Wishlist", "success");
+        return [...prev, productId];
+      }
+    });
+  };
+
+  const isInWishlist = (productId: string) => wishlist.includes(productId);
+
+  // Recently Viewed
+  const addToRecentlyViewed = (product: SareeProduct) => {
+    setRecentlyViewed((prev) => {
+      const filtered = prev.filter((p) => p.id !== product.id);
+      const updated = [product, ...filtered].slice(0, 8);
+      try {
+        localStorage.setItem("ravina_recent", JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  // Addresses
+  const addAddress = (address: Omit<SavedAddress, "id">): SavedAddress => {
+    const newAddress: SavedAddress = {
+      ...address,
+      id: `addr-${Date.now()}`,
+    };
+    if (newAddress.isDefault) {
+      setSavedAddresses((prev) => [...prev.map((a) => ({ ...a, isDefault: false })), newAddress]);
+    } else {
+      setSavedAddresses((prev) => [...prev, newAddress]);
+    }
+    showToast("Address saved successfully", "success");
+    return newAddress;
+  };
+
+  const updateAddress = (id: string, updates: Partial<SavedAddress>) => {
+    setSavedAddresses((prev) =>
+      prev.map((a) => {
+        if (a.id === id) {
+          return { ...a, ...updates };
+        }
+        if (updates.isDefault) {
+          return { ...a, isDefault: false };
+        }
+        return a;
+      })
+    );
+    showToast("Address updated", "success");
+  };
+
+  const deleteAddress = (id: string) => {
+    setSavedAddresses((prev) => prev.filter((a) => a.id !== id));
+    showToast("Address removed", "info");
+  };
+
+  // Orders
+  const placeOrder = (orderDetails: {
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    shippingAddress: SavedAddress;
+    paymentMethod: "razorpay" | "upi" | "card" | "netbanking" | "cod";
+    paymentId?: string;
+  }): Order => {
+    const newOrder: Order = {
+      id: `ord-${Date.now()}`,
+      orderNumber: generateOrderNumber(),
+      userId: user?.id,
+      customerName: orderDetails.customerName,
+      customerEmail: orderDetails.customerEmail,
+      customerPhone: orderDetails.customerPhone,
+      shippingAddress: orderDetails.shippingAddress,
+      items: cart.map((item) => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        sku: item.product.sku,
+        selectedColor: item.selectedColor,
+        price: item.product.discountPrice || item.product.price,
+        quantity: item.quantity,
+        imageUrl: item.product.images[0] || "",
+      })),
+      subtotal: cartSubtotal,
+      discountAmount: cartDiscount,
+      shippingFee,
+      giftWrapFee,
+      totalAmount: cartTotal,
+      paymentMethod: orderDetails.paymentMethod,
+      paymentStatus: orderDetails.paymentMethod === "cod" ? "pending" : "paid",
+      paymentId: orderDetails.paymentId || `pay_${Date.now()}`,
+      orderStatus: "confirmed",
+      courierPartner: "BlueDart Express",
+      trackingNumber: generateTrackingNumber(),
+      trackingUrl: "https://www.bluedart.com/tracking",
+      giftWrap,
+      giftMessage: giftWrap ? giftMessage : undefined,
+      appliedCoupon: appliedCoupon?.code,
+      createdAt: new Date().toISOString(),
+      estimatedDelivery: getEstimatedDeliveryDate(4),
+    };
+
+    setOrders((prev) => [newOrder, ...prev]);
+    clearCart();
+    return newOrder;
+  };
+
+  const updateOrderStatus = (
+    orderId: string,
+    status: OrderStatus,
+    trackingNumber?: string,
+    courierPartner?: string
+  ) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === orderId || o.orderNumber === orderId) {
+          return {
+            ...o,
+            orderStatus: status,
+            trackingNumber: trackingNumber || o.trackingNumber,
+            courierPartner: courierPartner || o.courierPartner,
+          };
+        }
+        return o;
+      })
+    );
+    showToast(`Order status updated to ${status.replace("_", " ").toUpperCase()}`, "success");
+  };
+
+  const getOrderById = (orderId: string) => orders.find((o) => o.id === orderId || o.orderNumber === orderId);
+  const getOrderByNumber = (num: string) => orders.find((o) => o.orderNumber === num);
+
+  // Products CRUD for Admin
+  const addProduct = (productData: Omit<SareeProduct, "id" | "createdAt">) => {
+    const newProduct: SareeProduct = {
+      ...productData,
+      id: `saree-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newProduct, ...products];
+    setProducts(updated);
+    try {
+      localStorage.setItem("ravina_custom_products", JSON.stringify(updated));
+    } catch {}
+    showToast(`Product "${newProduct.name}" created!`, "success");
+  };
+
+  const updateProduct = (id: string, updates: Partial<SareeProduct>) => {
+    const updated = products.map((p) => (p.id === id ? { ...p, ...updates } : p));
+    setProducts(updated);
+    try {
+      localStorage.setItem("ravina_custom_products", JSON.stringify(updated));
+    } catch {}
+    showToast("Product updated successfully", "success");
+  };
+
+  const deleteProduct = (id: string) => {
+    const updated = products.filter((p) => p.id !== id);
+    setProducts(updated);
+    try {
+      localStorage.setItem("ravina_custom_products", JSON.stringify(updated));
+    } catch {}
+    showToast("Product deleted", "info");
+  };
+
+  const addCategory = (categoryData: Omit<Category, "id">) => {
+    const newCat: Category = {
+      ...categoryData,
+      id: `cat-${Date.now()}`,
+    };
+    setCategories((prev) => [...prev, newCat]);
+    showToast(`Category "${newCat.name}" added`, "success");
+  };
+
+  const deleteCategory = (id: string) => {
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+    showToast("Category removed", "info");
+  };
+
+  const getProductBySlug = (slug: string) => products.find((p) => p.slug === slug);
+  const getProductById = (id: string) => products.find((p) => p.id === id);
+
+  // Coupons CRUD
+  const addCoupon = (couponData: Omit<Coupon, "id">) => {
+    const newCoupon: Coupon = {
+      ...couponData,
+      id: `coup-${Date.now()}`,
+    };
+    setCoupons((prev) => [newCoupon, ...prev]);
+    showToast(`Coupon ${newCoupon.code} created!`, "success");
+  };
+
+  const toggleCouponStatus = (id: string) => {
+    setCoupons((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c))
+    );
+    showToast("Coupon status updated", "info");
+  };
+
+  // Reviews
+  const addReview = (reviewData: Omit<Review, "id" | "createdAt" | "status">) => {
+    const newReview: Review = {
+      ...reviewData,
+      id: `rev-${Date.now()}`,
+      status: "approved", // auto approved for instant feedback
+      createdAt: new Date().toISOString(),
+    };
+    setReviews((prev) => [newReview, ...prev]);
+    showToast("Thank you for your review! It has been posted.", "success");
+  };
+
+  const updateReviewStatus = (id: string, status: "approved" | "rejected") => {
+    setReviews((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status } : r))
+    );
+    showToast(`Review ${status}`, "info");
+  };
+
+  // User Auth
+  const login = (email: string, role: "customer" | "admin" = "customer") => {
+    const isAdm = role === "admin" || email.includes("admin");
+    setUser({
+      id: isAdm ? "usr-admin-001" : "usr-001",
+      email,
+      fullName: isAdm ? "Admin Ravina" : "Ananya Reddy",
+      phone: "+91 98765 43210",
+      role: isAdm ? "admin" : "customer",
+      joinedDate: "2025-11-10",
+      avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+    });
+    showToast(`Welcome back, ${isAdm ? "Admin" : "Ananya"}!`, "success");
+  };
+
+  const logout = () => {
+    setUser(null);
+    showToast("You have been signed out", "info");
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        products,
+        categories,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        addCategory,
+        deleteCategory,
+        getProductBySlug,
+        getProductById,
+        cart,
+        addToCart,
+        updateCartQuantity,
+        removeFromCart,
+        clearCart,
+        isCartDrawerOpen,
+        setIsCartDrawerOpen,
+        cartSubtotal,
+        cartDiscount,
+        cartTotal,
+        freeShippingThreshold,
+        appliedCoupon,
+        applyCoupon,
+        removeCoupon,
+        giftWrap,
+        setGiftWrap,
+        giftMessage,
+        setGiftMessage,
+        giftWrapFee,
+        coupons,
+        addCoupon,
+        toggleCouponStatus,
+        wishlist,
+        toggleWishlist,
+        isInWishlist,
+        recentlyViewed,
+        addToRecentlyViewed,
+        quickViewProduct,
+        setQuickViewProduct,
+        user,
+        login,
+        logout,
+        savedAddresses,
+        addAddress,
+        updateAddress,
+        deleteAddress,
+        orders,
+        placeOrder,
+        updateOrderStatus,
+        getOrderById,
+        getOrderByNumber,
+        reviews,
+        addReview,
+        updateReviewStatus,
+        toasts,
+        showToast,
+        removeToast,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error("useApp must be used within an AppProvider");
+  }
+  return context;
+};

@@ -1,0 +1,114 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          white: "#FFFFFF",
+          ivory: "#FAF9F6",
+          cream: "#F5F0EB",
+          gold: "#C8A24D",
+          goldLight: "#D4B86A",
+          goldPale: "#F5EDD6",
+          goldDark: "#A88534",
+          goldHover: "#B8923D",
+          goldMuted: "rgba(200, 162, 77, 0.10)",
+          maroon: "#7A1F2B",
+          maroonDark: "#5C1520",
+          maroonLight: "#9A2E3D",
+          text: "#222222",
+          textSecondary: "#555555",
+          textMuted: "#888888",
+          border: "#EAEAEA",
+          borderDark: "#D4D4D4",
+          cardShadow: "rgba(0,0,0,0.06)",
+        },
+      },
+      fontFamily: {
+        heading: ["'Playfair Display'", "Georgia", "serif"],
+        body: ["'Inter'", "system-ui", "-apple-system", "sans-serif"],
+        button: ["'Poppins'", "'Inter'", "system-ui", "sans-serif"],
+      },
+      letterSpacing: {
+        tighter: "-0.04em",
+        tight: "-0.02em",
+        normal: "0em",
+        wide: "0.04em",
+        wider: "0.08em",
+        widest: "0.16em",
+        luxury: "0.24em",
+      },
+      borderRadius: {
+        card: "14px",
+        btn: "9999px",
+        lg: "12px",
+        xl: "16px",
+      },
+      backgroundImage: {
+        "gold-gradient": "linear-gradient(135deg, #D4B86A 0%, #C8A24D 50%, #A88534 100%)",
+        "maroon-gradient": "linear-gradient(135deg, #9A2E3D 0%, #7A1F2B 50%, #5C1520 100%)",
+        "ivory-gradient": "linear-gradient(180deg, #FFFFFF 0%, #FAF9F6 100%)",
+        "hero-overlay": "linear-gradient(90deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)",
+        "hero-bottom": "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 100%)",
+      },
+      boxShadow: {
+        "soft": "0 2px 8px rgba(0, 0, 0, 0.06)",
+        "card": "0 4px 16px rgba(0, 0, 0, 0.06)",
+        "cardHover": "0 8px 30px rgba(0, 0, 0, 0.10)",
+        "nav": "0 2px 16px rgba(0, 0, 0, 0.06)",
+        "gold": "0 4px 20px rgba(200, 162, 77, 0.20)",
+        "goldHover": "0 6px 28px rgba(200, 162, 77, 0.30)",
+        "modal": "0 20px 60px rgba(0, 0, 0, 0.15)",
+        "drawer": "-4px 0 30px rgba(0, 0, 0, 0.10)",
+      },
+      transitionTimingFunction: {
+        luxury: "cubic-bezier(0.16, 1, 0.3, 1)",
+      },
+      keyframes: {
+        fadeInUp: {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        slideInRight: {
+          "0%": { transform: "translateX(100%)" },
+          "100%": { transform: "translateX(0)" },
+        },
+        slideInUp: {
+          "0%": { transform: "translateY(100%)", opacity: "0" },
+          "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        shimmer: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
+        },
+        pulse: {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5" },
+        },
+        ripple: {
+          "0%": { transform: "scale(0)", opacity: "0.5" },
+          "100%": { transform: "scale(4)", opacity: "0" },
+        },
+      },
+      animation: {
+        fadeInUp: "fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        fadeIn: "fadeIn 0.3s ease-out forwards",
+        slideInRight: "slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        slideInUp: "slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        shimmer: "shimmer 2.5s ease-in-out infinite",
+        pulse: "pulse 2s ease-in-out infinite",
+        ripple: "ripple 0.6s ease-out",
+      },
+    },
+  },
+  plugins: [],
+};

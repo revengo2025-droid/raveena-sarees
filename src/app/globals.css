@@ -1,0 +1,298 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-heading: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-button: 'Poppins', 'Inter', system-ui, sans-serif;
+  --color-gold: #C8A24D;
+  --color-maroon: #7A1F2B;
+  --color-ivory: #FAF9F6;
+  --color-text: #222222;
+  --ease-luxury: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body {
+  background-color: #FFFFFF;
+  color: #222222;
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: #C8A24D;
+  color: #FFFFFF;
+}
+
+/* ─── Premium Light Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F0EB;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4D4D4;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C8A24D;
+}
+
+/* ─── Luxury Card System ─── */
+.luxury-card {
+  background: #FFFFFF;
+  border: 1px solid #EAEAEA;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.luxury-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.10);
+  border-color: rgba(200, 162, 77, 0.3);
+}
+
+.luxury-card-elevated {
+  background: #FFFFFF;
+  border: 1px solid #EAEAEA;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.luxury-card-elevated:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  border-color: rgba(200, 162, 77, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ─── Section Backgrounds ─── */
+.bg-ivory {
+  background-color: #FAF9F6;
+}
+
+.bg-cream {
+  background-color: #F5F0EB;
+}
+
+/* ─── Gold Accent Utilities ─── */
+.gold-text {
+  color: #C8A24D;
+}
+
+.gold-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #C8A24D 50%, transparent 100%);
+}
+
+/* ─── Premium Button System ─── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  background: #C8A24D;
+  color: #FFFFFF;
+  font-family: var(--font-button);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(200, 162, 77, 0.20);
+}
+
+.btn-primary:hover {
+  background: #7A1F2B;
+  box-shadow: 0 6px 28px rgba(122, 31, 43, 0.25);
+  transform: scale(1.02);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  background: #FFFFFF;
+  color: #C8A24D;
+  font-family: var(--font-button);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-radius: 9999px;
+  border: 1.5px solid #C8A24D;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: #C8A24D;
+  color: #FFFFFF;
+  transform: scale(1.02);
+}
+
+/* ─── Shimmer Loading Skeleton ─── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #F0ECE6;
+  border-radius: 8px;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ─── Fade-in on Scroll ─── */
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fade-in-section.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Image Hover Zoom ─── */
+.img-zoom {
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.img-zoom img {
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.img-zoom:hover img {
+  transform: scale(1.05);
+}
+
+/* ─── Gold Underline Link ─── */
+.gold-link {
+  position: relative;
+  color: #C8A24D;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.gold-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 1.5px;
+  background: #C8A24D;
+  transition: width 0.3s ease;
+}
+
+.gold-link:hover::after {
+  width: 100%;
+}
+
+.gold-link:hover {
+  color: #7A1F2B;
+}
+
+/* ─── Section Heading Line ─── */
+.section-heading-line {
+  display: inline-block;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+/* ─── Luxury Glow & Shimmer ─── */
+@keyframes shimmerGold {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-gold {
+  background: linear-gradient(
+    90deg,
+    rgba(200, 162, 77, 0.1) 0%,
+    rgba(200, 162, 77, 0.45) 50%,
+    rgba(200, 162, 77, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerGold 3s infinite ease-in-out;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(200, 162, 77, 0.25);
+}
+
+.glass-panel-dark {
+  background: rgba(20, 15, 15, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(200, 162, 77, 0.35);
+}
+
+.countdown-box {
+  background: linear-gradient(135deg, #1C1917 0%, #292524 100%);
+  color: #FAF8F5;
+  border: 1px solid rgba(200, 162, 77, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.badge-glow {
+  box-shadow: 0 0 15px rgba(200, 162, 77, 0.45);
+}
+
+/* ─── Print Styles ─── */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
