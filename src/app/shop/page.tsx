@@ -30,7 +30,11 @@ function ShopContent() {
   const [selectedFabrics, setSelectedFabrics] = useState<string[]>([]);
   const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [maxPrice, setMaxPrice] = useState<number>(3500);
+  const highestPrice = useMemo(() => {
+    return products.length > 0 ? Math.max(5000, ...products.map((p) => p.price)) : 5000;
+  }, [products]);
+
+  const [maxPrice, setMaxPrice] = useState<number>(5000);
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<string>("featured");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
@@ -44,13 +48,13 @@ function ShopContent() {
 
   const distinctFabrics = useMemo(() => {
     return [
+      "Soft Silk",
+      "Metallic Tissue",
       "Mulberry Silk",
+      "Pure Silk",
       "Katan Silk",
       "Tussar Silk",
-      "Tissue Silk",
       "Organza Silk",
-      "Cotton Silk",
-      "Georgette",
     ];
   }, []);
 
@@ -106,7 +110,7 @@ function ShopContent() {
     setSelectedFabrics([]);
     setSelectedOccasions([]);
     setSelectedColors([]);
-    setMaxPrice(3500);
+    setMaxPrice(highestPrice);
     setInStockOnly(false);
   };
 
@@ -193,7 +197,7 @@ function ShopContent() {
     selectedFabrics.length > 0 ||
     selectedOccasions.length > 0 ||
     selectedColors.length > 0 ||
-    maxPrice < 55000 ||
+    maxPrice < highestPrice ||
     inStockOnly;
 
   return (
@@ -351,7 +355,7 @@ function ShopContent() {
               <input
                 type="range"
                 min={1000}
-                max={3500}
+                max={highestPrice}
                 step={100}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
@@ -359,7 +363,7 @@ function ShopContent() {
               />
               <div className="flex justify-between text-[10px] text-neutral-500 mt-1 font-mono">
                 <span>₹1,000</span>
-                <span>₹3,500</span>
+                <span>{formatINR(highestPrice)}</span>
               </div>
             </div>
 
@@ -383,7 +387,9 @@ function ShopContent() {
                       />
                       {cat.name}
                     </span>
-                    <span className="text-[10px] text-neutral-400 font-mono">{cat.itemCount || 18}</span>
+                    <span className="text-[10px] text-neutral-400 font-mono">
+                      {products.filter((p) => p.categoryId === cat.id).length}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -523,7 +529,7 @@ function ShopContent() {
                 <input
                   type="range"
                   min={1000}
-                  max={3500}
+                  max={highestPrice}
                   step={100}
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}

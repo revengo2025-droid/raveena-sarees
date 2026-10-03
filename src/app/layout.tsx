@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     siteName: "Ravina Sarees",
     images: [
       {
-        url: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=80",
+        url: "https://ravinasarees.in/images/hero/hero-banner-1.png",
         width: 1200,
         height: 630,
         alt: "Ravina Sarees Royal Silk Collection",
@@ -58,7 +58,7 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "ClothingStore",
               name: "Ravina Sarees",
-              image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c",
+              image: "https://ravinasarees.in/images/hero/hero-banner-1.png",
               url: "https://ravinasarees.in",
               telephone: "+91-8688472300",
               email: "ravieenasarees@gmail.com",

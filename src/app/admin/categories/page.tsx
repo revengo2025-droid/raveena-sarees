@@ -6,7 +6,7 @@ import { useApp } from "@/lib/store";
 import { Category } from "@/lib/types";
 
 export default function AdminCategoriesPage() {
-  const { categories, addCategory, deleteCategory, showToast } = useApp();
+  const { categories, products, addCategory, deleteCategory, showToast } = useApp();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState("");
@@ -35,8 +35,8 @@ export default function AdminCategoriesPage() {
       name,
       slug,
       description: description || "Authentic luxury handloom collection curated for discerning patrons.",
-      imageUrl: imageUrl || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
-      itemCount: 12,
+      imageUrl: imageUrl || "/images/products/rani-pink-silk-1.jpg",
+      itemCount: 1,
       featured: true,
     });
     resetForm();
@@ -89,7 +89,14 @@ export default function AdminCategoriesPage() {
 
               <div className="flex items-center justify-between pt-4 border-t border-[#1F1F1F] text-xs">
                 <span className="text-gray-400">
-                  Total Sarees: <strong className="text-white">{cat.itemCount || 15}</strong>
+                  Total Sarees:{" "}
+                  <strong className="text-white">
+                    {products.filter(
+                      (p) =>
+                        p.categoryId === cat.id ||
+                        p.categoryName?.toLowerCase() === cat.name.toLowerCase()
+                    ).length}
+                  </strong>
                 </span>
 
                 <button

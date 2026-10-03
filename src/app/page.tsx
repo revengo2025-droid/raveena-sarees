@@ -86,9 +86,8 @@ export default function HomePage() {
 
   // Filtered products for active curator tab
   const filteredTabProducts = products.filter((p) => {
-    const effPrice = p.discountPrice || p.price;
-    if (collectionTab === "trending") return effPrice <= 2000 || p.isNewArrival;
-    if (collectionTab === "handloom") return p.categoryId === "cat-1" || p.categoryId === "cat-2";
+    if (collectionTab === "trending") return p.isNewArrival || p.isFeatured;
+    if (collectionTab === "handloom") return p.categoryId === "cat-4" || p.categoryId === "cat-7";
     if (collectionTab === "party") return p.categoryId === "cat-5" || p.categoryId === "cat-7";
     if (collectionTab === "bestseller") return p.isBestseller;
     return true;
@@ -146,8 +145,8 @@ export default function HomePage() {
       daysToWeave: "30 to 45 Days per Drape",
       technique: "Korvai Interlocking Pit Loom Technique",
       drapeProfile: "Architectural, stately drape that forms crisp, majestic pleats for wedding muhurthams.",
-      image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1000&q=85",
-      link: "/category/kanjivaram-sarees",
+      image: "/images/products/rani-pink-silk-3.jpg",
+      link: "/category/silk-sarees",
       specPoints: [
         "3-Ply Twisted Mulberry Silk Filament",
         "Contrast Korvai Solid Pallu Joint",
@@ -164,8 +163,8 @@ export default function HomePage() {
       daysToWeave: "25 to 35 Days per Drape",
       technique: "Kadwa Embossed Hand-Weave (Zero Floats)",
       drapeProfile: "Soft, flowing, and sensuous with raised metallic motifs that glow under ambient royal chandeliers.",
-      image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1000&q=85",
-      link: "/category/banarasi-sarees",
+      image: "/images/products/rani-pink-silk-2.jpg",
+      link: "/category/designer-sarees",
       specPoints: [
         "Pure Mulberry Warp with Metallic Weft",
         "Hand-engraved Kadwa Motifs (No Cutting)",
@@ -293,10 +292,10 @@ export default function HomePage() {
                 🌸 Soft Jacquard Silks
               </Link>
               <Link
-                href="/category/kanjivaram-sarees"
+                href="/category/designer-sarees"
                 className="px-4 py-2 rounded-full bg-brand-ivory hover:bg-brand-gold hover:text-white text-brand-text text-xs font-medium tracking-wide border border-brand-border transition-all whitespace-nowrap flex items-center gap-1.5 font-poppins"
               >
-                🏛️ Pure Kanjivaram
+                ✨ Designer Sarees
               </Link>
             </div>
             <Link
@@ -496,7 +495,7 @@ export default function HomePage() {
                   <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 flex flex-col justify-end text-white">
                     <span className="text-[10px] text-amber-200 uppercase tracking-[0.25em] font-semibold mb-1.5 flex items-center gap-1.5 font-poppins">
                       <span className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
-                      {category.itemCount || 20}+ Pure Sarees
+                      {products.filter((p) => p.categoryId === category.id).length || category.itemCount || 1} Exclusive Drape{products.filter((p) => p.categoryId === category.id).length === 1 ? "" : "s"}
                     </span>
                     <h3 className="text-xl sm:text-2xl lg:text-3xl font-serif text-white font-normal group-hover:text-amber-200 transition-colors leading-snug">
                       {category.name}
@@ -828,7 +827,7 @@ export default function HomePage() {
           <div className="relative">
             <div className="rounded-3xl overflow-hidden shadow-luxury border border-brand-border aspect-[4/5] bg-brand-ivory">
               <img
-                src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=85"
+                src="/images/products/golden-kanchipuram-1.jpg"
                 alt="Ravina Sarees Master Handloom Weaving"
                 className="w-full h-full object-cover"
               />
@@ -1026,7 +1025,7 @@ export default function HomePage() {
             </div>
             <div className="aspect-square rounded-2xl overflow-hidden relative group border border-brand-border shadow-sm">
               <img
-                src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80"
+                src="/images/products/emerald-kanjivaram-1.jpg"
                 alt="Kanjivaram Saree Drape"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />

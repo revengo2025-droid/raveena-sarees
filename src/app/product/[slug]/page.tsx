@@ -116,10 +116,13 @@ export default function ProductDetailPage() {
     (r) => r.productId === product.id && r.status === "approved"
   );
 
-  // Related products from same category
-  const relatedProducts = products
-    .filter((p) => p.categoryId === product.categoryId && p.id !== product.id)
-    .slice(0, 4);
+  // Related products from same category, with fallback to all other products
+  const relatedSameCat = products.filter(
+    (p) => p.categoryId === product.categoryId && p.id !== product.id
+  );
+  const relatedProducts = (
+    relatedSameCat.length > 0 ? relatedSameCat : products.filter((p) => p.id !== product.id)
+  ).slice(0, 4);
 
   // Pincode Check
   const handlePincodeCheck = (e: React.FormEvent) => {
@@ -725,7 +728,7 @@ export default function ProductDetailPage() {
               You May Also Admire
             </h2>
             <Link
-              href={`/category/${product.categoryId}`}
+              href={categoryObj ? `/category/${categoryObj.slug}` : "/shop"}
               className="text-xs text-brand-maroon hover:text-brand-gold uppercase tracking-wider font-semibold font-poppins"
             >
               View More from {product.categoryName} &rarr;

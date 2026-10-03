@@ -188,20 +188,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       },
       items: [
         {
-          productId: "saree-01",
-          productName: "Royal Crimson & Gold Temple Border Kanjivaram Silk Saree",
-          sku: "RAV-KNJ-001",
-          selectedColor: "Crimson Red",
-          price: 2499,
+          productId: "saree-09",
+          productName: "Turquoise Blue Tissue Silver Zariwork Saree With Matching Blouse Piece",
+          sku: "RAV-TIS-009",
+          selectedColor: "Turquoise Blue",
+          price: 1794,
           quantity: 1,
-          imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80",
+          imageUrl: "/images/products/turquoise-tissue-1.jpg",
         },
       ],
-      subtotal: 2499,
-      discountAmount: 250,
+      subtotal: 1794,
+      discountAmount: 179,
       shippingFee: 0,
       giftWrapFee: 150,
-      totalAmount: 2399,
+      totalAmount: 1765,
       paymentMethod: "razorpay",
       paymentStatus: "paid",
       paymentId: "pay_RAV982347293",
@@ -217,36 +217,114 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     },
   ]);
 
+  // Obsolete demo product IDs that should never be restored from stale browser storage
+  const OBSOLETE_DEMO_IDS = new Set([
+    "saree-01",
+    "saree-02",
+    "saree-03",
+    "saree-04",
+    "saree-05",
+    "saree-06",
+    "saree-07",
+    "saree-08",
+  ]);
+
   // Load / Persist localStorage
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem("ravina_cart");
-      if (savedCart) setCart(JSON.parse(savedCart));
+      if (savedCart) {
+        const parsedCart: CartItem[] = JSON.parse(savedCart);
+        const cleanCart = parsedCart.filter(
+          (item) => item.product && !OBSOLETE_DEMO_IDS.has(item.product.id)
+        );
+        setCart(cleanCart);
+      }
 
       const savedWishlist = localStorage.getItem("ravina_wishlist");
-      if (savedWishlist) setWishlist(JSON.parse(savedWishlist));
+      if (savedWishlist) {
+        const parsedWish: string[] = JSON.parse(savedWishlist);
+        setWishlist(parsedWish.filter((id) => !OBSOLETE_DEMO_IDS.has(id)));
+      }
 
       const savedRecently = localStorage.getItem("ravina_recent");
-      if (savedRecently) setRecentlyViewed(JSON.parse(savedRecently));
+      if (savedRecently) {
+        const parsedRecent: SareeProduct[] = JSON.parse(savedRecently);
+        setRecentlyViewed(parsedRecent.filter((p) => !OBSOLETE_DEMO_IDS.has(p.id)));
+      }
 
       const savedOrders = localStorage.getItem("ravina_orders");
-      if (savedOrders) setOrders(JSON.parse(savedOrders));
+      if (savedOrders) {
+        const parsedOrders: Order[] = JSON.parse(savedOrders);
+        const cleanOrders = parsedOrders.map((o) => ({
+          ...o,
+          items: o.items.filter((item) => !OBSOLETE_DEMO_IDS.has(item.productId)),
+        })).filter((o) => o.items.length > 0);
+        if (cleanOrders.length > 0) {
+          setOrders(cleanOrders);
+        }
+      }
 
       const customProducts = localStorage.getItem("ravina_custom_products");
       if (customProducts) {
         const parsed: SareeProduct[] = JSON.parse(customProducts);
-        const merged = [...parsed];
-        for (const initP of INITIAL_PRODUCTS) {
-          const idx = merged.findIndex((p) => p.id === initP.id);
-          if (idx === -1) {
-            merged.push(initP);
-          } else {
-            merged[idx] = initP;
-          }
-        }
+        const initialIds = new Set(INITIAL_PRODUCTS.map((p) => p.id));
+        // Keep only valid admin-added products, filtering out obsolete demo products
+        const customOnly = parsed.filter(
+          (p) => !initialIds.has(p.id) && !OBSOLETE_DEMO_IDS.has(p.id)
+        );
+        const merged = [...INITIAL_PRODUCTS, ...customOnly];
         setProducts(merged);
+        // Clean localStorage of stale products
+        localStorage.setItem("ravina_custom_products", JSON.stringify(merged));
       } else {
         setProducts(INITIAL_PRODUCTS);
+      }
+
+      const savedCategories = localStorage.getItem("ravina_categories");
+      if (savedCategories) {
+        try {
+          const parsedCats: Category[] = JSON.parse(savedCategories);
+          const initialCatMap = new Map(INITIAL_CATEGORIES.map((c) => [c.id, c]));
+          const mergedCats = INITIAL_CATEGORIES.map((initCat) => {
+            const saved = parsedCats.find((c) => c.id === initCat.id);
+            return saved ? { ...initCat, ...saved, imageUrl: initCat.imageUrl, bannerUrl: initCat.bannerUrl } : initCat;
+          });
+          const customCats = parsedCats.filter((c) => !initialCatMap.has(c.id));
+          setCategories([...mergedCats, ...customCats]);
+        } catch {
+          setCategories(INITIAL_CATEGORIES);
+        }
+      } else {
+        setCategories(INITIAL_CATEGORIES);
+      }
+
+      const savedCoupons = localStorage.getItem("ravina_coupons");
+      if (savedCoupons) {
+        try {
+          const parsedCoupons: Coupon[] = JSON.parse(savedCoupons);
+          const initialCouponCodes = new Set(INITIAL_COUPONS.map((c) => c.code));
+          const customCoupons = parsedCoupons.filter((c) => !initialCouponCodes.has(c.code));
+          setCoupons([...INITIAL_COUPONS, ...customCoupons]);
+        } catch {
+          setCoupons(INITIAL_COUPONS);
+        }
+      } else {
+        setCoupons(INITIAL_COUPONS);
+      }
+
+      const savedReviews = localStorage.getItem("ravina_reviews");
+      if (savedReviews) {
+        try {
+          const parsedReviews: Review[] = JSON.parse(savedReviews);
+          const initialReviewIds = new Set(INITIAL_REVIEWS.map((r) => r.id));
+          const customReviews = parsedReviews.filter((r) => !initialReviewIds.has(r.id));
+          setReviews([...INITIAL_REVIEWS, ...customReviews]);
+        } catch {
+          setReviews(INITIAL_REVIEWS);
+        }
+      } else {
+        setReviews(INITIAL_REVIEWS);
       }
     } catch {
       // Ignore storage errors in restricted contexts
@@ -270,6 +348,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem("ravina_orders", JSON.stringify(orders));
     } catch {}
   }, [orders]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ravina_categories", JSON.stringify(categories));
+    } catch {}
+  }, [categories]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ravina_coupons", JSON.stringify(coupons));
+    } catch {}
+  }, [coupons]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ravina_reviews", JSON.stringify(reviews));
+    } catch {}
+  }, [reviews]);
 
   // Toast System
   const showToast = (message: string, type: "success" | "error" | "info" = "success") => {

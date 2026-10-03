@@ -23,7 +23,7 @@ export default function ShippingPolicyPage() {
           </h2>
           <p>
             Ravina Sarees offers complimentary express air shipping across all serviceable pin codes in India
-            on orders above ₹5,000. For orders below this threshold, a flat nominal express fee of ₹250 applies.
+            on orders above ₹2,500. For orders below this threshold, a flat nominal express fee of ₹150 applies.
           </p>
         </section>
 

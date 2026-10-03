@@ -30,7 +30,7 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div className="aspect-[4/3] rounded-3xl overflow-hidden border border-brand-border shadow-luxury bg-brand-ivory">
             <img
-              src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1200&q=85"
+              src="/images/products/golden-kanchipuram-1.jpg"
               alt="Ravina Sarees Kanchipuram Weaving"
               className="w-full h-full object-cover"
             />

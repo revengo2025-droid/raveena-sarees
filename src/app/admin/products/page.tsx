@@ -29,41 +29,41 @@ export default function AdminProductsPage() {
   // Form Fields
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
-  const [categoryId, setCategoryId] = useState(categories[0]?.id || "cat-1");
-  const [price, setPrice] = useState<number>(25000);
-  const [discountPrice, setDiscountPrice] = useState<number>(21999);
-  const [stock, setStock] = useState<number>(10);
-  const [fabric, setFabric] = useState("Pure Mulberry Kanchipuram Silk");
-  const [zariType, setZariType] = useState("Pure Gold Zari");
-  const [weaveType, setWeaveType] = useState("Korvai Handloom Technique");
-  const [occasion, setOccasion] = useState("Bridal / Wedding");
-  const [primaryColor, setPrimaryColor] = useState("Crimson Red");
-  const [availableColors, setAvailableColors] = useState("Crimson Red, Royal Gold, Maroon");
+  const [categoryId, setCategoryId] = useState(categories[0]?.id || "cat-5");
+  const [price, setPrice] = useState<number>(2990);
+  const [discountPrice, setDiscountPrice] = useState<number>(1794);
+  const [stock, setStock] = useState<number>(15);
+  const [fabric, setFabric] = useState("Pure Metallic Tissue Sheer Silk Blend");
+  const [zariType, setZariType] = useState("Exquisite Silver Zari & Scalloped Resham Border");
+  const [weaveType, setWeaveType] = useState("Luminescent Tissue Jacquard Weave");
+  const [occasion, setOccasion] = useState("Party Wear / Festive / Reception");
+  const [primaryColor, setPrimaryColor] = useState("Turquoise Blue");
+  const [availableColors, setAvailableColors] = useState("Turquoise Blue, Aqua Marine, Sky Cyan");
   const [images, setImages] = useState(
-    "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1000&q=85"
+    "/images/products/turquoise-tissue-1.jpg\n/images/products/turquoise-tissue-2.jpg"
   );
   const [description, setDescription] = useState(
-    "Exquisite handwoven heirloom saree with pure gold zari temple border and heavy brocade pallu."
+    "An enchanting handcrafted saree featuring shimmering metallic weave adorned with exquisite zari bootis and an ornate scalloped border."
   );
   const [isFeatured, setIsFeatured] = useState(true);
-  const [isBestseller, setIsBestseller] = useState(false);
+  const [isBestseller, setIsBestseller] = useState(true);
   const [isNewArrival, setIsNewArrival] = useState(true);
 
   const resetForm = () => {
     setName("");
-    setSku(`RAV-SLK-${Math.floor(100 + Math.random() * 900)}`);
-    setCategoryId(categories[0]?.id || "cat-1");
-    setPrice(25000);
-    setDiscountPrice(21999);
-    setStock(10);
-    setFabric("Pure Mulberry Kanchipuram Silk");
-    setZariType("Pure Gold Zari");
-    setWeaveType("Korvai Handloom Technique");
-    setOccasion("Bridal / Wedding");
-    setPrimaryColor("Crimson Red");
-    setAvailableColors("Crimson Red, Royal Gold, Maroon");
-    setImages("https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1000&q=85");
-    setDescription("Exquisite handwoven heirloom saree with pure gold zari temple border.");
+    setSku(`RAV-${Math.floor(100 + Math.random() * 900)}`);
+    setCategoryId(categories[0]?.id || "cat-5");
+    setPrice(2990);
+    setDiscountPrice(1794);
+    setStock(15);
+    setFabric("Pure Metallic Tissue Sheer Silk Blend");
+    setZariType("Exquisite Silver Zari & Scalloped Resham Border");
+    setWeaveType("Luminescent Tissue Jacquard Weave");
+    setOccasion("Party Wear / Festive / Reception");
+    setPrimaryColor("Turquoise Blue");
+    setAvailableColors("Turquoise Blue, Aqua Marine, Sky Cyan");
+    setImages("/images/products/turquoise-tissue-1.jpg\n/images/products/turquoise-tissue-2.jpg");
+    setDescription("An enchanting handcrafted saree featuring shimmering metallic weave adorned with exquisite zari bootis.");
     setIsFeatured(false);
     setIsBestseller(false);
     setIsNewArrival(true);
