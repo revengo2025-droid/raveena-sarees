@@ -57,18 +57,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div>
           {/* Logo */}
           <div className="p-6 border-b border-[#1F1F1F] flex items-center justify-between">
-            <Link href="/admin" className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-serif font-bold text-white tracking-widest uppercase">
-                  Ravina
-                </span>
-                <span className="text-lg font-serif font-light text-[#D4AF37] tracking-wider uppercase">
-                  Admin
+            <Link href="/admin" className="flex items-center gap-3">
+              <img
+                src="/images/logo/raveena-brand-logo.jpg"
+                alt="Raveena Sarees"
+                className="h-9 w-auto object-contain rounded-md border border-[#D4AF37]/30 shadow-sm"
+              />
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base font-serif font-bold text-white tracking-widest uppercase">
+                    Raveena
+                  </span>
+                  <span className="text-base font-serif font-light text-[#D4AF37] tracking-wider uppercase">
+                    Admin
+                  </span>
+                </div>
+                <span className="text-[9px] uppercase tracking-[0.25em] text-gray-500">
+                  Atelier Control Panel
                 </span>
               </div>
-              <span className="text-[9px] uppercase tracking-[0.25em] text-gray-500">
-                Atelier Control Panel
-              </span>
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -114,7 +121,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Storefront
           </Link>
           <div className="text-[10px] text-gray-600 px-3.5">
-            Ravina Sarees v1.0.0 • Telangana
+            Raveena Sarees v1.0.0 • Telangana
           </div>
         </div>
       </aside>
@@ -147,7 +154,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
             <div className="text-right">
               <span className="text-xs font-semibold text-white block">
-                {user?.fullName || "Admin Ravina"}
+                {user?.fullName || "Raveena Admin"}
               </span>
               <span className="text-[10px] text-[#D4AF37]">Super Administrator</span>
             </div>

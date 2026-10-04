@@ -125,7 +125,7 @@ class ResendEmailService implements EmailService {
           </div>
         </div>
         <p style="color: #6b7280; font-size: 12px; text-align: center; margin-top: 32px;">
-          For concierge assistance, WhatsApp us at +91-8688472300 or reply to this email.
+          For concierge assistance, WhatsApp us at +91-7780756009 or reply to this email.
         </p>
       </div>
     `;

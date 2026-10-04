@@ -67,8 +67,8 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-bold text-brand-text uppercase text-[11px] font-poppins">Concierge Phone</h3>
                   <p className="text-neutral-600 mt-1 font-light">
-                    <a href="tel:+918688472300" className="hover:text-brand-maroon transition-colors">
-                      +91 8688472300
+                    <a href="tel:+917780756009" className="hover:text-brand-maroon transition-colors">
+                      +91 77807 56009
                     </a>
                   </p>
                 </div>
@@ -102,7 +102,7 @@ export default function ContactPage() {
             {/* Direct WhatsApp Button */}
             <div className="pt-2">
               <a
-                href="https://wa.me/918688472300?text=Namaste%20Ravina%20Sarees,%20I%20would%20like%20to%20inquire%20about%20sarees."
+                href="https://wa.me/917780756009?text=Namaste%20Ravina%20Sarees,%20I%20would%20like%20to%20inquire%20about%20sarees."
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-full flex items-center justify-center gap-2 transition-colors shadow-md font-poppins"
@@ -172,7 +172,7 @@ export default function ContactPage() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="+91 86884 72300"
+                      placeholder="+91 77807 56009"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       className="w-full bg-brand-ivory border border-brand-border rounded-xl px-3.5 py-2.5 text-brand-text focus:outline-none focus:border-brand-gold shadow-sm"

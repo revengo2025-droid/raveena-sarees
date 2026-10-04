@@ -284,7 +284,7 @@ function SuccessContent() {
         {/* Footer Note */}
         <div className="pt-4 border-t border-brand-border text-[11px] text-neutral-500 text-center space-y-1 font-light print:text-gray-600 print:border-black">
           <p>This is a computer generated tax invoice and does not require a physical signature.</p>
-          <p>For inquiries, contact concierge <a href="mailto:ravieenasarees@gmail.com" className="text-brand-maroon hover:underline">ravieenasarees@gmail.com</a> or WhatsApp <a href="https://wa.me/918688472300" className="text-brand-maroon hover:underline">+91 8688472300</a>.</p>
+          <p>For inquiries, contact concierge <a href="mailto:ravieenasarees@gmail.com" className="text-brand-maroon hover:underline">ravieenasarees@gmail.com</a> or WhatsApp <a href="https://wa.me/917780756009" className="text-brand-maroon hover:underline">+91 77807 56009</a>.</p>
         </div>
       </div>
     </div>

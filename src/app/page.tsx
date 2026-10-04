@@ -197,6 +197,9 @@ export default function HomePage() {
             <img
               src={slide.imageUrl}
               alt={slide.title}
+              loading={idx === 0 ? "eager" : "lazy"}
+              fetchPriority={idx === 0 ? "high" : "auto"}
+              decoding="async"
               className="w-full h-full object-cover object-center scale-100 hover:scale-[1.02] transition-transform duration-1000 ease-out"
             />
 
@@ -373,12 +376,16 @@ export default function HomePage() {
                     <img
                       src={deal.images[0]}
                       alt={deal.name}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     />
                     {deal.images[1] && (
                       <img
                         src={deal.images[1]}
                         alt={`${deal.name} view 2`}
+                        loading="lazy"
+                        decoding="async"
                         className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-700"
                       />
                     )}
@@ -496,6 +503,8 @@ export default function HomePage() {
                   <img
                     src={category.imageUrl}
                     alt={category.name}
+                    loading="lazy"
+                    decoding="async"
                     className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
                   />
                   {/* Luxury Multi-layer Gradient */}
@@ -678,6 +687,8 @@ export default function HomePage() {
                 <img
                   src={currentWeaveInfo.image}
                   alt={currentWeaveInfo.name}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
@@ -846,7 +857,9 @@ export default function HomePage() {
             <div className="rounded-3xl overflow-hidden shadow-luxury border border-brand-border aspect-[4/5] bg-brand-ivory">
               <img
                 src="/images/products/golden-kanchipuram-1.jpg"
-                alt="Ravina Sarees Master Handloom Weaving"
+                alt="Raveena Sarees Master Handloom Weaving"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -984,7 +997,7 @@ export default function HomePage() {
                 Shop Masterpieces Now
               </Link>
               <a
-                href="https://wa.me/918688472300?text=Hi%20Ravina%20Sarees,%20I%20would%20like%20to%20consult%20with%20your%20saree%20stylist"
+                href="https://wa.me/917780756009?text=Hi%20Ravina%20Sarees,%20I%20would%20like%20to%20consult%20with%20your%20saree%20stylist"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3.5 bg-emerald-600/90 hover:bg-emerald-600 text-white text-xs font-semibold uppercase tracking-[0.16em] rounded-full flex items-center gap-2 transition-all shadow font-poppins"
@@ -1029,6 +1042,8 @@ export default function HomePage() {
               <img
                 src="/images/products/rani-pink-silk-2.jpg"
                 alt="Rani Pink Saree Drape"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1039,6 +1054,8 @@ export default function HomePage() {
               <img
                 src="/images/products/turquoise-tissue-1.jpg"
                 alt="Turquoise Tissue Drape"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1049,6 +1066,8 @@ export default function HomePage() {
               <img
                 src="/images/products/emerald-kanjivaram-1.jpg"
                 alt="Kanjivaram Saree Drape"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -1059,6 +1078,8 @@ export default function HomePage() {
               <img
                 src="/images/products/rani-pink-silk-3.jpg"
                 alt="Pallu Tassels Drape"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

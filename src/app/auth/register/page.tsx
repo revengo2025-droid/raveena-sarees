@@ -118,7 +118,7 @@ function RegisterContent() {
               <input
                 type="tel"
                 required
-                placeholder="+91 86884 72300"
+                placeholder="+91 77807 56009"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full bg-brand-ivory border border-brand-border rounded-xl py-2.5 pl-10 pr-3 text-brand-text focus:outline-none focus:border-brand-gold"

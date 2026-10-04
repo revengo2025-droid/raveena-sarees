@@ -672,7 +672,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // User Auth
   const login = (email: string, role: "customer" | "admin" = "customer", fullName?: string, phone?: string) => {
     const isAdm = role === "admin" || email.includes("admin");
-    const formattedName = fullName || (isAdm ? "Store Administrator" : email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
+    const formattedName = fullName || (isAdm ? "Raveena Admin" : email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
     setUser({
       id: isAdm ? "usr-admin-001" : `usr-${Date.now()}`,
       email,

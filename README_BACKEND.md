@@ -1,7 +1,7 @@
-# Ravina Sarees — Production Backend Architecture & Integration Guide
+# Raveena Sarees — Production Backend Architecture & Integration Guide
 
 ## 1. Overview
-This codebase contains the complete production-grade backend implementation powering the **Ravina Sarees** luxury handloom e-commerce platform.
+This codebase contains the complete production-grade backend implementation powering the **Raveena Sarees** luxury handloom e-commerce platform.
 
 ### Tech Stack
 * **Framework:** Next.js 14 (App Router) with TypeScript

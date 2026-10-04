@@ -7,14 +7,14 @@ import { useApp } from "@/lib/store";
 export default function AdminSettingsPage() {
   const { showToast } = useApp();
 
-  const [storeName, setStoreName] = useState("Ravina Sarees");
+  const [storeName, setStoreName] = useState("Raveena Sarees");
   const [domain, setDomain] = useState("ravinasarees.in");
   const [showroomAddress, setShowroomAddress] = useState(
     "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana – 504224, India"
   );
-  const [conciergePhone, setConciergePhone] = useState("+91 86884 72300");
+  const [conciergePhone, setConciergePhone] = useState("+91 77807 56009");
   const [conciergeEmail, setConciergeEmail] = useState("ravieenasarees@gmail.com");
-  const [whatsappNumber, setWhatsappNumber] = useState("+91 86884 72300");
+  const [whatsappNumber, setWhatsappNumber] = useState("+91 77807 56009");
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(2500);
   const [gstRate, setGstRate] = useState(12);
   const [silkMarkLicense, setSilkMarkLicense] = useState("SM-IN-TS-98242");

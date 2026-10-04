@@ -79,9 +79,9 @@ export const Footer: React.FC = () => {
           <div className="space-y-5">
             <Link href="/" className="inline-block group">
               <img
-                src="/images/logo/raveena-logo-dark.jpg"
+                src="/images/logo/raveena-brand-logo.jpg"
                 alt="Raveena Sarees"
-                className="h-14 w-auto object-contain rounded-lg group-hover:opacity-90 transition-opacity"
+                className="h-16 w-auto object-contain rounded-xl shadow-md border border-brand-gold/30 group-hover:opacity-95 transition-opacity"
               />
             </Link>
 
@@ -103,8 +103,8 @@ export const Footer: React.FC = () => {
               </p>
               <p className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-brand-gold shrink-0" />
-                <a href="tel:+918688472300" className="hover:text-brand-gold transition-colors">
-                  +91 86884 72300
+                <a href="tel:+917780756009" className="hover:text-brand-gold transition-colors">
+                  +91 77807 56009
                 </a>
               </p>
               <p className="flex items-center gap-2.5">

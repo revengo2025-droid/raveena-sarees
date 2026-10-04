@@ -1,4 +1,4 @@
-# 👑 Ravina Sarees - Luxury E-Commerce Web Platform
+# 👑 Raveena Sarees - Luxury E-Commerce Web Platform
 
 > **Authentic Handloom & Royal Silk Sarees Atelier — Hyderabad, India**  
 > Official Domain: [ravinasarees.in](https://ravinasarees.in)
@@ -7,7 +7,7 @@
 
 ## 🌟 Brand & Overview
 
-**Ravina Sarees** is a high-fashion, luxury e-commerce web platform exclusively dedicated to authentic Indian handloom sarees. Mastercrafted with pure mulberry silk, tested gold and silver zari, and centuries of artisan weaving heritage from Kanchipuram, Varanasi, Hyderabad, and Chanderi.
+**Raveena Sarees** is a high-fashion, luxury e-commerce web platform exclusively dedicated to authentic Indian handloom sarees. Mastercrafted with pure mulberry silk, tested gold and silver zari, and centuries of artisan weaving heritage from Kanchipuram, Varanasi, Hyderabad, and Chanderi.
 
 ### 🎨 Luxury Black & Gold Design System
 * **Primary Canvas:** Deep Black (`#050505`) & Royal Charcoal (`#0E0E0E`, `#161616`)

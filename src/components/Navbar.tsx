@@ -126,9 +126,9 @@ export const Navbar: React.FC = () => {
             {/* Left: Logo */}
             <Link href="/" className="group flex items-center select-none shrink-0 py-1">
               <img
-                src="/images/logo/raveena-logo-light.png"
+                src="/images/logo/raveena-brand-logo.jpg"
                 alt="Raveena Sarees"
-                className={`w-auto object-contain transition-all duration-500 ease-out group-hover:scale-105 ${
+                className={`w-auto object-contain transition-all duration-500 ease-out group-hover:scale-105 rounded-md shadow-sm border border-brand-gold/30 ${
                   isScrolled ? "h-8 sm:h-9 md:h-10" : "h-9 sm:h-10 md:h-11"
                 }`}
               />
@@ -363,8 +363,8 @@ export const Navbar: React.FC = () => {
                 })}
               </div>
               <div className="pt-4 mt-4 border-t border-black/[0.06] flex items-center gap-4">
-                <a href="tel:+918688472300" className="text-sm text-brand-textMuted font-body hover:text-brand-gold transition-colors">
-                  📞 +91 86884 72300
+                <a href="tel:+917780756009" className="text-sm text-brand-textMuted font-body hover:text-brand-gold transition-colors">
+                  📞 +91 77807 56009
                 </a>
               </div>
             </div>

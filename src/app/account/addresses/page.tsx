@@ -137,7 +137,7 @@ export default function AddressesPage() {
               <input
                 type="tel"
                 required
-                placeholder="+91 86884 72300"
+                placeholder="+91 77807 56009"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full bg-white border border-brand-border rounded-xl px-3.5 py-2.5 text-brand-text focus:outline-none focus:border-brand-gold"

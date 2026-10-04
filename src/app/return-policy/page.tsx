@@ -46,7 +46,7 @@ export default function ReturnPolicyPage() {
             <CheckCircle className="w-4 h-4 text-emerald-600" /> 3. Complimentary Doorstep Reverse Pickup
           </h2>
           <p>
-            Once you submit a return request via your dashboard or WhatsApp concierge (<a href="https://wa.me/918688472300" className="text-brand-maroon hover:underline font-medium">+91 8688472300</a>),
+            Once you submit a return request via your dashboard or WhatsApp concierge (<a href="https://wa.me/917780756009" className="text-brand-maroon hover:underline font-medium">+91 77807 56009</a>),
             we arrange a complimentary BlueDart reverse courier pickup from your address. You do not have to pay any return shipping charges.
           </p>
         </section>

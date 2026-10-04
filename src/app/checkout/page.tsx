@@ -179,10 +179,10 @@ export default function CheckoutPage() {
       const orderPayload = {
         customerName,
         customerEmail,
-        customerPhone: customerPhone.replace(/\D/g, "").slice(-10) || "8688472300",
+        customerPhone: customerPhone.replace(/\D/g, "").slice(-10) || "7780756009",
         shippingAddress: {
           name: shippingAddress.name,
-          phone: shippingAddress.phone.replace(/\D/g, "").slice(-10) || "8688472300",
+          phone: shippingAddress.phone.replace(/\D/g, "").slice(-10) || "7780756009",
           streetAddress: shippingAddress.street,
           landmark: shippingAddress.landmark || "",
           city: shippingAddress.city,
@@ -439,7 +439,7 @@ export default function CheckoutPage() {
                     <input
                       type="tel"
                       required={isAddingNewAddress}
-                      placeholder="+91 86884 72300"
+                      placeholder="+91 77807 56009"
                       value={newPhone}
                       onChange={(e) => setNewPhone(e.target.value)}
                       className="w-full bg-brand-ivory border border-brand-border rounded-xl px-3.5 py-2.5 text-brand-text focus:outline-none focus:border-brand-gold"

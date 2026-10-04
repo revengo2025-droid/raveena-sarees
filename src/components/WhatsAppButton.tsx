@@ -7,7 +7,7 @@ export const WhatsAppButton: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("Namaste Ravina Sarees, I would like personalized assistance with choosing a saree.");
 
-  const whatsappNumber = "918688472300"; // Official WhatsApp Concierge
+  const whatsappNumber = "917780756009"; // Official WhatsApp Concierge
 
   const handleSend = () => {
     const encoded = encodeURIComponent(message);
