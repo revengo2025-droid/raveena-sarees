@@ -1,45 +1,48 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Mail, ArrowRight } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { loginAction } from "@/app/actions/auth";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect") || "/account";
   const { login, showToast } = useApp();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       showToast("Please enter your email address", "error");
       return;
     }
     setIsLoading(true);
-    setTimeout(() => {
-      login(email, email.includes("admin") ? "admin" : "customer");
-      setIsLoading(false);
-      if (email.includes("admin")) {
-        router.push("/admin");
-      } else {
-        router.push("/account");
-      }
-    }, 800);
-  };
 
-  const handleQuickLogin = (demoRole: "customer" | "admin") => {
-    const demoEmail =
-      demoRole === "admin" ? "admin@ravinasarees.in" : "ananya.reddy@example.com";
-    login(demoEmail, demoRole);
-    if (demoRole === "admin") {
-      router.push("/admin");
-    } else {
-      router.push("/account");
+    try {
+      const res = await loginAction({ email, password });
+      if (res.success && res.data?.user) {
+        login(res.data.user.email, res.data.user.role as any, res.data.user.fullName);
+        setIsLoading(false);
+        showToast("Signed in successfully. Welcome back!", "success");
+        if (res.data.user.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push(redirectParam);
+        }
+      } else {
+        setIsLoading(false);
+        showToast(res.error || "Invalid email or password", "error");
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      showToast(err?.message || "Failed to sign in. Please verify your credentials.", "error");
     }
   };
 
@@ -62,31 +65,8 @@ export default function LoginPage() {
             Welcome to the Royal Circle
           </h1>
           <p className="text-xs text-neutral-500 font-light">
-            Sign in to access your orders, wishlist, and exclusive bridal privileges.
+            Sign in to access your orders, wishlist, and complete your saree purchase.
           </p>
-        </div>
-
-        {/* Quick Demo Buttons */}
-        <div className="bg-brand-ivory p-3.5 rounded-2xl border border-brand-border space-y-2">
-          <span className="text-[10px] uppercase font-bold text-brand-maroon tracking-wider block font-poppins">
-            ⚡ Instant 1-Click Demo Login
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("customer")}
-              className="py-2 px-3 bg-white hover:bg-brand-ivory text-xs text-brand-text rounded-xl border border-brand-border transition-colors font-poppins shadow-sm"
-            >
-              Sign In as Customer
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin("admin")}
-              className="py-2 px-3 bg-white hover:bg-brand-ivory text-xs text-brand-maroon font-semibold rounded-xl border border-brand-gold/40 transition-colors font-poppins shadow-sm"
-            >
-              Sign In as Admin
-            </button>
-          </div>
         </div>
 
         {/* Form */}
@@ -100,7 +80,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
-                placeholder="ananya.reddy@example.com"
+                placeholder="patron@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-brand-ivory border border-brand-border rounded-xl py-2.5 pl-10 pr-3 text-brand-text placeholder-neutral-400 focus:outline-none focus:border-brand-gold"
@@ -140,11 +120,32 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="text-center pt-2 border-t border-brand-border text-xs text-neutral-500">
           New to Ravina Sarees?{" "}
-          <Link href="/auth/register" className="text-brand-maroon font-semibold hover:underline font-poppins">
+          <Link
+            href={
+              redirectParam !== "/account"
+                ? `/auth/register?redirect=${encodeURIComponent(redirectParam)}`
+                : "/auth/register"
+            }
+            className="text-brand-maroon font-semibold hover:underline font-poppins"
+          >
             Create an Account
           </Link>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[85vh] bg-brand-white flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-brand-gold border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

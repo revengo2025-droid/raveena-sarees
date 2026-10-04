@@ -25,19 +25,19 @@ export default function AccountPage() {
         <p className="text-xs text-neutral-500 max-w-sm mb-6 font-light">
           Sign in to access your saved order history, download tax invoices, and view saved addresses.
         </p>
-        <div className="flex gap-3 font-poppins">
+        <div className="flex flex-wrap items-center justify-center gap-3 font-poppins">
           <Link
             href="/auth/login"
             className="btn-primary px-6 py-2.5 text-xs rounded-full font-semibold shadow-md"
           >
-            Sign In / Register
+            Sign In
           </Link>
-          <button
-            onClick={() => login("ananya.reddy@example.com", "customer")}
-            className="px-5 py-2.5 bg-brand-ivory border border-brand-border text-brand-maroon hover:text-brand-gold text-xs font-semibold rounded-full shadow-sm"
+          <Link
+            href="/auth/register"
+            className="px-5 py-2.5 bg-brand-ivory hover:bg-white border border-brand-border text-brand-text hover:border-brand-gold text-xs font-semibold rounded-full shadow-sm transition-colors"
           >
-            Demo Sign In
-          </button>
+            Register Account
+          </Link>
         </div>
       </div>
     );

@@ -18,6 +18,12 @@ import { useApp } from "@/lib/store";
 import { SareeProduct } from "@/lib/types";
 import { formatINR } from "@/lib/utils";
 
+import {
+  createProductAction,
+  updateProductAction,
+  deleteProductAction,
+} from "@/app/actions/products";
+
 export default function AdminProductsPage() {
   const { products, categories, addProduct, updateProduct, deleteProduct, showToast } = useApp();
 
@@ -29,41 +35,37 @@ export default function AdminProductsPage() {
   // Form Fields
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
-  const [categoryId, setCategoryId] = useState(categories[0]?.id || "cat-5");
-  const [price, setPrice] = useState<number>(2990);
-  const [discountPrice, setDiscountPrice] = useState<number>(1794);
-  const [stock, setStock] = useState<number>(15);
-  const [fabric, setFabric] = useState("Pure Metallic Tissue Sheer Silk Blend");
-  const [zariType, setZariType] = useState("Exquisite Silver Zari & Scalloped Resham Border");
-  const [weaveType, setWeaveType] = useState("Luminescent Tissue Jacquard Weave");
-  const [occasion, setOccasion] = useState("Party Wear / Festive / Reception");
-  const [primaryColor, setPrimaryColor] = useState("Turquoise Blue");
-  const [availableColors, setAvailableColors] = useState("Turquoise Blue, Aqua Marine, Sky Cyan");
-  const [images, setImages] = useState(
-    "/images/products/turquoise-tissue-1.jpg\n/images/products/turquoise-tissue-2.jpg"
-  );
-  const [description, setDescription] = useState(
-    "An enchanting handcrafted saree featuring shimmering metallic weave adorned with exquisite zari bootis and an ornate scalloped border."
-  );
-  const [isFeatured, setIsFeatured] = useState(true);
-  const [isBestseller, setIsBestseller] = useState(true);
+  const [categoryId, setCategoryId] = useState(categories[0]?.id || "cat-1");
+  const [price, setPrice] = useState<number | "">("");
+  const [discountPrice, setDiscountPrice] = useState<number | "">("");
+  const [stock, setStock] = useState<number>(1);
+  const [fabric, setFabric] = useState("");
+  const [zariType, setZariType] = useState("");
+  const [weaveType, setWeaveType] = useState("");
+  const [occasion, setOccasion] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("");
+  const [availableColors, setAvailableColors] = useState("");
+  const [images, setImages] = useState("");
+  const [description, setDescription] = useState("");
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [isBestseller, setIsBestseller] = useState(false);
   const [isNewArrival, setIsNewArrival] = useState(true);
 
   const resetForm = () => {
     setName("");
-    setSku(`RAV-${Math.floor(100 + Math.random() * 900)}`);
-    setCategoryId(categories[0]?.id || "cat-5");
-    setPrice(2990);
-    setDiscountPrice(1794);
-    setStock(15);
-    setFabric("Pure Metallic Tissue Sheer Silk Blend");
-    setZariType("Exquisite Silver Zari & Scalloped Resham Border");
-    setWeaveType("Luminescent Tissue Jacquard Weave");
-    setOccasion("Party Wear / Festive / Reception");
-    setPrimaryColor("Turquoise Blue");
-    setAvailableColors("Turquoise Blue, Aqua Marine, Sky Cyan");
-    setImages("/images/products/turquoise-tissue-1.jpg\n/images/products/turquoise-tissue-2.jpg");
-    setDescription("An enchanting handcrafted saree featuring shimmering metallic weave adorned with exquisite zari bootis.");
+    setSku("");
+    setCategoryId(categories[0]?.id || "cat-1");
+    setPrice("");
+    setDiscountPrice("");
+    setStock(1);
+    setFabric("");
+    setZariType("");
+    setWeaveType("");
+    setOccasion("");
+    setPrimaryColor("");
+    setAvailableColors("");
+    setImages("");
+    setDescription("");
     setIsFeatured(false);
     setIsBestseller(false);
     setIsNewArrival(true);
@@ -84,8 +86,8 @@ export default function AdminProductsPage() {
     setWeaveType(p.weaveType);
     setOccasion(p.occasion);
     setPrimaryColor(p.primaryColor);
-    setAvailableColors(p.availableColors.join(", "));
-    setImages(p.images.join("\n"));
+    setAvailableColors(p.availableColors?.join(", ") || "");
+    setImages(p.images?.join("\n") || "");
     setDescription(p.description);
     setIsFeatured(p.isFeatured || false);
     setIsBestseller(p.isBestseller || false);
@@ -93,13 +95,14 @@ export default function AdminProductsPage() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !sku || !price) {
-      showToast("Please fill in Saree name, SKU, and Price.", "error");
+    if (!name || !price) {
+      showToast("Please fill in Saree name and Price.", "error");
       return;
     }
 
+    const finalSku = sku.trim() || `RAV-${Date.now().toString().slice(-6)}`;
     const catObj = categories.find((c) => c.id === categoryId);
     const imageList = images
       .split("\n")
@@ -116,9 +119,9 @@ export default function AdminProductsPage() {
       .replace(/(^-|-$)+/g, "");
 
     if (editingId) {
-      updateProduct(editingId, {
+      const updates = {
         name,
-        sku,
+        sku: finalSku,
         slug,
         categoryId,
         categoryName: catObj?.name || "Silk Sarees",
@@ -131,15 +134,20 @@ export default function AdminProductsPage() {
         occasion,
         primaryColor,
         availableColors: colorList,
-        images: imageList.length > 0 ? imageList : [images],
+        images: imageList.length > 0 ? imageList : ["/images/products/rani-pink-silk-1.jpg"],
         description,
         isFeatured,
         isBestseller,
         isNewArrival,
-      });
+      };
+      updateProduct(editingId, updates);
+      updateProductAction(editingId, updates).catch((err) =>
+        console.error("Database product update error:", err)
+      );
+      showToast("Saree updated successfully in catalog", "success");
     } else {
-      addProduct({
-        sku,
+      const newProd = {
+        sku: finalSku,
         name,
         slug,
         categoryId,
@@ -158,13 +166,19 @@ export default function AdminProductsPage() {
         careInstructions: "Dry Clean Only. Wrap in mul-mul cloth.",
         availableColors: colorList,
         primaryColor,
-        images: imageList.length > 0 ? imageList : [images],
+        images: imageList.length > 0 ? imageList : ["/images/products/rani-pink-silk-1.jpg"],
         rating: 5.0,
         reviewCount: 0,
         isFeatured,
         isBestseller,
         isNewArrival,
-      });
+      };
+      addProduct(newProd);
+      createProductAction({
+        ...newProd,
+        isActive: true,
+      } as any).catch((err) => console.error("Database product creation error:", err));
+      showToast("New saree published to atelier catalog", "success");
     }
 
     resetForm();
@@ -344,6 +358,10 @@ export default function AdminProductsPage() {
                         onClick={() => {
                           if (confirm(`Are you sure you want to delete "${p.name}"?`)) {
                             deleteProduct(p.id);
+                            deleteProductAction(p.id).catch((err) =>
+                              console.error("Database delete error:", err)
+                            );
+                            showToast(`"${p.name}" deleted from catalog`, "info");
                           }
                         }}
                         className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-[#222] rounded-lg transition-colors"

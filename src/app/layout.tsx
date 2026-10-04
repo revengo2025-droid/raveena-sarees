@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppProvider } from "@/lib/store";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
-import { CartDrawer } from "@/components/CartDrawer";
-import { QuickViewModal } from "@/components/QuickViewModal";
-import { WhatsAppButton } from "@/components/WhatsAppButton";
-import { ToastContainer } from "@/components/ToastContainer";
+import { StoreLayoutWrapper } from "@/components/StoreLayoutWrapper";
 
 export const metadata: Metadata = {
   title: "Ravina Sarees | Luxury Pure Handloom Silk & Bridal Sarees",
@@ -93,13 +88,7 @@ export default function RootLayout({
       </head>
       <body className="bg-white text-[#222222] min-h-screen flex flex-col antialiased selection:bg-[#C8A24D] selection:text-white relative overflow-x-hidden">
         <AppProvider>
-          <Navbar />
-          <main className="flex-1 relative">{children}</main>
-          <Footer />
-          <CartDrawer />
-          <QuickViewModal />
-          <WhatsAppButton />
-          <ToastContainer />
+          <StoreLayoutWrapper>{children}</StoreLayoutWrapper>
         </AppProvider>
       </body>
     </html>

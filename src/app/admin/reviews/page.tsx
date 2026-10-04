@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Star, CheckCircle, XCircle, Trash2, Search } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { formatDate } from "@/lib/utils";
+import { moderateReviewAction } from "@/app/actions/reviews";
 
 export default function AdminReviewsPage() {
   const { reviews, updateReviewStatus, products } = useApp();
@@ -91,7 +92,12 @@ export default function AdminReviewsPage() {
                 <div className="flex items-center gap-2">
                   {rev.status !== "approved" && (
                     <button
-                      onClick={() => updateReviewStatus(rev.id, "approved")}
+                      onClick={() => {
+                        updateReviewStatus(rev.id, "approved");
+                        moderateReviewAction(rev.id, "approved").catch((err) =>
+                          console.error("Database review approval error:", err)
+                        );
+                      }}
                       className="px-3 py-1.5 bg-green-900/60 hover:bg-green-800 text-green-200 text-xs rounded-lg transition-colors flex items-center gap-1"
                     >
                       <CheckCircle className="w-3.5 h-3.5" /> Approve
@@ -99,7 +105,12 @@ export default function AdminReviewsPage() {
                   )}
                   {rev.status !== "rejected" && (
                     <button
-                      onClick={() => updateReviewStatus(rev.id, "rejected")}
+                      onClick={() => {
+                        updateReviewStatus(rev.id, "rejected");
+                        moderateReviewAction(rev.id, "rejected").catch((err) =>
+                          console.error("Database review rejection error:", err)
+                        );
+                      }}
                       className="px-3 py-1.5 bg-red-900/60 hover:bg-red-800 text-red-200 text-xs rounded-lg transition-colors flex items-center gap-1"
                     >
                       <XCircle className="w-3.5 h-3.5" /> Reject

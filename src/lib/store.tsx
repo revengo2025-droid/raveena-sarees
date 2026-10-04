@@ -20,6 +20,8 @@ import {
   INITIAL_REVIEWS,
 } from "./mockData";
 import { generateOrderNumber, generateTrackingNumber, getEstimatedDeliveryDate } from "./utils";
+import { createProductAction, updateProductAction, deleteProductAction, getProductsAction } from "@/app/actions/products";
+import { updateOrderStatusAction } from "@/app/actions/orders";
 
 interface Toast {
   id: string;
@@ -78,7 +80,7 @@ interface AppContextType {
 
   // User Auth & Profiles
   user: UserProfile | null;
-  login: (email: string, role?: "customer" | "admin") => void;
+  login: (email: string, role?: "customer" | "admin", fullName?: string, phone?: string) => void;
   logout: () => void;
   savedAddresses: SavedAddress[];
   addAddress: (address: Omit<SavedAddress, "id">) => SavedAddress;
@@ -128,94 +130,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [giftMessage, setGiftMessage] = useState<string>("");
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Default User (Simulated Logged-in Customer with easy admin toggle)
-  const [user, setUser] = useState<UserProfile | null>({
-    id: "usr-001",
-    email: "ananya.reddy@example.com",
-    fullName: "Ananya Reddy",
-    phone: "+91 98765 43210",
-    role: "customer",
-    joinedDate: "2025-11-10",
-    avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
-  });
-
-  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([
-    {
-      id: "addr-01",
-      name: "Ananya Reddy",
-      phone: "+91 98765 43210",
-      street: "Main Road, Near Temple, Marthadi",
-      landmark: "Bejjur Mandal",
-      city: "Komaram Bheem Asifabad",
-      state: "Telangana",
-      pincode: "504224",
-      isDefault: true,
-      type: "Home",
-    },
-    {
-      id: "addr-02",
-      name: "Ananya Reddy (Work)",
-      phone: "+91 98765 43210",
-      street: "Cyber Towers, 5th Floor, Hitec City",
-      landmark: "Opposite Cyber Gateway",
-      city: "Hyderabad",
-      state: "Telangana",
-      pincode: "500081",
-      isDefault: false,
-      type: "Work",
-    },
-  ]);
-
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: "ord-101",
-      orderNumber: "RS-892144-4921",
-      userId: "usr-001",
-      customerName: "Ananya Reddy",
-      customerEmail: "ananya.reddy@example.com",
-      customerPhone: "+91 98765 43210",
-      shippingAddress: {
-        id: "addr-01",
-        name: "Ananya Reddy",
-        phone: "+91 98765 43210",
-        street: "Main Road, Near Temple, Marthadi",
-        landmark: "Bejjur Mandal",
-        city: "Komaram Bheem Asifabad",
-        state: "Telangana",
-        pincode: "504224",
-        isDefault: true,
-        type: "Home",
-      },
-      items: [
-        {
-          productId: "saree-09",
-          productName: "Turquoise Blue Tissue Silver Zariwork Saree With Matching Blouse Piece",
-          sku: "RAV-TIS-009",
-          selectedColor: "Turquoise Blue",
-          price: 1794,
-          quantity: 1,
-          imageUrl: "/images/products/turquoise-tissue-1.jpg",
-        },
-      ],
-      subtotal: 1794,
-      discountAmount: 179,
-      shippingFee: 0,
-      giftWrapFee: 150,
-      totalAmount: 1765,
-      paymentMethod: "razorpay",
-      paymentStatus: "paid",
-      paymentId: "pay_RAV982347293",
-      orderStatus: "shipped",
-      courierPartner: "BlueDart Express",
-      trackingNumber: "BLU892348201IN",
-      trackingUrl: "https://www.bluedart.com/tracking",
-      giftWrap: true,
-      giftMessage: "With heartfelt blessings for your upcoming celebration!",
-      appliedCoupon: "RAVINA10",
-      createdAt: "2026-02-26T10:15:00Z",
-      estimatedDelivery: "2 Mar, 2026",
-    },
-  ]);
+  // Default User (starts signed out)
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   // Obsolete demo product IDs that should never be restored from stale browser storage
   const OBSOLETE_DEMO_IDS = new Set([
@@ -608,6 +526,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return o;
       })
     );
+    updateOrderStatusAction(orderId, status, trackingNumber).catch(() => {});
     showToast(`Order status updated to ${status.replace("_", " ").toUpperCase()}`, "success");
   };
 
@@ -626,6 +545,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       localStorage.setItem("ravina_custom_products", JSON.stringify(updated));
     } catch {}
+    
+    // Background Server Sync
+    createProductAction({
+      sku: newProduct.sku,
+      name: newProduct.name,
+      slug: newProduct.slug,
+      categoryName: (newProduct as any).categoryName || (newProduct as any).category || "Silk Sarees",
+      description: newProduct.description,
+      price: newProduct.price,
+      discountPrice: newProduct.discountPrice,
+      stock: newProduct.stock,
+      fabric: newProduct.fabric,
+      zariType: newProduct.zariType,
+      weaveType: newProduct.weaveType,
+      sareeLength: newProduct.sareeLength,
+      blouseIncluded: newProduct.blouseIncluded,
+      blouseLength: newProduct.blouseLength,
+      occasion: newProduct.occasion,
+      careInstructions: newProduct.careInstructions,
+      availableColors: newProduct.availableColors,
+      primaryColor: newProduct.primaryColor,
+      images: newProduct.images,
+      rating: newProduct.rating,
+      reviewCount: newProduct.reviewCount,
+      isFeatured: Boolean(newProduct.isFeatured),
+      isBestseller: Boolean(newProduct.isBestseller),
+      isNewArrival: Boolean(newProduct.isNewArrival),
+      isActive: true,
+    }).catch(() => {});
+
     showToast(`Product "${newProduct.name}" created!`, "success");
   };
 
@@ -635,6 +584,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       localStorage.setItem("ravina_custom_products", JSON.stringify(updated));
     } catch {}
+
+    // Background Server Sync
+    updateProductAction(id, {
+      ...(updates.name && { name: updates.name }),
+      ...(updates.price !== undefined && { price: updates.price }),
+      ...(updates.discountPrice !== undefined && { discountPrice: updates.discountPrice }),
+      ...(updates.stock !== undefined && { stock: updates.stock }),
+      ...(updates.fabric && { fabric: updates.fabric }),
+      ...(updates.description && { description: updates.description }),
+      ...(updates.images && { images: updates.images }),
+      ...(((updates as any).categoryName || (updates as any).category) && { categoryName: (updates as any).categoryName || (updates as any).category }),
+      ...(updates.isFeatured !== undefined && { isFeatured: updates.isFeatured }),
+      ...(updates.isBestseller !== undefined && { isBestseller: updates.isBestseller }),
+      ...(updates.isNewArrival !== undefined && { isNewArrival: updates.isNewArrival }),
+    }).catch(() => {});
+
     showToast("Product updated successfully", "success");
   };
 
@@ -644,6 +609,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       localStorage.setItem("ravina_custom_products", JSON.stringify(updated));
     } catch {}
+
+    // Background Server Sync
+    deleteProductAction(id).catch(() => {});
+
     showToast("Product deleted", "info");
   };
 
@@ -701,18 +670,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // User Auth
-  const login = (email: string, role: "customer" | "admin" = "customer") => {
+  const login = (email: string, role: "customer" | "admin" = "customer", fullName?: string, phone?: string) => {
     const isAdm = role === "admin" || email.includes("admin");
+    const formattedName = fullName || (isAdm ? "Store Administrator" : email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
     setUser({
-      id: isAdm ? "usr-admin-001" : "usr-001",
+      id: isAdm ? "usr-admin-001" : `usr-${Date.now()}`,
       email,
-      fullName: isAdm ? "Admin Ravina" : "Ananya Reddy",
-      phone: "+91 98765 43210",
+      fullName: formattedName,
+      phone: phone || "",
       role: isAdm ? "admin" : "customer",
-      joinedDate: "2025-11-10",
-      avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+      joinedDate: new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
+      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(formattedName)}&background=C8A24D&color=fff`,
     });
-    showToast(`Welcome back, ${isAdm ? "Admin" : "Ananya"}!`, "success");
+    showToast(`Welcome back, ${formattedName}!`, "success");
   };
 
   const logout = () => {

@@ -15,6 +15,7 @@ import {
 import { useApp } from "@/lib/store";
 import { formatINR, formatDate } from "@/lib/utils";
 import { Order, OrderStatus } from "@/lib/types";
+import { updateOrderStatusAction } from "@/app/actions/orders";
 
 export default function AdminOrdersPage() {
   const { orders, updateOrderStatus, showToast } = useApp();
@@ -39,6 +40,13 @@ export default function AdminOrdersPage() {
     e.preventDefault();
     if (editingOrder) {
       updateOrderStatus(editingOrder.id, newStatus, newTracking, newCourier);
+      updateOrderStatusAction(
+        editingOrder.id,
+        newStatus,
+        newTracking,
+        `Courier updated to ${newCourier}`
+      ).catch((err) => console.error("Database order status update error:", err));
+      showToast(`Order #${editingOrder.orderNumber} updated to ${newStatus}`, "success");
       setEditingOrder(null);
     }
   };

@@ -41,6 +41,26 @@ export const INITIAL_CATEGORIES: Category[] = [
     itemCount: 2,
     featured: true,
   },
+  {
+    id: "cat-2",
+    name: "Banarasi Heritage",
+    slug: "banarasi-sarees",
+    description: "Authentic Varanasi Kadhwa brocades, son-rupa gold and silver motifs, and royal court-inspired heirloom masterworks.",
+    imageUrl: "/images/products/maroon-banarasi-1.jpg",
+    bannerUrl: "/images/products/maroon-banarasi-1.jpg",
+    itemCount: 2,
+    featured: true,
+  },
+  {
+    id: "cat-1",
+    name: "Handloom Silks",
+    slug: "handloom-sarees",
+    description: "Traditional masterloom craftsmanship, certified Silk Mark drapes, temple Korvai borders, and generational bridal weaves.",
+    imageUrl: "/images/products/rani-pink-silk-1.jpg",
+    bannerUrl: "/images/products/rani-pink-silk-1.jpg",
+    itemCount: 3,
+    featured: true,
+  },
 ];
 
 export const INITIAL_PRODUCTS: SareeProduct[] = [

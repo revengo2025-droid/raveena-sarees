@@ -38,10 +38,21 @@ export default function CartPage() {
     giftMessage,
     setGiftMessage,
     giftWrapFee,
+    user,
+    showToast,
   } = useApp();
 
   const [couponCode, setCouponCode] = useState("");
   const [couponError, setCouponError] = useState("");
+
+  const handleProceedToCheckout = () => {
+    if (!user) {
+      showToast("Please sign in or create an account to proceed to checkout.", "info");
+      router.push("/auth/login?redirect=/checkout");
+      return;
+    }
+    router.push("/checkout");
+  };
 
   const progressPercent = Math.min(
     100,
@@ -354,7 +365,7 @@ export default function CartPage() {
 
             {/* Checkout Button */}
             <button
-              onClick={() => router.push("/checkout")}
+              onClick={handleProceedToCheckout}
               className="btn-primary w-full py-4 text-xs font-bold uppercase tracking-widest rounded-full shadow-md flex items-center justify-center gap-2 mt-4 font-poppins"
             >
               Proceed to Secure Checkout <ArrowRight className="w-4 h-4" />

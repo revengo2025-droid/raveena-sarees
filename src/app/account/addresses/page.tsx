@@ -16,9 +16,9 @@ export default function AddressesPage() {
   const [phone, setPhone] = useState("");
   const [street, setStreet] = useState("");
   const [landmark, setLandmark] = useState("");
-  const [city, setCity] = useState("Hyderabad");
-  const [state, setState] = useState("Telangana");
-  const [pincode, setPincode] = useState("500033");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
   const [type, setType] = useState<"Home" | "Work" | "Other">("Home");
   const [isDefault, setIsDefault] = useState(false);
 
@@ -27,9 +27,9 @@ export default function AddressesPage() {
     setPhone("");
     setStreet("");
     setLandmark("");
-    setCity("Hyderabad");
-    setState("Telangana");
-    setPincode("500033");
+    setCity("");
+    setState("");
+    setPincode("");
     setType("Home");
     setIsDefault(false);
     setIsAdding(false);

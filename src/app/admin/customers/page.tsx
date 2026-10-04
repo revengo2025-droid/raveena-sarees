@@ -9,57 +9,43 @@ export default function AdminCustomersPage() {
   const { orders } = useApp();
   const [search, setSearch] = useState("");
 
-  // Aggregate distinct customers from orders and user
-  const customers = [
-    {
-      id: "cust-1",
-      name: "Ananya Reddy",
-      email: "ananya.reddy@example.com",
-      phone: "+91 98765 43210",
-      city: "Hyderabad",
-      state: "Telangana",
-      tier: "Royal Bridal Patron",
-      ordersCount: orders.length || 1,
-      totalSpend: orders.reduce((sum, o) => sum + o.totalAmount, 0) || 28999,
-      joined: "Nov 2025",
-    },
-    {
-      id: "cust-2",
-      name: "Deepika Rao",
-      email: "deepika.rao@example.com",
-      phone: "+91 98451 22334",
-      city: "Bengaluru",
-      state: "Karnataka",
-      tier: "Silk Connoisseur",
-      ordersCount: 3,
-      totalSpend: 78500,
-      joined: "Dec 2025",
-    },
-    {
-      id: "cust-3",
-      name: "Dr. Shalini Varma",
-      email: "dr.shalini@example.com",
-      phone: "+91 97890 55443",
-      city: "Chennai",
-      state: "Tamil Nadu",
-      tier: "Bridal Collector",
-      ordersCount: 2,
-      totalSpend: 91500,
-      joined: "Jan 2026",
-    },
-    {
-      id: "cust-4",
-      name: "Sunita Deshmukh",
-      email: "sunita.d@example.com",
-      phone: "+91 98200 11998",
-      city: "Mumbai",
-      state: "Maharashtra",
-      tier: "Privilege Member",
-      ordersCount: 1,
-      totalSpend: 22999,
-      joined: "Feb 2026",
-    },
-  ];
+  // Aggregate distinct customers dynamically from real orders
+  const customers = React.useMemo(() => {
+    const custMap: Record<string, {
+      id: string;
+      name: string;
+      email: string;
+      phone: string;
+      city: string;
+      state: string;
+      tier: string;
+      ordersCount: number;
+      totalSpend: number;
+      joined: string;
+    }> = {};
+
+    orders.forEach((o) => {
+      const key = o.customerEmail || o.customerPhone || o.customerName;
+      if (!custMap[key]) {
+        custMap[key] = {
+          id: `cust-${Object.keys(custMap).length + 1}`,
+          name: o.customerName || "Patron",
+          email: o.customerEmail || "—",
+          phone: o.customerPhone || "—",
+          city: o.shippingAddress?.city || "—",
+          state: o.shippingAddress?.state || "—",
+          tier: o.totalAmount > 50000 ? "Bridal Collector" : o.totalAmount > 20000 ? "Silk Connoisseur" : "Privilege Member",
+          ordersCount: 0,
+          totalSpend: 0,
+          joined: new Date(o.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
+        };
+      }
+      custMap[key].ordersCount += 1;
+      custMap[key].totalSpend += o.totalAmount;
+    });
+
+    return Object.values(custMap);
+  }, [orders]);
 
   const filtered = customers.filter(
     (c) =>

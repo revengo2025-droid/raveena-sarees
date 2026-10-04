@@ -5,6 +5,7 @@ import { Tag, Plus, CheckCircle, XCircle, Trash2, X, Sparkles } from "lucide-rea
 import { useApp } from "@/lib/store";
 import { Coupon } from "@/lib/types";
 import { formatINR } from "@/lib/utils";
+import { createCouponAction } from "@/app/actions/coupons";
 
 export default function AdminCouponsPage() {
   const { coupons, addCoupon, toggleCouponStatus, showToast } = useApp();
@@ -34,7 +35,7 @@ export default function AdminCouponsPage() {
       return;
     }
 
-    addCoupon({
+    const newCoupon = {
       code: code.trim().toUpperCase(),
       discountType,
       discountValue: Number(discountValue),
@@ -45,8 +46,15 @@ export default function AdminCouponsPage() {
         `${discountType === "percentage" ? `${discountValue}% off` : `Flat ₹${discountValue} off`} on orders above ₹${minOrderValue}`,
       isActive: true,
       expiresAt: "2026-12-31T23:59:59Z",
-    });
+    };
 
+    addCoupon(newCoupon);
+    createCouponAction({
+      ...newCoupon,
+      usageLimit: 1000,
+    } as any).catch((err) => console.error("Database coupon creation error:", err));
+
+    showToast(`Voucher ${newCoupon.code} created and activated`, "success");
     resetForm();
   };
 

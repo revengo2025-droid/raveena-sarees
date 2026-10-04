@@ -35,6 +35,7 @@ import {
 import { useApp } from "@/lib/store";
 import { HERO_SLIDES, TESTIMONIALS } from "@/lib/mockData";
 import { ProductCard } from "@/components/ProductCard";
+import { ScrollReveal } from "@/components/ScrollReveal";
 import { formatINR, calculateDiscountPercentage } from "@/lib/utils";
 
 export default function HomePage() {
@@ -448,54 +449,63 @@ export default function HomePage() {
           4. ROYAL WEAVES BENTO GALLERY (Shop by Category)
       ────────────────────────────────────────────────────────────── */}
       <section className="py-20 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-brand-border pb-6">
-          <div>
-            <span className="text-[11px] font-semibold text-brand-gold uppercase tracking-[0.28em] block mb-2 font-poppins">
-              The Royal Archive
-            </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-brand-text font-normal tracking-tight">
-              Curated Saree Collections
-            </h2>
+        <ScrollReveal direction="up" delay={80}>
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-brand-border pb-6">
+            <div>
+              <span className="text-[11px] font-semibold text-brand-gold uppercase tracking-[0.28em] block mb-2 font-poppins">
+                The Royal Archive
+              </span>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif text-brand-text font-normal tracking-tight">
+                Curated Saree Collections
+              </h2>
+            </div>
+            <Link
+              href="/shop"
+              className="mt-4 md:mt-0 text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold hover:text-brand-maroon flex items-center gap-2 transition-colors font-poppins group"
+            >
+              Explore Complete Archive ({categories.length}){" "}
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
-          <Link
-            href="/shop"
-            className="mt-4 md:mt-0 text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold hover:text-brand-maroon flex items-center gap-2 transition-colors font-poppins group"
-          >
-            Explore Complete Archive ({categories.length}){" "}
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
+        </ScrollReveal>
 
-        {/* Dynamic Asymmetric Bento Grid */}
+        {/* Dynamic Asymmetric Bento Grid - 6 Curated Categories */}
+        <ScrollReveal direction="up" delay={150}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {categories.slice(0, 6).map((category, idx) => {
-            let bentoClass = "aspect-[4/3]";
-            if (idx === 0) bentoClass = "md:col-span-2 aspect-[16/10]";
-            if (idx === 1) bentoClass = "md:col-span-1 md:row-span-2 aspect-[3/4] md:aspect-auto";
+            const isTall = idx === 1;
+            const isWide = idx === 0 || idx === 4;
 
             return (
               <div
                 key={category.id}
-                className={`group rounded-2xl overflow-hidden shadow-card border border-brand-border hover:shadow-luxury transition-all duration-500 bg-white ${
-                  idx === 0 ? "md:col-span-2" : ""
-                } ${idx === 1 ? "md:row-span-2" : ""}`}
+                className={`group rounded-2xl overflow-hidden shadow-card border border-brand-border/60 hover:shadow-luxury transition-all duration-500 bg-brand-ivory relative ${
+                  isWide ? "md:col-span-2" : "md:col-span-1"
+                } ${isTall ? "md:row-span-2" : ""}`}
               >
                 <Link
                   href={`/category/${category.slug}`}
-                  className={`relative block overflow-hidden ${bentoClass} w-full`}
+                  className={`relative block overflow-hidden w-full ${
+                    isTall
+                      ? "h-full min-h-[380px] md:min-h-[580px]"
+                      : isWide
+                      ? "h-[280px] sm:h-[340px]"
+                      : "h-[280px]"
+                  }`}
                 >
                   <img
                     src={category.imageUrl}
                     alt={category.name}
-                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                    className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+                  {/* Luxury Multi-layer Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity group-hover:from-black/95" />
 
                   {/* Text Overlay */}
-                  <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 flex flex-col justify-end text-white">
+                  <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 flex flex-col justify-end text-white z-10">
                     <span className="text-[10px] text-amber-200 uppercase tracking-[0.25em] font-semibold mb-1.5 flex items-center gap-1.5 font-poppins">
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
-                      {products.filter((p) => p.categoryId === category.id).length || category.itemCount || 1} Exclusive Drape{products.filter((p) => p.categoryId === category.id).length === 1 ? "" : "s"}
+                      <span className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse" />
+                      {products.filter((p) => p.categoryId === category.id).length || category.itemCount || 1} Curated Drape{products.filter((p) => p.categoryId === category.id).length === 1 ? "" : "s"}
                     </span>
                     <h3 className="text-xl sm:text-2xl lg:text-3xl font-serif text-white font-normal group-hover:text-amber-200 transition-colors leading-snug">
                       {category.name}
@@ -514,12 +524,14 @@ export default function HomePage() {
             );
           })}
         </div>
+        </ScrollReveal>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
           5. THE CURATOR&apos;S EDIT (Tabbed Catalog Showcase)
       ────────────────────────────────────────────────────────────── */}
       <section className="py-20 md:py-28 bg-brand-ivory border-y border-brand-border">
+        <ScrollReveal direction="up" delay={80}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-center text-center mb-14">
             <span className="text-[11px] font-semibold text-brand-gold uppercase tracking-[0.28em] mb-2.5 font-poppins">
@@ -592,12 +604,14 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
           6. INTERACTIVE 360° SILK & WEAVE COMPARATOR MASTERCLASS
       ────────────────────────────────────────────────────────────── */}
       <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        <ScrollReveal direction="up" delay={80}>
         <div className="rounded-3xl bg-white border border-brand-border p-6 sm:p-10 lg:p-14 shadow-luxury">
           
           <div className="text-center max-w-3xl mx-auto mb-12">
@@ -760,12 +774,14 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
           7. REAL CUSTOMER & BRIDE STYLING REEL (#RavinaRoyalty)
       ────────────────────────────────────────────────────────────── */}
       <section className="py-20 md:py-24 bg-brand-ivory border-t border-brand-border">
+        <ScrollReveal direction="up" delay={80}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <span className="text-[11px] font-semibold text-brand-gold uppercase tracking-[0.28em] block mb-2.5 font-poppins">
@@ -816,12 +832,14 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
           8. ARTISANAL HERITAGE & SACRED LOOM STORYTELLING
       ────────────────────────────────────────────────────────────── */}
       <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        <ScrollReveal direction="up" delay={80}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
           {/* Visual Showcase */}
           <div className="relative">
@@ -898,12 +916,14 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
           9. VIP BRIDAL & FESTIVE PAVILION (Privilege Unlock)
       ────────────────────────────────────────────────────────────── */}
       <section className="py-20 md:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        <ScrollReveal direction="up" delay={80}>
         <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#7A1F2B] via-[#5C141E] to-[#3B0C13] border border-brand-gold/50 p-8 sm:p-14 shadow-luxury text-white">
           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-gold/20 rounded-full blur-3xl pointer-events-none" />
 
@@ -974,12 +994,14 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
           10. INSTAGRAM SAREE WALL & TRUST MATRIX
       ────────────────────────────────────────────────────────────── */}
       <section className="py-20 md:py-24 bg-brand-ivory border-t border-brand-border">
+        <ScrollReveal direction="up" delay={80}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-brand-border pb-6">
@@ -1090,6 +1112,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </section>
     </div>
   );

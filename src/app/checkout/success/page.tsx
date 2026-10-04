@@ -13,12 +13,50 @@ import confetti from "canvas-confetti";
 import { useApp } from "@/lib/store";
 import { formatINR, formatDate } from "@/lib/utils";
 
+import { getOrderByNumberAction } from "@/app/actions/orders";
+
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("orderNumber");
   const { orders, getOrderByNumber } = useApp();
+  const [serverOrder, setServerOrder] = React.useState<any>(null);
 
-  const order = orderNumber ? getOrderByNumber(orderNumber) : orders[0];
+  useEffect(() => {
+    if (orderNumber && !getOrderByNumber(orderNumber)) {
+      getOrderByNumberAction(orderNumber).then((res) => {
+        if (res.success && res.data) {
+          setServerOrder(res.data);
+        }
+      });
+    }
+  }, [orderNumber, getOrderByNumber]);
+
+  const rawOrder = orderNumber
+    ? getOrderByNumber(orderNumber) || serverOrder
+    : orders.length > 0
+    ? orders[orders.length - 1]
+    : null;
+
+  const order = rawOrder
+    ? {
+        ...rawOrder,
+        orderNumber: rawOrder.order_number || rawOrder.orderNumber,
+        customerName: rawOrder.customer_name || rawOrder.customerName,
+        customerEmail: rawOrder.customer_email || rawOrder.customerEmail,
+        customerPhone: rawOrder.customer_phone || rawOrder.customerPhone,
+        totalAmount: rawOrder.total_amount || rawOrder.totalAmount,
+        subtotal: rawOrder.subtotal || rawOrder.subtotal,
+        discountAmount: rawOrder.discount_amount || rawOrder.discountAmount,
+        shippingFee: rawOrder.shipping_fee || rawOrder.shippingFee,
+        paymentMethod: rawOrder.payment_method || rawOrder.paymentMethod,
+        paymentId: rawOrder.payment_id || rawOrder.paymentId,
+        trackingNumber: rawOrder.tracking_number || rawOrder.trackingNumber,
+        estimatedDelivery: rawOrder.estimated_delivery || rawOrder.estimatedDelivery || "4 Business Days",
+        createdAt: rawOrder.created_at || rawOrder.createdAt,
+        shippingAddress: rawOrder.shipping_address || rawOrder.shippingAddress,
+        items: (rawOrder.items || []) as any[],
+      }
+    : null;
 
   // Trigger celebration confetti
   useEffect(() => {
@@ -180,7 +218,7 @@ function SuccessContent() {
           </h3>
 
           <div className="divide-y divide-brand-border print:divide-black">
-            {order.items.map((item, idx) => (
+            {order.items.map((item: any, idx: number) => (
               <div key={idx} className="py-3 flex items-center justify-between gap-4 text-xs">
                 <div className="flex items-center gap-3">
                   <img

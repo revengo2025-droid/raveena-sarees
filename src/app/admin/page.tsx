@@ -82,13 +82,14 @@ export default function AdminDashboardPage() {
       const rev = monthOrders.reduce((s, o) => s + o.totalAmount, 0);
       return {
         label: months[mIdx],
-        revenue: rev || Math.round(Math.random() * 15000 + 5000),
-        orders: monthOrders.length || Math.floor(Math.random() * 8 + 1),
+        revenue: rev,
+        orders: monthOrders.length,
       };
     });
   }, [orders]);
 
   const maxRevenue = Math.max(...monthlyRevData.map((d) => d.revenue), 1);
+  const maxOrders = Math.max(...monthlyRevData.map((d) => d.orders), 1);
 
   // Top Selling Products
   const productSales = useMemo(() => {
@@ -203,7 +204,7 @@ export default function AdminDashboardPage() {
             {formatINR(totalRevenue)}
           </span>
           <div className="flex items-center gap-1 text-[11px] text-green-400">
-            <ArrowUpRight className="w-3 h-3" /> +18.4% this festive season
+            <ArrowUpRight className="w-3 h-3" /> {orders.length > 0 ? `${orders.length} order${orders.length === 1 ? '' : 's'} recorded` : "Real-time ledger"}
           </div>
         </div>
 
@@ -273,19 +274,30 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="h-52 flex items-end justify-between gap-3 pt-6">
+          <div className="h-56 flex items-end justify-between gap-3 pt-6">
             {monthlyRevData.map((bar, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                <div className="text-center space-y-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[10px] text-[#F5DE88] font-semibold block">
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative">
+                {/* Floating Tooltip */}
+                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black/90 border border-brand-gold/40 text-white rounded-lg px-2.5 py-1 text-center shadow-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 whitespace-nowrap">
+                  <span className="text-[10px] text-[#F5DE88] font-bold block">
                     {formatINR(bar.revenue)}
                   </span>
-                  <span className="text-[9px] text-gray-500">{bar.orders} orders</span>
+                  <span className="text-[9px] text-gray-400">{bar.orders} orders placed</span>
                 </div>
-                <div className="w-full bg-[#1A1A1A] rounded-t-lg h-40 flex items-end overflow-hidden p-1 relative">
+
+                {/* Dual Bars Container */}
+                <div className="w-full bg-[#161616] rounded-t-xl h-44 flex items-end justify-center gap-1.5 p-1.5 border border-[#262626]">
+                  {/* Revenue Bar */}
                   <div
-                    className="w-full bg-gradient-to-t from-[#AA820A] to-[#D4AF37] rounded-t transition-all duration-700 group-hover:brightness-125"
-                    style={{ height: `${(bar.revenue / maxRevenue) * 100}%` }}
+                    className="w-1/2 bg-gradient-to-t from-[#8E6C0C] via-[#B8923D] to-[#E3C36B] rounded-t-sm transition-all duration-700 group-hover:brightness-125 animate-bar-rise"
+                    style={{ height: `${bar.revenue === 0 ? 0 : Math.max((bar.revenue / maxRevenue) * 100, 6)}%` }}
+                    title={`Revenue: ${formatINR(bar.revenue)}`}
+                  />
+                  {/* Orders Bar */}
+                  <div
+                    className="w-1/2 bg-gradient-to-t from-blue-900 via-blue-600 to-cyan-400 rounded-t-sm transition-all duration-700 opacity-80 group-hover:opacity-100 animate-bar-rise"
+                    style={{ height: `${bar.orders === 0 ? 0 : Math.max((bar.orders / maxOrders) * 100, 6)}%` }}
+                    title={`Orders: ${bar.orders}`}
                   />
                 </div>
                 <span className="text-[11px] text-gray-300 font-medium">{bar.label}</span>

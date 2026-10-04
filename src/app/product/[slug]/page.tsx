@@ -27,6 +27,7 @@ import {
   validateIndianPincode,
   formatDate,
 } from "@/lib/utils";
+import { getProductBySlugAction } from "@/app/actions/products";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -43,10 +44,29 @@ export default function ProductDetailPage() {
     recentlyViewed,
     reviews,
     addReview,
+    user,
     showToast,
   } = useApp();
 
-  const product = products.find((p) => p.slug === slug);
+  const contextProduct = products.find((p) => p.slug === slug);
+  const [serverProduct, setServerProduct] = useState<any>(null);
+  const [loadingProduct, setLoadingProduct] = useState(!contextProduct);
+
+  useEffect(() => {
+    if (!contextProduct && slug) {
+      setLoadingProduct(true);
+      getProductBySlugAction(slug).then((res) => {
+        if (res.success && res.data) {
+          setServerProduct(res.data);
+        }
+        setLoadingProduct(false);
+      });
+    } else {
+      setLoadingProduct(false);
+    }
+  }, [slug, contextProduct]);
+
+  const product = contextProduct || serverProduct;
   const categoryObj = product
     ? categories.find(
         (c) =>
@@ -89,6 +109,15 @@ export default function ProductDetailPage() {
       }
     }
   }, [product]);
+
+  if (loadingProduct) {
+    return (
+      <div className="min-h-[70vh] bg-brand-white flex flex-col items-center justify-center p-8 text-center text-brand-text">
+        <div className="w-10 h-10 border-2 border-brand-gold border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs text-neutral-500 font-light">Retrieving heirloom saree details from atelier...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -134,6 +163,11 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = () => {
     addToCart(product, 1, currentColor);
+    if (!user) {
+      showToast("Please sign in or create an account to proceed to checkout.", "info");
+      router.push("/auth/login?redirect=/checkout");
+      return;
+    }
     router.push("/checkout");
   };
 
@@ -180,7 +214,55 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-white text-brand-text py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-sans">
+    <div className="min-h-screen bg-brand-white text-brand-text py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-sans animate-fade-in">
+      {/* Schema.org Product JSON-LD Structured Data for Google Rich Snippets */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org/",
+            "@type": "Product",
+            name: product.name,
+            image: (product.images || []).map((img: string) =>
+              img.startsWith("http") ? img : `https://ravinasarees.com${img}`
+            ),
+            description: product.description,
+            sku: product.sku,
+            mpn: product.sku,
+            brand: {
+              "@type": "Brand",
+              name: "Ravina Sarees",
+            },
+            offers: {
+              "@type": "Offer",
+              url: `https://ravinasarees.com/product/${product.slug}`,
+              priceCurrency: "INR",
+              price: product.discountPrice || product.price,
+              priceValidUntil: "2026-12-31",
+              itemCondition: "https://schema.org/NewCondition",
+              availability:
+                product.stock > 0
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/OutOfStock",
+              seller: {
+                "@type": "Organization",
+                name: "Ravina Sarees",
+              },
+            },
+            aggregateRating: {
+              "@type": "AggregateRating",
+              ratingValue: product.rating,
+              reviewCount: product.reviewCount || 1,
+              bestRating: "5",
+              worstRating: "1",
+            },
+            category: product.categoryName,
+            material: product.fabric,
+            color: product.primaryColor,
+          }),
+        }}
+      />
+
       {/* 1. Breadcrumbs */}
       <nav className="flex items-center gap-2 text-xs text-neutral-500 mb-8 overflow-x-auto whitespace-nowrap pb-2 font-poppins">
         <Link href="/" className="hover:text-brand-gold">
@@ -237,9 +319,9 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Thumbnail Gallery Strip */}
-          {product.images.length > 1 && (
+          {product.images?.length > 1 && (
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {product.images.map((img, idx) => (
+              {product.images.map((img: string, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
@@ -324,7 +406,7 @@ export default function ProductDetailPage() {
                   Select Shade: <strong className="text-brand-maroon">{currentColor}</strong>
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {product.availableColors.map((color) => (
+                  {product.availableColors.map((color: string) => (
                     <button
                       key={color}
                       onClick={() => setSelectedColor(color)}

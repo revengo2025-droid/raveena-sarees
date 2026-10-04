@@ -20,11 +20,15 @@ export default function CategoryPage() {
   const categoryProducts = useMemo(() => {
     if (!category) return [];
     return products
-      .filter(
-        (p) =>
-          p.categoryId === category.id ||
-          p.categoryName.toLowerCase() === category.name.toLowerCase()
-      )
+      .filter((p) => {
+        if (p.categoryId === category.id) return true;
+        if (p.categoryName?.toLowerCase() === category.name.toLowerCase()) return true;
+        const catWord = category.name.split(" ")[0].toLowerCase();
+        if (p.tags?.some((t) => t.toLowerCase().includes(catWord))) return true;
+        if (category.slug === "banarasi-sarees" && (p.tags?.includes("Banarasi") || p.fabric?.includes("Banarasi"))) return true;
+        if (category.slug === "handloom-sarees" && (p.tags?.includes("Handloom") || p.tags?.includes("Kanjivaram") || p.tags?.includes("Pure Silk"))) return true;
+        return false;
+      })
       .sort((a, b) => {
         const priceA = a.discountPrice || a.price;
         const priceB = b.discountPrice || b.price;

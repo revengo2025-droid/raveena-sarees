@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -12,13 +12,42 @@ import {
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { formatDate } from "@/lib/utils";
+import { getOrderByNumberAction } from "@/app/actions/orders";
 
 export default function OrderTrackingPage() {
   const params = useParams();
   const orderNumber = params?.orderNumber as string;
 
   const { orders, getOrderByNumber } = useApp();
-  const order = getOrderByNumber(orderNumber) || orders[0];
+  const contextOrder = getOrderByNumber(orderNumber) || orders.find((o) => o.orderNumber === orderNumber);
+  const [serverOrder, setServerOrder] = useState<any>(null);
+
+  useEffect(() => {
+    if (orderNumber) {
+      getOrderByNumberAction(orderNumber).then((res) => {
+        if (res.success && res.data) {
+          setServerOrder(res.data);
+        }
+      });
+    }
+  }, [orderNumber]);
+
+  const rawOrder = serverOrder || contextOrder;
+  const order = rawOrder
+    ? {
+        ...rawOrder,
+        orderNumber: rawOrder.order_number || rawOrder.orderNumber,
+        customerName: rawOrder.customer_name || rawOrder.customerName,
+        customerEmail: rawOrder.customer_email || rawOrder.customerEmail,
+        orderStatus: rawOrder.order_status || rawOrder.orderStatus,
+        trackingNumber: rawOrder.tracking_number || rawOrder.trackingNumber,
+        courierPartner: rawOrder.courier_partner || rawOrder.courierPartner,
+        estimatedDelivery: rawOrder.estimated_delivery || rawOrder.estimatedDelivery || "4 Business Days",
+        createdAt: rawOrder.created_at || rawOrder.createdAt,
+        totalAmount: rawOrder.total_amount || rawOrder.totalAmount,
+        shippingAddress: rawOrder.shipping_address || rawOrder.shippingAddress,
+      }
+    : null;
 
   if (!order) {
     return (

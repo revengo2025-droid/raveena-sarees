@@ -38,6 +38,8 @@ export const CartDrawer: React.FC = () => {
     giftMessage,
     setGiftMessage,
     giftWrapFee,
+    user,
+    showToast,
   } = useApp();
 
   const [couponInput, setCouponInput] = useState("");
@@ -62,6 +64,11 @@ export const CartDrawer: React.FC = () => {
 
   const handleProceedToCheckout = () => {
     setIsCartDrawerOpen(false);
+    if (!user) {
+      showToast("Please sign in or create an account to proceed to checkout.", "info");
+      router.push("/auth/login?redirect=/checkout");
+      return;
+    }
     router.push("/checkout");
   };
 

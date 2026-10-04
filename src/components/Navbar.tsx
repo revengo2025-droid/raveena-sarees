@@ -292,16 +292,18 @@ export const Navbar: React.FC = () => {
                           </p>
                           <Link
                             href="/auth/login"
+                            onClick={() => setUserDropdownOpen(false)}
                             className="btn-primary block w-full text-center !py-2.5 !text-[11px]"
                           >
                             Sign In
                           </Link>
-                          <button
-                            onClick={() => login("admin@ravinasarees.in", "admin")}
+                          <Link
+                            href="/auth/register"
+                            onClick={() => setUserDropdownOpen(false)}
                             className="btn-secondary block w-full text-center !py-2 !text-[10px]"
                           >
-                            Demo: Admin Login
-                          </button>
+                            Create Account
+                          </Link>
                         </div>
                       )}
                     </div>
