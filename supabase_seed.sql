@@ -1,7 +1,7 @@
 -- ==============================================================================
--- Ravina Sarees - Comprehensive Production Seed Script
+-- Raveena Sarees - Comprehensive Production Seed Script
 -- Atelier: Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana - 504224
--- Brand URL: https://ravinasarees.in
+-- Brand: Raveena Sarees
 -- ==============================================================================
 
 -- 1. SEED CATEGORIES (Matching frontend routes and catalog navigation)
@@ -275,7 +275,7 @@ SET price = EXCLUDED.price,
 -- 3. SEED COUPONS
 INSERT INTO coupons (code, discount_type, discount_value, min_order_value, max_discount, usage_limit, is_active)
 VALUES
-  ('RAVINA10', 'percentage', 10.00, 2500.00, 500.00, 5000, true),
+  ('RAVEENA10', 'percentage', 10.00, 2500.00, 500.00, 5000, true),
   ('ROYAL400', 'fixed', 400.00, 3500.00, 400.00, 2000, true),
   ('FIRSTBUY', 'percentage', 15.00, 1500.00, 350.00, 3000, true),
   ('FESTIVE200', 'fixed', 200.00, 2000.00, 200.00, 5000, true)
@@ -288,7 +288,7 @@ SET discount_type = EXCLUDED.discount_type,
 -- 4. SEED STORE SETTINGS
 INSERT INTO store_settings (key, value)
 VALUES
-  ('store_info', '{"name": "Ravina Sarees", "tagline": "Royal Handlooms of India", "phone": "+91 77807 56009", "email": "ravieenasarees@gmail.com", "address": "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana - 504224"}'::jsonb),
+  ('store_info', '{"name": "Raveena Sarees", "tagline": "Royal Handlooms of India", "phone": "+91 77807 56009", "email": "raveenasarees22@gmail.com", "address": "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana - 504224"}'::jsonb),
   ('shipping_config', '{"free_shipping_threshold": 1000, "default_shipping_fee": 150, "gift_wrap_fee": 250, "courier_partner": "BlueDart Express"}'::jsonb),
   ('payment_config', '{"razorpay_enabled": true, "cod_enabled": true, "upi_enabled": true, "currency": "INR"}'::jsonb)
 ON CONFLICT (key) DO UPDATE

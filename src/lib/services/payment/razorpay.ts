@@ -69,8 +69,8 @@ export async function createRazorpayOrder(params: CreateOrderParams): Promise<Ra
 }
 
 export function verifyRazorpaySignature(orderId: string, paymentId: string, signature: string): boolean {
-  if (!isRazorpayLive) {
-    // If running in development simulation mode, accept mock signatures
+  if (!isRazorpayLive && process.env.NODE_ENV !== "production") {
+    // Development-only simulation mode: never accepted in production
     if (signature.startsWith("mock_sig_") || orderId.includes("mock")) {
       return true;
     }
@@ -83,17 +83,35 @@ export function verifyRazorpaySignature(orderId: string, paymentId: string, sign
     .update(`${orderId}|${paymentId}`)
     .digest("hex");
 
-  return generatedSignature === signature;
+  const a = Buffer.from(generatedSignature);
+  const b = Buffer.from(signature);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 export function verifyWebhookSignature(payloadString: string, signature: string): boolean {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-  if (!webhookSecret) return true; // dev fallback
+  if (!webhookSecret) return process.env.NODE_ENV !== "production"; // dev-only fallback
 
   const expectedSignature = crypto
     .createHmac("sha256", webhookSecret)
     .update(payloadString)
     .digest("hex");
 
-  return expectedSignature === signature;
+  const a = Buffer.from(expectedSignature);
+  const b = Buffer.from(signature);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+/** Fetches a Razorpay order so callers can confirm it belongs to the expected receipt/amount. */
+export async function fetchRazorpayOrder(
+  razorpayOrderId: string
+): Promise<{ receipt: string; amount: number } | null> {
+  if (!razorpayClient) return null;
+  try {
+    const order = await razorpayClient.orders.fetch(razorpayOrderId);
+    return { receipt: String(order.receipt ?? ""), amount: Number(order.amount) };
+  } catch (err) {
+    console.error("Razorpay order fetch error:", err);
+    return null;
+  }
 }

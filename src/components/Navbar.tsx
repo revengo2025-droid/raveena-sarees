@@ -14,8 +14,10 @@ import {
   Settings,
   ArrowRight,
 } from "lucide-react";
+import Image from "next/image";
 import { useApp } from "@/lib/store";
 import { formatINR } from "@/lib/utils";
+import { SITE } from "@/lib/site";
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
@@ -123,15 +125,37 @@ export const Navbar: React.FC = () => {
               isScrolled ? "h-14 md:h-[64px]" : "h-16 md:h-[72px]"
             }`}
           >
-            {/* Left: Logo */}
-            <Link href="/" className="group flex items-center select-none shrink-0 py-1">
-              <img
-                src="/images/logo/raveena-brand-logo.jpg"
-                alt="Raveena Sarees"
+            {/* Mobile: hamburger (left) */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden glass-orb-btn w-11 h-11 rounded-full flex items-center justify-center text-brand-text hover:text-brand-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold -ml-2"
+              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-nav"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            {/* Brand: centred on mobile, left-aligned from lg */}
+            <Link
+              href="/"
+              aria-label="Raveena Sarees – Home"
+              className="group flex items-center gap-2 select-none py-1 absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0 shrink-0"
+            >
+              <Image
+                src={SITE.mark}
+                alt=""
+                width={44}
+                height={44}
+                priority
                 className={`w-auto object-contain transition-all duration-500 ease-out group-hover:scale-105 rounded-md shadow-sm border border-brand-gold/30 ${
                   isScrolled ? "h-8 sm:h-9 md:h-10" : "h-9 sm:h-10 md:h-11"
                 }`}
               />
+              <span className="flex flex-col leading-none">
+                <span className="font-serif text-[13px] sm:text-[15px] md:text-base font-semibold tracking-[0.18em] sm:tracking-[0.2em] text-brand-maroon uppercase">Raveena</span>
+                <span className="font-poppins text-[7px] sm:text-[8px] md:text-[9px] tracking-[0.42em] text-brand-goldDark uppercase mt-1">Sarees</span>
+              </span>
             </Link>
 
             {/* Center: Nav Links (Desktop) */}
@@ -157,28 +181,31 @@ export const Navbar: React.FC = () => {
               })}
             </div>
 
-            {/* Right: Action Icons */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Right: Action Icons (mobile shows only Search + Cart; the rest live in the bottom bar) */}
+            <div className="flex items-center gap-1 sm:gap-2 ml-auto lg:ml-0">
               {/* Search */}
-              <div className="relative" ref={searchRef}>
+              <div className="sm:relative" ref={searchRef}>
                 <button
                   onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className="glass-orb-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-brand-text hover:text-brand-gold focus:outline-none"
-                  aria-label="Search Sarees"
+                  className="glass-orb-btn w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-brand-text hover:text-brand-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
+                  aria-label="Search sarees"
+                  aria-expanded={isSearchOpen}
+                  aria-haspopup="dialog"
                 >
                   <Search className="w-4 h-4 sm:w-[17px] sm:h-[17px]" />
                 </button>
 
                 {isSearchOpen && (
-                  <div className="absolute right-0 top-12 sm:top-14 w-80 sm:w-96 glass-dropdown rounded-2xl z-50 animate-fadeIn overflow-hidden">
+                  <div role="dialog" aria-label="Search sarees" onKeyDown={(e) => e.key === "Escape" && setIsSearchOpen(false)} className="absolute left-3 right-3 top-full mt-1 sm:left-auto sm:right-0 sm:top-14 sm:mt-0 sm:w-96 glass-dropdown rounded-2xl z-50 animate-fadeIn overflow-hidden">
                     <div className="p-4">
-                      <form onSubmit={handleSearchSubmit} className="relative">
+                      <form onSubmit={handleSearchSubmit} role="search" className="relative">
                         <input
                           type="text"
                           placeholder="Search Kanjivaram, Banarasi, Silk..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           autoFocus
+                          aria-label="Search sarees"
                           className="w-full bg-white/50 backdrop-blur-xl border border-white/80 rounded-full py-2.5 pl-10 pr-4 text-sm text-brand-text placeholder-brand-textMuted focus:outline-none focus:border-brand-gold focus:bg-white/75 focus:ring-2 focus:ring-brand-gold/15 transition-all font-body shadow-[inset_0_1px_2px_rgba(0,0,0,0.03)]"
                         />
                         <Search className="w-4 h-4 text-brand-gold absolute left-3.5 top-3" />
@@ -195,11 +222,16 @@ export const Navbar: React.FC = () => {
                               href={`/product/${item.slug}`}
                               className="flex items-center gap-3 py-2.5 hover:bg-black/[0.04] px-2 rounded-lg transition-colors group"
                             >
-                              <img
-                                src={item.images[0]}
-                                alt={item.name}
-                                className="w-10 h-12 object-cover rounded-lg border border-white/80 group-hover:border-brand-gold/60 transition-colors shadow-sm"
-                              />
+                              {item.images[0] && (
+                                <Image
+                                  src={item.images[0]}
+                                  alt=""
+                                  width={40}
+                                  height={48}
+                                  sizes="40px"
+                                  className="w-10 h-12 object-cover rounded-lg border border-white/80 group-hover:border-brand-gold/60 transition-colors shadow-sm"
+                                />
+                              )}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-heading text-brand-text truncate group-hover:text-brand-gold transition-colors">
                                   {item.name}
@@ -225,7 +257,7 @@ export const Navbar: React.FC = () => {
               {/* Wishlist */}
               <Link
                 href="/wishlist"
-                className="glass-orb-btn relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-brand-text hover:text-brand-gold"
+                className="hidden lg:flex glass-orb-btn relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-brand-text hover:text-brand-gold"
                 aria-label="View Wishlist"
               >
                 <Heart className="w-4 h-4 sm:w-[17px] sm:h-[17px]" />
@@ -237,7 +269,7 @@ export const Navbar: React.FC = () => {
               </Link>
 
               {/* User */}
-              <div className="relative" ref={userDropdownRef}>
+              <div className="relative hidden lg:block" ref={userDropdownRef}>
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   className="glass-orb-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-brand-text hover:text-brand-gold focus:outline-none"
@@ -314,8 +346,8 @@ export const Navbar: React.FC = () => {
               {/* Cart */}
               <button
                 onClick={() => setIsCartDrawerOpen(true)}
-                className="glass-bag-btn relative flex items-center gap-1.5 text-white pl-4 pr-3 py-2 rounded-full group ml-1"
-                aria-label="Open Shopping Bag"
+                className="glass-bag-btn relative flex items-center justify-center gap-1.5 text-white min-w-[44px] min-h-[44px] sm:min-h-0 sm:pl-4 sm:pr-3 sm:py-2 rounded-full group sm:ml-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
+                aria-label={`Open shopping bag${cartItemCount ? `, ${cartItemCount} items` : ""}`}
               >
                 <span className="text-[11px] font-button font-semibold tracking-wider uppercase hidden sm:inline text-white/95">
                   Bag
@@ -328,21 +360,13 @@ export const Navbar: React.FC = () => {
                 )}
               </button>
 
-              {/* Mobile Menu Toggle */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden glass-orb-btn w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-brand-text hover:text-brand-gold focus:outline-none ml-1"
-                aria-label="Toggle Navigation Menu"
-              >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
             </div>
           </nav>
         </div>
 
         {/* ─── MOBILE MENU DRAWER ─── */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-white/60 bg-white/80 backdrop-blur-3xl shadow-[0_20px_40px_rgba(0,0,0,0.12)] rounded-b-2xl sm:rounded-b-3xl animate-fadeIn">
+          <div id="mobile-nav" className="lg:hidden border-t border-white/60 bg-white/80 backdrop-blur-3xl shadow-[0_20px_40px_rgba(0,0,0,0.12)] rounded-b-2xl sm:rounded-b-3xl animate-fadeIn">
             <div className="max-w-7xl mx-auto px-4 py-4">
               <div className="space-y-1">
                 {navLinks.map((link) => {
@@ -362,9 +386,15 @@ export const Navbar: React.FC = () => {
                   );
                 })}
               </div>
-              <div className="pt-4 mt-4 border-t border-black/[0.06] flex items-center gap-4">
-                <a href="tel:+917780756009" className="text-sm text-brand-textMuted font-body hover:text-brand-gold transition-colors">
-                  📞 +91 77807 56009
+              <div className="pt-3 mt-3 border-t border-black/[0.06] grid grid-cols-2 gap-1 text-[13px] font-body">
+                <Link href="/faq" className="px-4 py-2.5 text-brand-textSecondary hover:text-brand-gold">FAQ</Link>
+                <Link href="/shipping-policy" className="px-4 py-2.5 text-brand-textSecondary hover:text-brand-gold">Shipping</Link>
+                <Link href="/return-policy" className="px-4 py-2.5 text-brand-textSecondary hover:text-brand-gold">Returns</Link>
+                <Link href="/refund-policy" className="px-4 py-2.5 text-brand-textSecondary hover:text-brand-gold">Refunds</Link>
+              </div>
+              <div className="pt-3 mt-2 border-t border-black/[0.06] flex items-center gap-4">
+                <a href={`tel:+${SITE.whatsappNumber}`} className="text-sm text-brand-textMuted font-body hover:text-brand-gold transition-colors py-2">
+                  Call {SITE.phoneDisplay}
                 </a>
               </div>
             </div>

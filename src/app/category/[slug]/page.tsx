@@ -98,7 +98,7 @@ export default function CategoryPage() {
 
             <div className="flex items-center gap-4 pt-1">
               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-white/90 backdrop-blur-md border border-brand-gold/40 rounded-full text-xs text-brand-maroon font-semibold font-poppins shadow-sm">
-                <ShieldCheck className="w-3.5 h-3.5 text-brand-gold" /> 100% Silk Mark Certified
+                <ShieldCheck className="w-3.5 h-3.5 text-brand-gold" /> Secure checkout
               </span>
               <span className="text-xs text-neutral-200 font-medium font-poppins">
                 {categoryProducts.length} Exclusive Creations
@@ -145,9 +145,9 @@ export default function CategoryPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categoryProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            {categoryProducts.map((product, i) => (
+              <ProductCard key={product.id} product={product} priority={i < 4} />
             ))}
           </div>
         )}

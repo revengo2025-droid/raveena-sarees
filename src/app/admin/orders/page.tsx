@@ -16,9 +16,11 @@ import { useApp } from "@/lib/store";
 import { formatINR, formatDate } from "@/lib/utils";
 import { Order, OrderStatus } from "@/lib/types";
 import { updateOrderStatusAction } from "@/app/actions/orders";
+import { orderStatusLabel, ORDER_STATUS_LABELS } from "@/lib/orders/mapper";
 
 export default function AdminOrdersPage() {
-  const { orders, updateOrderStatus, showToast } = useApp();
+  const { orders, refreshOrders, showToast } = useApp();
+  const [saving, setSaving] = useState(false);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -27,28 +29,28 @@ export default function AdminOrdersPage() {
   // Edit Tracking Modal states
   const [newStatus, setNewStatus] = useState<OrderStatus>("shipped");
   const [newTracking, setNewTracking] = useState("");
-  const [newCourier, setNewCourier] = useState("BlueDart Express");
+  const [newCourier, setNewCourier] = useState("");
 
   const handleOpenEdit = (order: Order) => {
     setEditingOrder(order);
     setNewStatus(order.orderStatus);
     setNewTracking(order.trackingNumber);
-    setNewCourier(order.courierPartner);
+    setNewCourier(order.courierPartner || "");
   };
 
-  const handleSaveOrderUpdate = (e: React.FormEvent) => {
+  const handleSaveOrderUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingOrder) {
-      updateOrderStatus(editingOrder.id, newStatus, newTracking, newCourier);
-      updateOrderStatusAction(
-        editingOrder.id,
-        newStatus,
-        newTracking,
-        `Courier updated to ${newCourier}`
-      ).catch((err) => console.error("Database order status update error:", err));
-      showToast(`Order #${editingOrder.orderNumber} updated to ${newStatus}`, "success");
-      setEditingOrder(null);
+    if (!editingOrder || saving) return;
+    setSaving(true);
+    const res = await updateOrderStatusAction(editingOrder.id, newStatus, newTracking || undefined, undefined, newCourier || undefined);
+    setSaving(false);
+    if (!res.success) {
+      showToast(res.error || "Could not update the order.", "error");
+      return;
     }
+    await refreshOrders();
+    showToast(`Order #${editingOrder.orderNumber} updated to ${orderStatusLabel(newStatus)}`, "success");
+    setEditingOrder(null);
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -94,12 +96,9 @@ export default function AdminOrdersPage() {
             className="bg-[#1A1A1A] border border-[#333] text-xs text-white rounded-xl px-3 py-2 focus:outline-none focus:border-[#D4AF37]"
           >
             <option value="all">All Statuses ({orders.length})</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="out_for_delivery">Out for Delivery</option>
-            <option value="delivered">Delivered</option>
-            <option value="cancelled">Cancelled</option>
+            {Object.entries(ORDER_STATUS_LABELS).map(([value, text]) => (
+              <option key={value} value={value}>{text}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -168,7 +167,7 @@ export default function AdminOrdersPage() {
 
                   <td className="py-3.5 px-4">
                     <span className="px-2.5 py-1 rounded text-[10px] uppercase font-bold bg-amber-950/60 text-amber-300 border border-amber-800">
-                      {ord.orderStatus.replace("_", " ")}
+                      {orderStatusLabel(ord.orderStatus)}
                     </span>
                   </td>
 
@@ -227,12 +226,9 @@ export default function AdminOrdersPage() {
                   onChange={(e) => setNewStatus(e.target.value as any)}
                   className="w-full bg-[#181818] border border-[#333] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#D4AF37]"
                 >
-                  <option value="confirmed">Confirmed</option>
-                  <option value="processing">Processing & Quality Check</option>
-                  <option value="shipped">Dispatched / Shipped</option>
-                  <option value="out_for_delivery">Out for Delivery</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="cancelled">Cancelled</option>
+                  {Object.entries(ORDER_STATUS_LABELS).map(([value, text]) => (
+                    <option key={value} value={value}>{text}</option>
+                  ))}
                 </select>
               </div>
 

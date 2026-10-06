@@ -1,14 +1,18 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/admin";
 import { createServerClient, createAdminClient } from "@/lib/supabase";
-import { INITIAL_COUPONS } from "@/lib/mockData";
+import { INITIAL_COUPONS as STARTER_COUPONS } from "@/lib/mockData";
+
+// Bundled sample coupons are for local development only; production uses coupons from the database.
+const INITIAL_COUPONS = process.env.NODE_ENV === "production" ? [] : STARTER_COUPONS;
 import { couponSchema, type CouponInput } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
 
 export async function validateCouponAction(code: string, subtotal: number) {
   try {
     const codeUpper = code.trim().toUpperCase();
-    const supabase = await createServerClient();
+    const supabase = createAdminClient(); // coupons are not publicly readable; validated server-side
 
     // Query Supabase
     const { data: coupon, error } = await supabase
@@ -50,6 +54,7 @@ export async function validateCouponAction(code: string, subtotal: number) {
           discountValue: Number(coupon.discount_value),
           discountAmount: discount,
           minOrderValue: Number(coupon.min_order_value),
+          maxDiscount: coupon.max_discount ? Number(coupon.max_discount) : undefined,
           description: `Applied ${coupon.code} discount`,
         },
       };
@@ -86,6 +91,7 @@ export async function validateCouponAction(code: string, subtotal: number) {
         discountValue: mock.discountValue,
         discountAmount: discount,
         minOrderValue: mock.minOrderValue,
+        maxDiscount: mock.maxDiscount,
         description: mock.description,
       },
     };
@@ -95,6 +101,8 @@ export async function validateCouponAction(code: string, subtotal: number) {
 }
 
 export async function getCouponsAction() {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
   try {
     const adminClient = createAdminClient();
     const { data, error } = await adminClient.from("coupons").select("*").order("created_at", { ascending: false });
@@ -110,6 +118,8 @@ export async function getCouponsAction() {
 }
 
 export async function createCouponAction(values: CouponInput) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
   try {
     const validated = couponSchema.safeParse(values);
     if (!validated.success) {
@@ -144,6 +154,8 @@ export async function createCouponAction(values: CouponInput) {
 }
 
 export async function deleteCouponAction(id: string) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
   try {
     const adminClient = createAdminClient();
     const { error } = await adminClient.from("coupons").delete().eq("id", id);

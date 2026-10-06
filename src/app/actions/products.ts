@@ -1,9 +1,12 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/admin";
 import { createServerClient, createAdminClient } from "@/lib/supabase";
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES } from "@/lib/mockData";
 import { productSchema, type ProductInput } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
+import { mapProductRow } from "@/lib/products/mapper";
+import { removeStorageObjects, revalidateCatalogue } from "@/lib/products/images";
 
 export async function getProductsAction(options?: {
   category?: string;
@@ -56,35 +59,7 @@ export async function getProductsAction(options?: {
       return { success: true, data: filtered, source: "mock" };
     }
 
-    // Map database snake_case columns to frontend Product structure
-    const formatted = data.map((p) => ({
-      id: p.id,
-      sku: p.sku,
-      name: p.name,
-      slug: p.slug,
-      categoryId: p.category_id || "",
-      categoryName: p.category_name,
-      description: p.description,
-      price: Number(p.price),
-      discountPrice: p.discount_price ? Number(p.discount_price) : undefined,
-      stock: p.stock,
-      fabric: p.fabric,
-      zariType: p.zari_type,
-      weaveType: p.weave_type,
-      sareeLength: p.saree_length,
-      blouseIncluded: p.blouse_included,
-      blouseLength: p.blouse_length,
-      occasion: p.occasion,
-      careInstructions: p.care_instructions,
-      availableColors: p.available_colors || [],
-      primaryColor: p.primary_color,
-      images: p.images || [],
-      rating: Number(p.rating),
-      reviewCount: p.review_count,
-      isFeatured: p.is_featured,
-      isBestseller: p.is_bestseller,
-      isNewArrival: p.is_new_arrival,
-    }));
+    const formatted = data.map(mapProductRow);
 
     return { success: true, data: formatted, source: "database" };
   } catch (err: any) {
@@ -109,34 +84,7 @@ export async function getProductBySlugAction(slug: string) {
 
     return {
       success: true,
-      data: {
-        id: data.id,
-        sku: data.sku,
-        name: data.name,
-        slug: data.slug,
-        categoryId: data.category_id || "",
-        categoryName: data.category_name,
-        description: data.description,
-        price: Number(data.price),
-        discountPrice: data.discount_price ? Number(data.discount_price) : undefined,
-        stock: data.stock,
-        fabric: data.fabric,
-        zariType: data.zari_type,
-        weaveType: data.weave_type,
-        sareeLength: data.saree_length,
-        blouseIncluded: data.blouse_included,
-        blouseLength: data.blouse_length,
-        occasion: data.occasion,
-        careInstructions: data.care_instructions,
-        availableColors: data.available_colors || [],
-        primaryColor: data.primary_color,
-        images: data.images || [],
-        rating: Number(data.rating),
-        reviewCount: data.review_count,
-        isFeatured: data.is_featured,
-        isBestseller: data.is_bestseller,
-        isNewArrival: data.is_new_arrival,
-      },
+      data: mapProductRow(data),
       source: "database",
     };
   } catch {
@@ -147,6 +95,8 @@ export async function getProductBySlugAction(slug: string) {
 }
 
 export async function createProductAction(values: ProductInput) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
   try {
     const validated = productSchema.safeParse(values);
     if (!validated.success) {
@@ -203,7 +153,7 @@ export async function createProductAction(values: ProductInput) {
       });
     }
 
-    revalidatePath("/shop");
+    revalidateCatalogue();
     revalidatePath("/admin/products");
     return { success: true, data };
   } catch (err: any) {
@@ -212,19 +162,31 @@ export async function createProductAction(values: ProductInput) {
 }
 
 export async function updateProductAction(id: string, values: Partial<ProductInput>) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
   try {
     const adminClient = createAdminClient();
     const { error } = await adminClient
       .from("products")
       .update({
-        ...(values.name && { name: values.name }),
+        ...(values.name !== undefined && { name: values.name }),
+        ...(values.sku !== undefined && { sku: values.sku }),
+        ...(values.slug !== undefined && { slug: values.slug }),
         ...(values.price !== undefined && { price: values.price }),
-        ...(values.discountPrice !== undefined && { discount_price: values.discountPrice }),
+        ...(values.discountPrice !== undefined && { discount_price: values.discountPrice || null }),
         ...(values.stock !== undefined && { stock: values.stock }),
-        ...(values.fabric && { fabric: values.fabric }),
-        ...(values.description && { description: values.description }),
-        ...(values.images && { images: values.images }),
-        ...(values.categoryName && { category_name: values.categoryName }),
+        ...(values.fabric !== undefined && { fabric: values.fabric }),
+        ...(values.zariType !== undefined && { zari_type: values.zariType }),
+        ...(values.weaveType !== undefined && { weave_type: values.weaveType }),
+        ...(values.sareeLength !== undefined && { saree_length: values.sareeLength }),
+        ...(values.blouseIncluded !== undefined && { blouse_included: values.blouseIncluded }),
+        ...(values.blouseLength !== undefined && { blouse_length: values.blouseLength }),
+        ...(values.occasion !== undefined && { occasion: values.occasion }),
+        ...(values.careInstructions !== undefined && { care_instructions: values.careInstructions }),
+        ...(values.availableColors !== undefined && { available_colors: values.availableColors }),
+        ...(values.primaryColor !== undefined && { primary_color: values.primaryColor }),
+        ...(values.description !== undefined && { description: values.description }),
+        ...(values.categoryName !== undefined && { category_name: values.categoryName }),
         ...(values.isFeatured !== undefined && { is_featured: values.isFeatured }),
         ...(values.isBestseller !== undefined && { is_bestseller: values.isBestseller }),
         ...(values.isNewArrival !== undefined && { is_new_arrival: values.isNewArrival }),
@@ -234,7 +196,7 @@ export async function updateProductAction(id: string, values: Partial<ProductInp
 
     if (error) return { success: false, error: error.message };
 
-    revalidatePath("/shop");
+    revalidateCatalogue();
     revalidatePath("/admin/products");
     return { success: true };
   } catch (err: any) {
@@ -243,12 +205,16 @@ export async function updateProductAction(id: string, values: Partial<ProductInp
 }
 
 export async function deleteProductAction(id: string) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
   try {
     const adminClient = createAdminClient();
+    const { data: imgs } = await adminClient.from("product_images").select("storage_path").eq("product_id", id);
     const { error } = await adminClient.from("products").delete().eq("id", id);
     if (error) return { success: false, error: error.message };
+    await removeStorageObjects(adminClient, (imgs || []).map((i) => i.storage_path));
 
-    revalidatePath("/shop");
+    revalidateCatalogue();
     revalidatePath("/admin/products");
     return { success: true };
   } catch (err: any) {

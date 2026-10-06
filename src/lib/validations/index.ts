@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { INDIAN_MOBILE_RE, INDIAN_PINCODE_RE, isIndianState } from "@/lib/geo/india";
 
 // =============================================================================
 // AUTH SCHEMAS
@@ -45,17 +46,16 @@ export const profileUpdateSchema = z.object({
 // ADDRESS SCHEMA
 // =============================================================================
 export const addressSchema = z.object({
-  name: z.string().min(2, "Contact name is required"),
-  phone: z
-    .string()
-    .regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian mobile number"),
-  streetAddress: z.string().min(5, "Flat / Street / Landmark is required"),
-  landmark: z.string().optional(),
-  city: z.string().min(2, "City is required"),
-  state: z.string().min(2, "State is required"),
-  pincode: z
-    .string()
-    .regex(/^\d{6}$/, "Please enter a valid 6-digit PIN code"),
+  name: z.string().trim().min(2, "Full name is required").max(100),
+  phone: z.string().regex(INDIAN_MOBILE_RE, "Please enter a valid 10-digit Indian mobile number"),
+  houseNumber: z.string().trim().min(1, "House number / tower / block is required").max(100),
+  streetAddress: z.string().trim().min(3, "Address / building / street is required").max(200),
+  locality: z.string().trim().min(2, "Locality / town is required").max(150),
+  landmark: z.string().trim().max(150).optional(),
+  city: z.string().trim().min(2, "City / district is required").max(100),
+  state: z.string().refine((v) => isIndianState(v), "Please select your state"),
+  pincode: z.string().regex(INDIAN_PINCODE_RE, "Please enter a valid 6-digit PIN code"),
+  addressType: z.enum(["home", "office", "other"]).default("home"),
   isDefault: z.boolean().optional().default(false),
 });
 
@@ -84,7 +84,7 @@ export const productSchema = z.object({
     .default("Dry Clean Only. Store wrapped in pure cotton or muslin fabric."),
   availableColors: z.array(z.string()).default([]),
   primaryColor: z.string().min(2, "Primary color is required"),
-  images: z.array(z.string()).min(1, "At least one product image is required"),
+  images: z.array(z.string()).default([]),
   rating: z.number().min(1).max(5).default(5),
   reviewCount: z.number().int().default(0),
   isFeatured: z.boolean().default(false),
@@ -160,7 +160,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type AddressInput = z.infer<typeof addressSchema>;
 export type ProductInput = z.infer<typeof productSchema>;
-export type CheckoutInput = z.infer<typeof checkoutSchema>;
+export type CheckoutInput = z.input<typeof checkoutSchema>;
 export type RazorpayVerificationInput = z.infer<typeof razorpayVerificationSchema>;
 export type CouponInput = z.infer<typeof couponSchema>;
 export type ReviewInput = z.infer<typeof reviewSchema>;

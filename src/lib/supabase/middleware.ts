@@ -75,9 +75,9 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Role check from user metadata or profile
-    const role = user.app_metadata?.role || user.user_metadata?.role;
-    if (role && role !== "admin" && role !== "staff") {
+    // Role is read from the profiles table (never from user-editable metadata)
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+    if (profile?.role !== "admin" && profile?.role !== "staff") {
       return NextResponse.redirect(new URL("/", request.url));
     }
   }

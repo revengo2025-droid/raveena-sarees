@@ -2,12 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
-import { Heart, ShoppingBag, Trash2 } from "lucide-react";
+import { Heart } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { formatINR } from "@/lib/utils";
+import { ProductCard } from "@/components/ProductCard";
 
 export default function WishlistPage() {
-  const { wishlist, products, toggleWishlist, addToCart } = useApp();
+  const { wishlist, products } = useApp();
 
   const wishlistedProducts = products.filter((p) => wishlist.includes(p.id));
 
@@ -17,10 +17,10 @@ export default function WishlistPage() {
       <div className="border-b border-brand-border pb-6 mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif text-brand-text font-normal">
-            Your Royal Wishlist ({wishlistedProducts.length})
+            Your Wishlist ({wishlistedProducts.length})
           </h1>
           <p className="text-xs text-neutral-500 mt-1 font-light">
-            Curated sarees reserved for your upcoming festivities and bridal trousseau.
+            Sarees you have saved. Tap the heart on any saree to remove it.
           </p>
         </div>
       </div>
@@ -42,67 +42,9 @@ export default function WishlistPage() {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {wishlistedProducts.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white border border-brand-border rounded-3xl overflow-hidden flex flex-col justify-between hover:border-brand-gold/60 transition-all shadow-card hover:shadow-luxury group"
-            >
-              <div className="relative aspect-[3/4] overflow-hidden bg-brand-ivory">
-                <img
-                  src={product.images[0]}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                />
-                <button
-                  onClick={() => toggleWishlist(product.id)}
-                  className="absolute top-3 right-3 p-2 bg-white/80 hover:bg-brand-maroon text-neutral-600 hover:text-white rounded-full transition-colors shadow-sm"
-                  aria-label="Remove from Wishlist"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-4 space-y-3 flex flex-col justify-between flex-1">
-                <div>
-                  <span className="text-[10px] text-brand-gold uppercase tracking-widest font-semibold block font-poppins">
-                    {product.categoryName}
-                  </span>
-                  <Link
-                    href={`/product/${product.slug}`}
-                    className="font-serif text-base text-brand-text hover:text-brand-maroon line-clamp-1 block transition-colors"
-                  >
-                    {product.name}
-                  </Link>
-                  <p className="text-[11px] text-neutral-400 line-clamp-1 italic mt-0.5">
-                    {product.fabric}
-                  </p>
-
-                  <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-base font-bold font-serif text-brand-maroon">
-                      {formatINR(product.discountPrice || product.price)}
-                    </span>
-                    {product.discountPrice && (
-                      <span className="text-xs text-neutral-400 line-through">
-                        {formatINR(product.price)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-brand-border flex gap-2">
-                  <button
-                    onClick={() => {
-                      addToCart(product);
-                      toggleWishlist(product.id);
-                    }}
-                    className="btn-primary flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-full flex items-center justify-center gap-1.5 shadow-sm font-poppins"
-                  >
-                    <ShoppingBag className="w-3.5 h-3.5" /> Move to Bag
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       )}

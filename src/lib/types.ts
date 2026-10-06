@@ -50,13 +50,17 @@ export interface SavedAddress {
   id: string;
   name: string;
   phone: string;
+  /** House number / tower / block */
+  houseNumber?: string;
+  /** Address / building / street */
   street: string;
+  locality?: string;
   landmark?: string;
   city: string;
   state: string;
   pincode: string;
   isDefault?: boolean;
-  type?: "Home" | "Work" | "Other";
+  type?: "Home" | "Office" | "Other";
 }
 
 export interface OrderItem {
@@ -70,12 +74,18 @@ export interface OrderItem {
 }
 
 export type OrderStatus =
+  | "pending"
   | "confirmed"
   | "processing"
+  | "packed"
   | "shipped"
   | "out_for_delivery"
   | "delivered"
-  | "cancelled";
+  | "cancelled"
+  | "return_requested"
+  | "returned"
+  | "refund_processing"
+  | "refunded";
 
 export type PaymentMethod = "razorpay" | "upi" | "card" | "netbanking" | "cod";
 

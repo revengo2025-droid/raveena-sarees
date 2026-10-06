@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { X, Star, ShoppingBag, Heart, ShieldCheck, ArrowRight } from "lucide-react";
 import { useApp } from "@/lib/store";
@@ -58,10 +59,12 @@ export const QuickViewModal: React.FC = () => {
           {/* Gallery Column */}
           <div className="space-y-4">
             <div className="aspect-[3/4] w-full rounded-2xl overflow-hidden bg-brand-ivory border border-brand-border relative shadow-card">
-              <img
+              <Image
                 src={quickViewProduct.images[selectedImageIndex] || quickViewProduct.images[0]}
                 alt={quickViewProduct.name}
-                className="w-full h-full object-cover object-center"
+                fill
+                sizes="(min-width: 768px) 400px, 90vw"
+                className="object-cover object-center"
               />
             </div>
 
@@ -117,7 +120,7 @@ export const QuickViewModal: React.FC = () => {
                   {quickViewProduct.rating} ({quickViewProduct.reviewCount} reviews)
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-brand-gold flex items-center gap-1 font-semibold ml-2 font-poppins">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Silk Mark Certified
+                  <ShieldCheck className="w-3.5 h-3.5" /> Secure checkout
                 </span>
               </div>
 

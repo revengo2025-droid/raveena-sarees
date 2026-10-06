@@ -1,7 +1,7 @@
 # 👑 Raveena Sarees - Luxury E-Commerce Web Platform
 
 > **Authentic Handloom & Royal Silk Sarees Atelier — Hyderabad, India**  
-> Official Domain: [ravinasarees.in](https://ravinasarees.in)
+> Production domain: configured through `NEXT_PUBLIC_SITE_URL`
 
 ---
 
@@ -40,7 +40,7 @@
   * Related Sarees & Recently Viewed tracker
 
 ### 💳 2. Shopping Bag & Razorpay Checkout Flow
-* **Slide-over Cart Drawer:** Instant bag updates, free shipping progress bar (Target ₹5,000), promo voucher validation (`RAVINA10`, `BRIDAL2026`, `FIRSTBUY`, `FESTIVE500`).
+* **Slide-over Cart Drawer:** Instant bag updates, free shipping progress bar (Target ₹5,000), promo voucher validation (`RAVEENA10`, `BRIDAL2026`, `FIRSTBUY`, `FESTIVE500`).
 * **Luxury Bridal Gift Box:** Optional velvet packaging and custom calligraphy greeting note (+₹150).
 * **Multi-step Checkout:**
   * Contact & Saved Delivery Address selector / New Address form with Indian state validation
@@ -79,7 +79,7 @@
 
 ```bash
 # 1. Navigate to the project directory
-cd "C:\Users\durga\.gemini\antigravity-ide\scratch\ravina-sarees"
+cd "C:\Users\durga\.gemini\antigravity-ide\scratch\raveena-sarees"
 
 # 2. Run the Next.js development server
 npm run dev
@@ -103,4 +103,4 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 ---
 
-*Handcrafted for Ravina Sarees • Jubilee Hills, Hyderabad, India.*
+*Handcrafted for Raveena Sarees • Jubilee Hills, Hyderabad, India.*

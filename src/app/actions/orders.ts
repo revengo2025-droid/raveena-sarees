@@ -1,11 +1,16 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/admin";
 import { createServerClient, createAdminClient } from "@/lib/supabase";
 import { checkoutSchema, razorpayVerificationSchema, type CheckoutInput } from "@/lib/validations";
-import { createRazorpayOrder, verifyRazorpaySignature } from "@/lib/services/payment/razorpay";
+import { PRICING } from "@/lib/pricing";
+import { createRazorpayOrder, verifyRazorpaySignature, fetchRazorpayOrder, isRazorpayLive } from "@/lib/services/payment/razorpay";
 import { getEmailService } from "@/lib/services/email";
 import { getShippingService } from "@/lib/services/shipping";
-import { INITIAL_PRODUCTS, INITIAL_COUPONS } from "@/lib/mockData";
+import { INITIAL_PRODUCTS, INITIAL_COUPONS as STARTER_COUPONS } from "@/lib/mockData";
+
+// Bundled sample coupons are for local development only.
+const INITIAL_COUPONS = process.env.NODE_ENV === "production" ? [] : STARTER_COUPONS;
 import { revalidatePath } from "next/cache";
 
 export async function createOrderAction(values: CheckoutInput) {
@@ -148,18 +153,31 @@ export async function createOrderAction(values: CheckoutInput) {
     const shippingFee = shippingService.calculateShippingFee(shippingAddress.pincode, calculatedSubtotal);
 
     // 5. Final total
-    const giftWrapFee = giftWrap ? 250 : 0;
+    const giftWrapFee = giftWrap ? PRICING.giftWrapFee : 0;
     const finalTotal = Math.max(0, calculatedSubtotal - discountAmount + shippingFee + giftWrapFee);
 
     // 6. Generate unique order number
-    const randomPart = Math.floor(1000 + Math.random() * 9000);
-    const orderNumber = `RAV-${new Date().getFullYear()}-${randomPart}`;
+    const randomPart = Math.floor(100000 + Math.random() * 900000);
+    const orderNumber = `RVN-${new Date().getFullYear()}-${randomPart}`;
 
     // 7. Handle Payment Provider (Razorpay)
+    if (!user) {
+      return { success: false, error: "Please sign in to place your order." };
+    }
+    const orderEmail = user.email || customerEmail;
+
     let razorpayOrderId: string | undefined;
     let razorpayKeyId: string | undefined;
 
     const isOnlinePayment = ["razorpay", "card", "upi", "netbanking"].includes(paymentMethod);
+
+    if (isOnlinePayment && !isRazorpayLive && process.env.NODE_ENV === "production") {
+      console.error("[order] online payment requested but Razorpay is not configured");
+      return {
+        success: false,
+        error: "Online payment is temporarily unavailable. Please choose Cash on Delivery or try again later.",
+      };
+    }
 
     if (isOnlinePayment) {
       const razorpayOrder = await createRazorpayOrder({
@@ -167,7 +185,7 @@ export async function createOrderAction(values: CheckoutInput) {
         orderNumber,
         receipt: orderNumber,
         notes: {
-          customerEmail,
+          customerEmail: orderEmail,
           customerPhone,
           orderNumber,
         },
@@ -183,9 +201,9 @@ export async function createOrderAction(values: CheckoutInput) {
         .from("orders")
         .insert({
           order_number: orderNumber,
-          user_id: user?.id || null,
+          user_id: user.id,
           customer_name: customerName,
-          customer_email: customerEmail,
+          customer_email: orderEmail,
           customer_phone: customerPhone,
           shipping_address: shippingAddress as any,
           billing_address: (billingAddress || shippingAddress) as any,
@@ -204,7 +222,15 @@ export async function createOrderAction(values: CheckoutInput) {
         .select()
         .single();
 
-      if (orderData?.id) {
+      if (orderError || !orderData?.id) {
+        console.error("[order] insert failed:", orderError?.message);
+        return {
+          success: false,
+          error: "We could not save your order. You have not been charged. Please try again.",
+        };
+      }
+
+      {
         createdOrderId = orderData.id;
 
         // Insert items
@@ -219,7 +245,15 @@ export async function createOrderAction(values: CheckoutInput) {
           image_url: item.imageUrl || null,
         }));
 
-        await adminClient.from("order_items").insert(itemRows);
+        const { error: itemsError } = await adminClient.from("order_items").insert(itemRows);
+        if (itemsError) {
+          console.error("[order] items insert failed:", itemsError.message);
+          await adminClient.from("orders").delete().eq("id", createdOrderId);
+          return {
+            success: false,
+            error: "We could not save your order. You have not been charged. Please try again.",
+          };
+        }
 
         // Record status history
         await adminClient.from("order_status_history").insert({
@@ -253,7 +287,11 @@ export async function createOrderAction(values: CheckoutInput) {
         }
       }
     } catch (dbErr) {
-      console.error("Database order insertion error:", dbErr);
+      console.error("[order] database error:", dbErr);
+      return {
+        success: false,
+        error: "We could not save your order. You have not been charged. Please try again.",
+      };
     }
 
     // 9. If Cash on Delivery, send immediate confirmation email
@@ -262,10 +300,10 @@ export async function createOrderAction(values: CheckoutInput) {
       await emailService.sendOrderConfirmation({
         order_number: orderNumber,
         customer_name: customerName,
-        customer_email: customerEmail,
+        customer_email: orderEmail,
         total_amount: finalTotal,
         payment_status: "Pending (Cash On Delivery)",
-        shipping_address: `${shippingAddress.streetAddress}, ${shippingAddress.city}, ${shippingAddress.state} - ${shippingAddress.pincode}`,
+        shipping_address: `${shippingAddress.houseNumber}, ${shippingAddress.streetAddress}, ${shippingAddress.locality}, ${shippingAddress.city}, ${shippingAddress.state} - ${shippingAddress.pincode}`,
       });
     }
 
@@ -284,7 +322,7 @@ export async function createOrderAction(values: CheckoutInput) {
         razorpayOrderId,
         razorpayKeyId,
         customerName,
-        customerEmail,
+        customerEmail: orderEmail,
         customerPhone,
       },
     };
@@ -309,6 +347,24 @@ export async function verifyPaymentAction(values: unknown) {
     }
 
     const adminClient = createAdminClient();
+
+    // Bind the verified Razorpay order to THIS order number and amount, so a valid
+    // payment for one order can never mark a different (costlier) order as paid.
+    if (isRazorpayLive) {
+      const [rzpOrder, { data: target }] = await Promise.all([
+        fetchRazorpayOrder(razorpayOrderId),
+        adminClient.from("orders").select("total_amount").eq("order_number", orderNumber).maybeSingle(),
+      ]);
+      if (
+        !rzpOrder ||
+        !target ||
+        rzpOrder.receipt !== orderNumber ||
+        rzpOrder.amount !== Math.round(Number(target.total_amount) * 100)
+      ) {
+        console.warn(`[security] Payment/order mismatch for ${orderNumber}`);
+        return { success: false, error: "Payment could not be matched to this order." };
+      }
+    }
 
     // Update order status in Supabase
     const { data: order, error } = await adminClient
@@ -420,6 +476,8 @@ export async function getOrderByNumberAction(orderNumber: string) {
 }
 
 export async function getAllOrdersAdminAction() {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
   try {
     const adminClient = createAdminClient();
     const { data: orders, error } = await adminClient
@@ -437,12 +495,22 @@ export async function getAllOrdersAdminAction() {
   }
 }
 
+const ORDER_STATUSES = [
+  "pending", "confirmed", "processing", "packed", "shipped", "out_for_delivery", "delivered",
+  "cancelled", "return_requested", "returned", "refund_processing", "refunded",
+];
+
 export async function updateOrderStatusAction(
   orderId: string,
   newStatus: string,
   trackingNumber?: string,
-  notes?: string
+  notes?: string,
+  courierPartner?: string
 ) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
+  if (!ORDER_STATUSES.includes(newStatus)) return { success: false, error: "Invalid order status." };
+  if (!/^[0-9a-f-]{36}$/i.test(orderId)) return { success: false, error: "Invalid order." };
   try {
     const adminClient = createAdminClient();
 
@@ -459,9 +527,13 @@ export async function updateOrderStatusAction(
       updated_at: new Date().toISOString(),
     };
 
+    const courier = (courierPartner || currentOrder?.courier_partner || "").trim();
+    if (courierPartner) updatePayload.courier_partner = courier.slice(0, 100);
     if (trackingNumber) {
-      updatePayload.tracking_number = trackingNumber;
-      updatePayload.tracking_url = `https://www.bluedart.com/tracking?trackid=${trackingNumber}`;
+      updatePayload.tracking_number = trackingNumber.trim().slice(0, 100);
+      updatePayload.tracking_url = /bluedart/i.test(courier)
+        ? `https://www.bluedart.com/tracking?trackid=${encodeURIComponent(trackingNumber.trim())}`
+        : null;
     }
 
     const { error } = await adminClient.from("orders").update(updatePayload).eq("id", orderId);
@@ -475,15 +547,17 @@ export async function updateOrderStatusAction(
       notes: notes || `Status changed from ${previousStatus} to ${newStatus}`,
     });
 
+    console.info(`[order-status] ${orderId} ${previousStatus} -> ${newStatus} by=${auth.userId}`);
+
     // Notify customer if dispatched
     if (newStatus === "shipped" && currentOrder) {
       const emailService = getEmailService();
       await emailService.sendShippingNotification({
         customer_email: currentOrder.customer_email,
         order_number: currentOrder.order_number,
-        courier_partner: currentOrder.courier_partner || "BlueDart Express",
+        courier_partner: courier || "Courier",
         tracking_number: trackingNumber,
-        tracking_url: trackingNumber ? `https://www.bluedart.com/tracking?trackid=${trackingNumber}` : null,
+        tracking_url: updatePayload.tracking_url ?? null,
       });
     }
 

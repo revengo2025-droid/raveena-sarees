@@ -31,7 +31,12 @@ export async function POST(req: NextRequest) {
           .eq("order_number", orderNumber)
           .single();
 
-        if (order && order.payment_status !== "paid") {
+        const amountMatches =
+          order && Number(paymentEntity?.amount) === Math.round(Number(order.total_amount) * 100);
+        if (order && !amountMatches) {
+          console.warn(`[security] Webhook amount mismatch for ${orderNumber}`);
+        }
+        if (order && amountMatches && order.payment_status !== "paid") {
           await adminClient
             .from("orders")
             .update({

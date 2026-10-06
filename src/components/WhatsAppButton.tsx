@@ -1,79 +1,42 @@
 "use client";
 
-import React, { useState } from "react";
-import { MessageCircle, X, Send } from "lucide-react";
+import React from "react";
+import { usePathname } from "next/navigation";
+import { SITE } from "@/lib/site";
 
+/** Official WhatsApp glyph (Simple Icons, CC0). */
+export function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true" focusable="false">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+  );
+}
+
+/**
+ * Customer-facing "Chat with us" button. Opens a plain WhatsApp conversation with the store.
+ * (Internal order notifications are sent server-side and are never exposed here.)
+ */
 export const WhatsAppButton: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [message, setMessage] = useState("Namaste Ravina Sarees, I would like personalized assistance with choosing a saree.");
+  const pathname = usePathname() || "";
+  // Keep the checkout flow clear of floating elements
+  if (pathname.startsWith("/checkout")) return null;
 
-  const whatsappNumber = "917780756009"; // Official WhatsApp Concierge
-
-  const handleSend = () => {
-    const encoded = encodeURIComponent(message);
-    window.open(`https://wa.me/${whatsappNumber}?text=${encoded}`, "_blank");
-    setIsOpen(false);
-  };
+  const text = encodeURIComponent("Namaste Raveena Sarees, I would like help choosing a saree.");
+  const href = `https://wa.me/${SITE.whatsappNumber}?text=${text}`;
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 font-sans">
-      {/* Popover Chat Prompt */}
-      {isOpen && (
-        <div className="absolute bottom-16 right-0 w-80 bg-white border border-brand-border rounded-2xl shadow-luxury p-4 text-brand-text animate-scaleUp">
-          <div className="flex items-center justify-between pb-3 border-b border-brand-border">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-xs">
-                RS
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-brand-text font-poppins">Ravina Saree Concierge</p>
-                <span className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
-                  ● Online | Open 24×7
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-neutral-400 hover:text-brand-text p-1 rounded-full hover:bg-neutral-100 transition-colors"
-              aria-label="Close chat"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="py-3">
-            <p className="text-xs text-neutral-600 bg-brand-ivory p-2.5 rounded-xl border border-brand-border leading-relaxed font-light">
-              Namaste! Looking for bridal styling, pure zari certification, or custom handloom order?
-              Chat with our drape stylists directly on WhatsApp.
-            </p>
-            <textarea
-              rows={2}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="mt-2.5 w-full bg-white border border-brand-border rounded-xl p-2.5 text-xs text-brand-text placeholder-neutral-400 focus:outline-none focus:border-brand-gold resize-none shadow-sm"
-            />
-          </div>
-
-          <button
-            onClick={handleSend}
-            className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md font-poppins"
-          >
-            <Send className="w-3.5 h-3.5" />
-            Start WhatsApp Chat
-          </button>
-        </div>
-      )}
-
-      {/* Floating Trigger */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="group relative flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-full shadow-luxury hover:scale-105 transition-all duration-300 border-2 border-white"
-        aria-label="WhatsApp Stylist Chat"
-      >
-        <MessageCircle className="w-7 h-7" />
-        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-brand-gold rounded-full border-2 border-white animate-ping" />
-        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-brand-gold rounded-full border-2 border-white" />
-      </button>
-    </div>
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Chat with Raveena Sarees on WhatsApp"
+      title="Chat on WhatsApp"
+      // Sits above the mobile bottom bar (56px) + safe area; normal corner position on desktop
+      className="fixed right-4 bottom-[calc(72px+env(safe-area-inset-bottom))] lg:right-6 lg:bottom-6 z-40 flex items-center gap-2 h-12 w-12 lg:w-auto lg:pl-4 lg:pr-5 justify-center rounded-full bg-[#25D366] hover:bg-[#1EBE5A] text-white shadow-luxury hover:scale-105 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#25D366] motion-reduce:transition-none"
+    >
+      <WhatsAppIcon className="w-7 h-7 shrink-0" />
+      <span className="hidden lg:inline text-sm font-semibold font-poppins">Chat with us</span>
+    </a>
   );
 };

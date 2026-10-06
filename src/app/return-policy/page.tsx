@@ -1,66 +1,94 @@
-import React from "react";
-import { RotateCcw, CheckCircle } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { LegalPage, Section } from "@/components/legal/LegalPage";
+import { SITE } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: "Return Policy",
+  description: `How to return a saree to ${SITE.name}: ${SITE.returnWindowDays}-day window, eligibility, process and what is not returnable.`,
+  alternates: { canonical: "/return-policy" },
+};
 
 export default function ReturnPolicyPage() {
+  const d = SITE.returnWindowDays;
   return (
-    <div className="min-h-screen bg-brand-white text-brand-text py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto font-sans space-y-8">
-      <div className="border-b border-brand-border pb-6">
-        <span className="text-xs font-semibold text-brand-gold uppercase tracking-[0.3em] block mb-1 font-poppins">
-          Peace of Mind
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-serif text-brand-text font-normal">
-          7-Day Return & Exchange Policy
-        </h1>
-        <p className="text-xs text-neutral-500 mt-1 font-light">
-          Last updated: 2026 • Ravina Sarees Handlooms India
+    <LegalPage
+      title="Return Policy"
+      intro={`We want you to be happy with your saree. If something is not right, you can ask for a return within ${d} days of delivery, subject to the conditions below.`}
+    >
+      <Section title="Return window">
+        <p>
+          You can request a return within <strong>{d} days from the date your order is delivered</strong>. Requests made
+          after this period cannot be accepted.
         </p>
-      </div>
+      </Section>
 
-      <div className="space-y-6 text-xs sm:text-sm text-neutral-700 leading-relaxed font-light">
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold flex items-center gap-2">
-            <RotateCcw className="w-4 h-4 text-brand-gold" /> 1. Doorstep 7-Day Returns & Exchanges
-          </h2>
-          <p>
-            At Ravina Sarees, your absolute delight is our paramount commitment. If the drape, shade, or weave
-            does not completely enchant you, you may request an exchange or full refund within <strong>7 days</strong> of
-            receiving your shipment.
-          </p>
-        </section>
+      <Section title="When a return is accepted">
+        <ul>
+          <li>The saree or blouse piece arrived <strong>damaged or defective</strong>.</li>
+          <li>You received the <strong>wrong item</strong> (different saree, colour or design from your order).</li>
+          <li>The product is materially different from its description on our website.</li>
+        </ul>
+        <p>
+          Sarees are handcrafted or hand-finished, so small variations in weave, motif placement and zari are natural and
+          are not defects. Colours can also look slightly different on different screens.
+        </p>
+      </Section>
 
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold">
-            2. Condition for Return & Silk Mark Integrity
-          </h2>
-          <p>To qualify for a hassle-free return or exchange:</p>
-          <ul className="list-disc pl-5 space-y-1 text-neutral-600">
-            <li>The saree must remain unworn, unwashed, and in its pristine original folding.</li>
-            <li>The official <strong>Silk Mark India</strong> tag and brand security tag must remain intact and uncut.</li>
-            <li>The unstitched blouse piece must not have been detached, cut, or tailored.</li>
-            <li>Original gold foil luxury packaging and invoices must accompany the returned parcel.</li>
-          </ul>
-        </section>
+      <Section title="Condition of the item">
+        <p>To be eligible, the item must be:</p>
+        <ul>
+          <li>unused, unwashed and unaltered (no fall/pico, no blouse stitching, no perfume or stains);</li>
+          <li>in its original packaging with all tags and the blouse piece included; and</li>
+          <li>accompanied by your order number.</li>
+        </ul>
+        <p>
+          Products marked as non-returnable on their product page are not eligible. Items that have been worn, washed or
+          altered cannot be returned.
+        </p>
+      </Section>
 
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-emerald-600" /> 3. Complimentary Doorstep Reverse Pickup
-          </h2>
-          <p>
-            Once you submit a return request via your dashboard or WhatsApp concierge (<a href="https://wa.me/917780756009" className="text-brand-maroon hover:underline font-medium">+91 77807 56009</a>),
-            we arrange a complimentary BlueDart reverse courier pickup from your address. You do not have to pay any return shipping charges.
-          </p>
-        </section>
+      <Section title="How to request a return">
+        <ol>
+          <li>
+            Email <a href={`mailto:${SITE.email}`}>{SITE.email}</a> or message us on WhatsApp at{" "}
+            <a href={`https://wa.me/${SITE.whatsappNumber}`}>{SITE.phoneDisplay}</a> within {d} days of delivery.
+          </li>
+          <li>
+            Share your <strong>order number</strong>, the reason, and clear <strong>photos</strong> of the item. For damaged or
+            wrong items, an unboxing video helps us resolve it faster.
+          </li>
+          <li>We review your request and reply by email or WhatsApp to confirm whether it is approved.</li>
+          <li>If approved, we will tell you how to send the item back (or arrange the pickup).</li>
+          <li>
+            After we receive and inspect the item, we process your refund as described in the{" "}
+            <Link href="/refund-policy">Refund Policy</Link>.
+          </li>
+        </ol>
+        <p>Please do not send an item back before your request is approved.</p>
+      </Section>
 
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold">
-            4. Refund Processing
-          </h2>
-          <p>
-            Upon receipt of the returned saree at our atelier, our master drapers inspect the piece.
-            Refunds are initiated within 24 hours to your original payment method (Bank Account, UPI, or Credit Card).
-          </p>
-        </section>
-      </div>
-    </div>
+      <Section title="Return shipping">
+        <p>
+          If the return is because of our error (damaged, defective or wrong item), we will arrange the return at no cost to you.
+          For any other approved return, we will explain the return shipping arrangement, and any charge that applies, when we
+          approve your request.
+        </p>
+      </Section>
+
+      <Section title="Exchanges">
+        <p>
+          We do not run an automatic exchange process. If you would like a different saree, request a return and place a new
+          order, or contact us and we will see what we can do depending on availability.
+        </p>
+      </Section>
+
+      <Section title="Related policies">
+        <p>
+          <Link href="/refund-policy">Refund Policy</Link> · <Link href="/cancellation-policy">Cancellation Policy</Link> ·{" "}
+          <Link href="/shipping-policy">Shipping Policy</Link>
+        </p>
+      </Section>
+    </LegalPage>
   );
 }

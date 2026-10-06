@@ -490,12 +490,12 @@ function ShopContent() {
             </div>
           ) : (
             <div
-              className={`grid grid-cols-1 sm:grid-cols-2 ${
+              className={`grid grid-cols-2 ${
                 columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"
-              } gap-6`}
+              } gap-3 sm:gap-6`}
             >
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {filteredProducts.map((product, i) => (
+                <ProductCard key={product.id} product={product} priority={i < 4} />
               ))}
             </div>
           )}
@@ -569,7 +569,7 @@ function ShopContent() {
 
 export default function ShopPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-brand-white text-brand-gold flex items-center justify-center font-serif text-lg">Loading Ravina Royal Catalog...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-brand-white text-brand-gold flex items-center justify-center font-serif text-lg">Loading Raveena Royal Catalog...</div>}>
       <ShopContent />
     </Suspense>
   );

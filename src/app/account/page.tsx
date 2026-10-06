@@ -50,11 +50,18 @@ export default function AccountPage() {
       {/* 1. Profile Header */}
       <div className="bg-brand-ivory border border-brand-border rounded-3xl p-6 sm:p-8 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-card">
         <div className="flex items-center gap-4">
-          <img
-            src={user.avatarUrl || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80"}
-            alt={user.fullName}
-            className="w-16 h-16 rounded-full object-cover border-2 border-brand-gold shadow-sm"
-          />
+          <div
+            aria-hidden="true"
+            className="w-16 h-16 rounded-full bg-brand-gold text-white flex items-center justify-center text-xl font-serif font-semibold border-2 border-brand-gold shadow-sm"
+          >
+            {user.fullName
+              .split(" ")
+              .map((n) => n[0])
+              .filter(Boolean)
+              .slice(0, 2)
+              .join("")
+              .toUpperCase()}
+          </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-serif text-brand-text font-semibold">

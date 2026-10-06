@@ -2,11 +2,11 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   MapPin,
   Phone,
   Mail,
-  Clock,
   ArrowRight,
   CheckCircle,
   Instagram,
@@ -14,6 +14,9 @@ import {
   Youtube,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { SITE } from "@/lib/site";
+import { PRICING } from "@/lib/pricing";
+import { formatINR } from "@/lib/utils";
 
 export const Footer: React.FC = () => {
   const { categories, showToast } = useApp();
@@ -37,7 +40,7 @@ export const Footer: React.FC = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="text-center md:text-left">
               <h3 className="text-2xl sm:text-3xl font-heading font-semibold text-brand-text">
-                Join the Ravina Family
+                Join the Raveena Family
               </h3>
               <p className="text-sm text-brand-textSecondary mt-2 font-body max-w-md">
                 Get exclusive access to new arrivals, special offers, and a 15% welcome discount on your first order.
@@ -78,27 +81,29 @@ export const Footer: React.FC = () => {
           {/* Brand Column */}
           <div className="space-y-5">
             <Link href="/" className="inline-block group">
-              <img
-                src="/images/logo/raveena-brand-logo.jpg"
+              <Image
+                src="/images/logo/raveena-logo.jpg"
                 alt="Raveena Sarees"
-                className="h-16 w-auto object-contain rounded-xl shadow-md border border-brand-gold/30 group-hover:opacity-95 transition-opacity"
+                width={112}
+                height={112}
+                className="h-28 w-28 object-cover rounded-xl shadow-md border border-brand-gold/30 group-hover:opacity-95 transition-opacity"
               />
             </Link>
 
             <p className="text-sm leading-relaxed text-neutral-400 font-body">
-              Ravina Sarees brings you authentic handloom silk sarees — Kanjivaram, Banarasi, and bridal masterpieces crafted by master artisans with pure gold zari and certified Silk Mark quality.
+              Raveena Sarees brings you a curated range of sarees for weddings, festivals and everyday elegance, delivered to your door across India.
             </p>
 
             {/* Contact Details */}
             <div className="space-y-3 text-sm">
               <p className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-brand-gold shrink-0 mt-0.5" />
-                <span>Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana – 504224, India</span>
+                <span>{SITE.address}</span>
               </p>
               <p className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-brand-gold shrink-0" />
-                <a href="mailto:ravieenasarees@gmail.com" className="hover:text-brand-gold transition-colors">
-                  ravieenasarees@gmail.com
+                <a href="mailto:raveenasarees22@gmail.com" className="hover:text-brand-gold transition-colors">
+                  raveenasarees22@gmail.com
                 </a>
               </p>
               <p className="flex items-center gap-2.5">
@@ -107,42 +112,28 @@ export const Footer: React.FC = () => {
                   +91 77807 56009
                 </a>
               </p>
-              <p className="flex items-center gap-2.5">
-                <Clock className="w-4 h-4 text-brand-gold shrink-0" />
-                <span>Open 24×7 (Always Open)</span>
-              </p>
             </div>
 
-            {/* Social Icons */}
-            <div className="flex items-center gap-3 pt-2">
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-brand-gold flex items-center justify-center text-neutral-400 hover:text-white transition-all"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-brand-gold flex items-center justify-center text-neutral-400 hover:text-white transition-all"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noreferrer"
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-brand-gold flex items-center justify-center text-neutral-400 hover:text-white transition-all"
-                aria-label="YouTube"
-              >
-                <Youtube className="w-4 h-4" />
-              </a>
-            </div>
+            {/* Social links: shown only when the real profile URLs are configured */}
+            {(process.env.NEXT_PUBLIC_INSTAGRAM_URL || process.env.NEXT_PUBLIC_FACEBOOK_URL || process.env.NEXT_PUBLIC_YOUTUBE_URL) && (
+              <div className="flex items-center gap-3 pt-2">
+                {process.env.NEXT_PUBLIC_INSTAGRAM_URL && (
+                  <a href={process.env.NEXT_PUBLIC_INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full bg-white/10 hover:bg-brand-gold flex items-center justify-center text-neutral-300 hover:text-white transition-all" aria-label="Instagram">
+                    <Instagram className="w-4 h-4" />
+                  </a>
+                )}
+                {process.env.NEXT_PUBLIC_FACEBOOK_URL && (
+                  <a href={process.env.NEXT_PUBLIC_FACEBOOK_URL} target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full bg-white/10 hover:bg-brand-gold flex items-center justify-center text-neutral-300 hover:text-white transition-all" aria-label="Facebook">
+                    <Facebook className="w-4 h-4" />
+                  </a>
+                )}
+                {process.env.NEXT_PUBLIC_YOUTUBE_URL && (
+                  <a href={process.env.NEXT_PUBLIC_YOUTUBE_URL} target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full bg-white/10 hover:bg-brand-gold flex items-center justify-center text-neutral-300 hover:text-white transition-all" aria-label="YouTube">
+                    <Youtube className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Quick Links */}
@@ -205,35 +196,52 @@ export const Footer: React.FC = () => {
                   FAQ
                 </Link>
               </li>
+              <li>
+                <Link href="/contact" className="hover:text-brand-gold transition-colors">
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link href="/refund-policy" className="hover:text-brand-gold transition-colors">
+                  Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/cancellation-policy" className="hover:text-brand-gold transition-colors">
+                  Cancellation Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/cookie-policy" className="hover:text-brand-gold transition-colors">
+                  Cookie Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/grievance-redressal" className="hover:text-brand-gold transition-colors">
+                  Grievance Redressal
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Why Ravina Sarees */}
+          {/* Why Raveena Sarees */}
           <div>
             <h4 className="text-xs font-button font-semibold text-white uppercase tracking-widest mb-5">
-              Why Choose Us
+              Shopping With Us
             </h4>
             <ul className="space-y-3.5 text-sm">
-              <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-brand-gold shrink-0 mt-0.5" />
-                <span>Silk Mark Certified Authentic Handlooms</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-brand-gold shrink-0 mt-0.5" />
-                <span>Pure Gold Zari with Tested Purity</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-brand-gold shrink-0 mt-0.5" />
-                <span>Free Insured Pan-India Delivery</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-brand-gold shrink-0 mt-0.5" />
-                <span>7-Day Easy Returns & Exchanges</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-brand-gold shrink-0 mt-0.5" />
-                <span>24×7 Customer Support</span>
-              </li>
+              {[
+                "Secure online payments through Razorpay",
+                `Free shipping on orders of ${formatINR(PRICING.freeShippingThreshold)} or more`,
+                `${SITE.returnWindowDays}-day return window from delivery`,
+                "Track your order from your account",
+                "Support by email and WhatsApp",
+              ].map((text) => (
+                <li key={text} className="flex items-start gap-2.5">
+                  <CheckCircle className="w-4 h-4 text-brand-gold shrink-0 mt-0.5" />
+                  <span>{text}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -243,7 +251,7 @@ export const Footer: React.FC = () => {
       <div className="border-t border-white/10 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
           <p className="text-neutral-500 text-center md:text-left text-xs">
-            © {new Date().getFullYear()} Ravina Sarees. All Rights Reserved. Silk Mark India Certified.
+            © {new Date().getFullYear()} {SITE.legalName || SITE.name}. All rights reserved.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-2.5 text-[11px] uppercase tracking-wider text-neutral-500">

@@ -44,10 +44,21 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { ORDER_STATUS_LABELS, orderStatusLabel } from "@/lib/orders/mapper";
+import { updateOrderStatusAction } from "@/app/actions/orders";
 import { formatINR, formatDate } from "@/lib/utils";
 
 export default function AdminDashboardPage() {
-  const { products, orders, categories, coupons, reviews, updateOrderStatus } = useApp();
+  const { products, orders, categories, coupons, reviews, refreshOrders, showToast } = useApp();
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    const res = await updateOrderStatusAction(orderId, status);
+    if (!res.success) {
+      showToast(res.error || "Could not update the order.", "error");
+      return;
+    }
+    await refreshOrders();
+    showToast("Order status updated", "success");
+  };
   const [timeRange, setTimeRange] = useState<"today" | "week" | "month" | "all">("all");
 
   // ═══ CRM ANALYTICS ═══
@@ -666,21 +677,18 @@ export default function AdminDashboardPage() {
                           ? "bg-red-950/60 text-red-300 border border-red-800"
                           : "bg-amber-950/60 text-amber-300 border border-amber-800"
                       }`}>
-                        {ord.orderStatus.replace("_", " ")}
+                        {orderStatusLabel(ord.orderStatus)}
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
                       <select
                         value={ord.orderStatus}
-                        onChange={(e) => updateOrderStatus(ord.id, e.target.value as any)}
+                        onChange={(e) => updateOrderStatus(ord.id, e.target.value)}
                         className="bg-[#1A1A1A] border border-[#333] text-xs text-white rounded-lg px-2 py-1 focus:outline-none focus:border-[#D4AF37]"
                       >
-                        <option value="confirmed">Confirmed</option>
-                        <option value="processing">Processing</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="out_for_delivery">Out for Delivery</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
+                        {Object.entries(ORDER_STATUS_LABELS).map(([value, text]) => (
+                          <option key={value} value={value}>{text}</option>
+                        ))}
                       </select>
                     </td>
                   </tr>

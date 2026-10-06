@@ -1,53 +1,91 @@
-import React from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { LegalPage, Section } from "@/components/legal/LegalPage";
+import { SITE } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: `How ${SITE.name} collects, uses, shares and protects your personal information, and the choices you have.`,
+  alternates: { canonical: "/privacy-policy" },
+};
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-brand-white text-brand-text py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto font-sans space-y-8">
-      <div className="border-b border-brand-border pb-6">
-        <span className="text-xs font-semibold text-brand-gold uppercase tracking-[0.3em] block mb-1 font-poppins">
-          Data Protection
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-serif text-brand-text font-normal">
-          Privacy Policy & Data Security
-        </h1>
-        <p className="text-xs text-neutral-500 mt-1 font-light">
-          Effective Date: 2026 • Ravina Sarees India
+    <LegalPage
+      title="Privacy Policy"
+      intro={`${SITE.legalName || SITE.name} ("we", "us") respects your privacy. This policy explains what personal information we collect when you use this website, why we collect it, who we share it with, and the choices you have.`}
+    >
+      <Section title="Information we collect">
+        <ul>
+          <li><strong>Account details:</strong> your name, email address, mobile number and password (stored securely by our authentication provider; we cannot read your password).</li>
+          <li><strong>Delivery details:</strong> the addresses you enter or save, and your address type and default-address choice.</li>
+          <li><strong>Order information:</strong> items bought, amounts, order and payment status, delivery tracking details, and any returns, refunds or support requests.</li>
+          <li><strong>Payment:</strong> online payments are handled by Razorpay. We do not see or store your card, UPI PIN or bank login details. We receive a payment reference and the payment status.</li>
+          <li><strong>Location (only if you choose):</strong> if you tap &ldquo;Use My Current Location&rdquo; at checkout, your browser asks permission. We use the coordinates once to suggest an address that you can edit, and we do not store them.</li>
+          <li><strong>Messages:</strong> anything you send us through the contact form, email or WhatsApp.</li>
+          <li><strong>Device storage:</strong> your bag, wishlist and recently viewed items are kept in your browser (see our <Link href="/cookie-policy">Cookie Policy</Link>).</li>
+        </ul>
+      </Section>
+
+      <Section title="How we use your information">
+        <ul>
+          <li>To create your account, process and deliver your orders, and take payment.</li>
+          <li>To send order confirmations, shipping updates and responses to your queries.</li>
+          <li>To handle returns, refunds, cancellations and complaints.</li>
+          <li>To keep the website secure and prevent fraud or misuse.</li>
+          <li>To meet legal, tax and accounting obligations.</li>
+        </ul>
+        <p>We do not sell your personal information.</p>
+      </Section>
+
+      <Section title="Who we share it with">
+        <p>We share only what is needed with service providers who help us run the store:</p>
+        <ul>
+          <li><strong>Supabase</strong> hosts our database and sign-in.</li>
+          <li><strong>Razorpay</strong> processes online payments.</li>
+          <li><strong>Courier partners</strong> receive your name, address and phone number to deliver your order.</li>
+          <li><strong>Email and messaging providers</strong> send order emails and internal order notifications.</li>
+          <li><strong>OpenStreetMap (Nominatim)</strong> and the <strong>India Post PIN code service</strong> receive a coordinate or PIN code when you use the location or PIN lookup helpers.</li>
+        </ul>
+        <p>We may also disclose information where the law requires it or to protect our rights and customers.</p>
+      </Section>
+
+      <Section title="How long we keep it">
+        <p>
+          We keep account and order records for as long as your account is active and as long as needed for returns, disputes,
+          accounting and legal requirements. You can ask us to delete your account; we may need to retain some order records
+          where the law requires.
         </p>
-      </div>
+      </Section>
 
-      <div className="space-y-6 text-xs sm:text-sm text-neutral-700 leading-relaxed font-light">
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold">1. Information Collection</h2>
-          <p>
-            When you browse Ravina Sarees or place an order, we collect essential information required to fulfill
-            your saree delivery: name, shipping address, mobile number for courier updates, and email address for tax invoices.
-          </p>
-        </section>
+      <Section title="Security">
+        <p>
+          We use encrypted connections, restrict access to customer data to authorised staff, and keep payment details with
+          Razorpay rather than on our servers. No system is completely secure, so please keep your password private.
+        </p>
+      </Section>
 
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold">2. Payment Security (Razorpay)</h2>
-          <p>
-            We do not store credit card numbers, debit card PINs, or UPI passcodes on our servers. All transactions
-            are processed through PCI-DSS Level 1 compliant gateways (Razorpay) with 256-bit SSL encryption.
-          </p>
-        </section>
+      <Section title="Your choices and rights">
+        <ul>
+          <li>View and update your name, mobile number and saved addresses from your <Link href="/account">account</Link>.</li>
+          <li>Ask us to access, correct or delete your personal information by emailing <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</li>
+          <li>Withdraw consent for location or marketing messages at any time.</li>
+          <li>Clear your browser storage to remove your bag and wishlist from your device.</li>
+        </ul>
+        <p>
+          You can exercise the rights available to you under applicable Indian law, including the Digital Personal Data
+          Protection Act, 2023, by contacting us. If you are not satisfied with our response, see{" "}
+          <Link href="/grievance-redressal">Grievance Redressal</Link>.
+        </p>
+      </Section>
 
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold">3. Information Sharing</h2>
-          <p>
-            We strictly do not sell, rent, or trade patron contact details with third-party advertisers. Information is
-            shared solely with trusted logistics partners (BlueDart) to facilitate order tracking and doorstep delivery.
-          </p>
-        </section>
+      <Section title="Children">
+        <p>This website is intended for adults. We do not knowingly collect information from children.</p>
+      </Section>
 
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold">4. Patron Rights</h2>
-          <p>
-            You have the right to request deletion of your account and saved delivery addresses at any time by
-            contacting <a href="mailto:ravieenasarees@gmail.com" className="text-brand-maroon hover:underline">ravieenasarees@gmail.com</a>.
-          </p>
-        </section>
-      </div>
-    </div>
+      <Section title="Changes to this policy">
+        <p>We may update this policy from time to time. The &ldquo;Last updated&rdquo; date above shows the latest version.</p>
+      </Section>
+    </LegalPage>
   );
 }

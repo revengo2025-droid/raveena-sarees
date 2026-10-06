@@ -3,17 +3,18 @@
 import React, { useState } from "react";
 import { Save, MapPin, Sparkles, Truck, Globe, Shield, Phone, Mail } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { SITE } from "@/lib/site";
 
 export default function AdminSettingsPage() {
   const { showToast } = useApp();
 
   const [storeName, setStoreName] = useState("Raveena Sarees");
-  const [domain, setDomain] = useState("ravinasarees.in");
+  const [domain, setDomain] = useState(SITE.url.replace(/^https?:\/\//, ""));
   const [showroomAddress, setShowroomAddress] = useState(
     "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana – 504224, India"
   );
   const [conciergePhone, setConciergePhone] = useState("+91 77807 56009");
-  const [conciergeEmail, setConciergeEmail] = useState("ravieenasarees@gmail.com");
+  const [conciergeEmail, setConciergeEmail] = useState<string>(SITE.email);
   const [whatsappNumber, setWhatsappNumber] = useState("+91 77807 56009");
   const [freeShippingThreshold, setFreeShippingThreshold] = useState(2500);
   const [gstRate, setGstRate] = useState(12);

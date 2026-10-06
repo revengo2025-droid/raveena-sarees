@@ -1,225 +1,197 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  Truck,
-  CheckCircle2,
-  Clock,
-  ChevronRight,
-  Printer,
-} from "lucide-react";
+import { CheckCircle2, Clock, ChevronRight, ExternalLink, Loader2, Truck, LifeBuoy } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { formatDate } from "@/lib/utils";
-import { getOrderByNumberAction } from "@/app/actions/orders";
+import { formatDate, formatINR } from "@/lib/utils";
+import { SITE } from "@/lib/site";
+import { getMyOrderAction } from "@/app/actions/my-orders";
+import { orderStatusLabel, PAYMENT_STATUS_LABELS } from "@/lib/orders/mapper";
+import type { Order, OrderStatus } from "@/lib/types";
+
+// The normal journey of an order. Every timestamp shown comes from the real status history.
+const JOURNEY: { status: OrderStatus; title: string; description: string }[] = [
+  { status: "confirmed", title: "Order confirmed", description: "We have received your order." },
+  { status: "processing", title: "Processing", description: "Your saree is being checked and prepared." },
+  { status: "packed", title: "Packed", description: "Packed and ready for the courier." },
+  { status: "shipped", title: "Shipped", description: "Handed over to the courier." },
+  { status: "out_for_delivery", title: "Out for delivery", description: "On its way to your address." },
+  { status: "delivered", title: "Delivered", description: "Delivered to your address." },
+];
+const SIDE_STATES: OrderStatus[] = ["cancelled", "return_requested", "returned", "refund_processing", "refunded"];
 
 export default function OrderTrackingPage() {
   const params = useParams();
   const orderNumber = params?.orderNumber as string;
+  const { user, authReady } = useApp();
 
-  const { orders, getOrderByNumber } = useApp();
-  const contextOrder = getOrderByNumber(orderNumber) || orders.find((o) => o.orderNumber === orderNumber);
-  const [serverOrder, setServerOrder] = useState<any>(null);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [history, setHistory] = useState<{ status: string; at: string }[]>([]);
+  const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "missing">("loading");
 
   useEffect(() => {
-    if (orderNumber) {
-      getOrderByNumberAction(orderNumber).then((res) => {
-        if (res.success && res.data) {
-          setServerOrder(res.data);
-        }
-      });
+    if (!authReady) return;
+    if (!user) {
+      setState("missing");
+      return;
     }
-  }, [orderNumber]);
+    getMyOrderAction(orderNumber).then((res) => {
+      if (res.success) {
+        setOrder(res.data);
+        setHistory(res.history);
+        setTrackingUrl(res.trackingUrl);
+        setState("ready");
+      } else setState("missing");
+    });
+  }, [authReady, user, orderNumber]);
 
-  const rawOrder = serverOrder || contextOrder;
-  const order = rawOrder
-    ? {
-        ...rawOrder,
-        orderNumber: rawOrder.order_number || rawOrder.orderNumber,
-        customerName: rawOrder.customer_name || rawOrder.customerName,
-        customerEmail: rawOrder.customer_email || rawOrder.customerEmail,
-        orderStatus: rawOrder.order_status || rawOrder.orderStatus,
-        trackingNumber: rawOrder.tracking_number || rawOrder.trackingNumber,
-        courierPartner: rawOrder.courier_partner || rawOrder.courierPartner,
-        estimatedDelivery: rawOrder.estimated_delivery || rawOrder.estimatedDelivery || "4 Business Days",
-        createdAt: rawOrder.created_at || rawOrder.createdAt,
-        totalAmount: rawOrder.total_amount || rawOrder.totalAmount,
-        shippingAddress: rawOrder.shipping_address || rawOrder.shippingAddress,
-      }
-    : null;
+  if (state === "loading") {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center text-neutral-500" role="status">
+        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading order…
+      </div>
+    );
+  }
 
-  if (!order) {
+  if (state === "missing" || !order) {
     return (
       <div className="min-h-[60vh] bg-brand-white flex flex-col items-center justify-center p-8 text-center text-brand-text font-sans">
-        <h2 className="text-2xl font-serif mb-2">Order Not Found</h2>
-        <p className="text-xs text-neutral-500 mb-6 font-light">
-          Could not locate tracking information for order number: {orderNumber}
+        <h1 className="text-2xl font-serif mb-2">Order not found</h1>
+        <p className="text-sm text-neutral-500 mb-6 font-light max-w-sm">
+          {user ? "We could not find this order in your account." : "Please sign in to track your order."}
         </p>
         <Link
-          href="/account/orders"
-          className="btn-primary px-6 py-2.5 text-xs rounded-full font-poppins font-semibold shadow-md"
+          href={user ? "/account/orders" : `/auth/login?redirect=${encodeURIComponent(`/account/track/${orderNumber}`)}`}
+          className="btn-primary px-6 min-h-[44px] inline-flex items-center text-xs rounded-full font-poppins font-semibold shadow-md"
         >
-          View All Orders
+          {user ? "View all orders" : "Sign in"}
         </Link>
       </div>
     );
   }
 
-  // 5 Step Timeline logic
-  const steps = [
-    {
-      title: "Order Confirmed & Paid",
-      description: "Payment authenticated via Razorpay. Handloom reservation locked.",
-      date: formatDate(order.createdAt),
-      status: "completed",
-    },
-    {
-      title: "Atelier Quality Inspection",
-      description: "Silk Mark audit, pure zari tension test & bridal box packing at our atelier.",
-      date: "Day 1",
-      status: order.orderStatus !== "confirmed" ? "completed" : "current",
-    },
-    {
-      title: "Dispatched via BlueDart Express",
-      description: `Handed over to BlueDart Air Express. Tracking AWB: ${order.trackingNumber}`,
-      date: "Day 2",
-      status:
-        order.orderStatus === "shipped" ||
-        order.orderStatus === "out_for_delivery" ||
-        order.orderStatus === "delivered"
-          ? "completed"
-          : order.orderStatus === "processing"
-          ? "current"
-          : "upcoming",
-    },
-    {
-      title: "In Transit (Air Cargo Hub)",
-      description: "Dispatched via air courier to destination city sorting hub.",
-      date: "Day 3",
-      status:
-        order.orderStatus === "out_for_delivery" || order.orderStatus === "delivered"
-          ? "completed"
-          : order.orderStatus === "shipped"
-          ? "current"
-          : "upcoming",
-    },
-    {
-      title: "Out for Delivery & Handover",
-      description: `Delivery by ${order.estimatedDelivery} at your doorstep.`,
-      date: order.estimatedDelivery,
-      status:
-        order.orderStatus === "delivered"
-          ? "completed"
-          : order.orderStatus === "out_for_delivery"
-          ? "current"
-          : "upcoming",
-    },
-  ];
+  const when = (status: string) => {
+    const h = [...history].reverse().find((x) => x.status === status);
+    return h ? formatDate(h.at) : "";
+  };
+  const currentIndex = JOURNEY.findIndex((j) => j.status === order.orderStatus);
+  const isSide = SIDE_STATES.includes(order.orderStatus);
+  const awaitingPayment = order.orderStatus === "pending";
+  // For side states (cancelled/returns) show how far it got by looking at history
+  const reachedIndex = isSide
+    ? Math.max(-1, ...history.map((h) => JOURNEY.findIndex((j) => j.status === h.status)))
+    : currentIndex;
+  const a = order.shippingAddress;
 
   return (
-    <div className="min-h-screen bg-brand-white text-brand-text py-10 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto font-sans">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-neutral-500 mb-6 font-poppins">
-        <Link href="/account" className="hover:text-brand-gold">
-          Dashboard
-        </Link>
+    <div className="min-h-screen bg-brand-white text-brand-text py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto font-sans">
+      <div className="flex items-center gap-2 text-xs text-neutral-500 mb-6 font-poppins flex-wrap">
+        <Link href="/account" className="hover:text-brand-gold">Account</Link>
         <ChevronRight className="w-3.5 h-3.5" />
-        <Link href="/account/orders" className="hover:text-brand-gold">
-          Orders
-        </Link>
+        <Link href="/account/orders" className="hover:text-brand-gold">Orders</Link>
         <ChevronRight className="w-3.5 h-3.5" />
         <span className="text-brand-gold font-semibold">{order.orderNumber}</span>
       </div>
 
-      {/* Header Card */}
-      <div className="bg-white border border-brand-border rounded-3xl p-6 sm:p-8 mb-8 space-y-4 shadow-luxury">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-brand-border pb-6">
+      <div className="bg-white border border-brand-border rounded-3xl p-5 sm:p-8 space-y-6 shadow-luxury">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-brand-border pb-6">
           <div>
-            <span className="text-xs uppercase font-bold text-brand-gold tracking-widest block mb-1 font-poppins">
-              Live Shipment Status
-            </span>
-            <h1 className="text-2xl font-serif text-brand-text font-normal">
-              Order #{order.orderNumber}
-            </h1>
-            <p className="text-xs text-neutral-500 mt-1 font-light">
-              Courier: <strong className="text-brand-text font-medium">{order.courierPartner}</strong> • AWB:{" "}
-              <strong className="font-mono text-brand-maroon">{order.trackingNumber}</strong>
+            <h1 className="text-2xl font-serif font-normal">Order {order.orderNumber}</h1>
+            <p className="text-xs text-neutral-500 mt-1">Placed {formatDate(order.createdAt)} · {formatINR(order.totalAmount)}</p>
+            <p className="text-xs text-neutral-600 mt-1">
+              Payment: <strong>{order.paymentMethod === "cod" ? "Cash on delivery" : PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}</strong>
             </p>
           </div>
-
-          <div className="sm:text-right space-y-1">
-            <span className="text-xs text-neutral-500 block font-light">Expected Arrival Date</span>
-            <span className="text-xl font-bold font-serif text-brand-maroon block">
-              {order.estimatedDelivery}
+          <div className="sm:text-right space-y-1.5">
+            <span className="inline-block px-3 py-1 rounded-full text-xs uppercase font-bold bg-brand-ivory text-brand-maroon border border-brand-gold/40 font-poppins">
+              {orderStatusLabel(order.orderStatus)}
             </span>
-            <span className="inline-block px-3 py-0.5 rounded-full text-xs uppercase font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 font-poppins">
-              {order.orderStatus.replace("_", " ").toUpperCase()}
-            </span>
+            {order.estimatedDelivery && (
+              <p className="text-xs text-neutral-600">Expected delivery <strong>{formatDate(order.estimatedDelivery)}</strong></p>
+            )}
           </div>
         </div>
 
-        {/* Tracking Timeline Stepper */}
-        <div className="py-6 space-y-8 relative pl-6 sm:pl-8 border-l-2 border-brand-border ml-4">
-          {steps.map((step, idx) => (
-            <div key={idx} className="relative group">
-              {/* Step Icon / Dot */}
-              <div
-                className={`absolute -left-[31px] sm:-left-[39px] top-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-2 transition-all ${
-                  step.status === "completed"
-                    ? "bg-brand-gold text-white border-brand-gold shadow-md"
-                    : step.status === "current"
-                    ? "bg-white text-brand-maroon border-brand-maroon animate-pulse"
-                    : "bg-brand-ivory text-neutral-400 border-brand-border"
-                }`}
-              >
-                {step.status === "completed" ? (
-                  <CheckCircle2 className="w-4 h-4" />
-                ) : step.status === "current" ? (
-                  <Clock className="w-4 h-4" />
-                ) : (
-                  <span className="text-[11px] font-bold font-poppins">{idx + 1}</span>
-                )}
-              </div>
+        {/* Shipment */}
+        <div className="rounded-2xl bg-brand-ivory border border-brand-border p-4 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {order.trackingNumber ? (
+            <>
+              <p className="flex items-center gap-2">
+                <Truck className="w-4 h-4 text-brand-gold shrink-0" />
+                <span>{order.courierPartner || "Courier"} · Tracking no. <strong className="font-mono">{order.trackingNumber}</strong></span>
+              </p>
+              {trackingUrl && (
+                <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-maroon underline min-h-[44px]">
+                  Track with courier <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </>
+          ) : (
+            <p className="text-neutral-600 flex items-center gap-2">
+              <Truck className="w-4 h-4 text-neutral-400 shrink-0" />
+              {awaitingPayment ? "Shipment starts once your payment is confirmed." : "Not shipped yet. Courier and tracking number will appear here as soon as it ships."}
+            </p>
+          )}
+        </div>
 
-              {/* Step Info */}
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3
-                    className={`font-serif text-base font-semibold ${
-                      step.status === "completed" || step.status === "current"
-                        ? "text-brand-text"
-                        : "text-neutral-400"
+        {/* Timeline */}
+        {awaitingPayment ? (
+          <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            Your payment has not been confirmed yet. If you were charged, it will be confirmed shortly or refunded by your bank.
+          </p>
+        ) : (
+          <ol className="py-2 space-y-7 relative pl-8 border-l-2 border-brand-border ml-3.5" aria-label="Order progress">
+            {JOURNEY.map((step, idx) => {
+              const done = reachedIndex >= idx && !(isSide && idx > reachedIndex);
+              const current = !isSide && idx === currentIndex;
+              const date = when(step.status);
+              return (
+                <li key={step.status} className="relative" aria-current={current ? "step" : undefined}>
+                  <span
+                    className={`absolute -left-[45px] top-0 w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                      done && !current ? "bg-brand-gold text-white border-brand-gold" : current ? "bg-white text-brand-maroon border-brand-maroon" : "bg-brand-ivory text-neutral-400 border-brand-border"
                     }`}
                   >
-                    {step.title}
-                  </h3>
-                  <span className="text-[11px] text-brand-maroon font-semibold font-poppins">{step.date}</span>
-                </div>
-                <p className="text-xs text-neutral-500 font-light">{step.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+                    {done && !current ? <CheckCircle2 className="w-4 h-4" /> : current ? <Clock className="w-4 h-4" /> : <span className="text-[11px] font-bold">{idx + 1}</span>}
+                  </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className={`font-serif text-base font-semibold ${done || current ? "text-brand-text" : "text-neutral-400"}`}>{step.title}</h2>
+                    {date && <span className="text-[11px] text-brand-maroon font-semibold font-poppins">{date}</span>}
+                  </div>
+                  <p className="text-xs text-neutral-500 mt-0.5">{step.description}</p>
+                </li>
+              );
+            })}
+          </ol>
+        )}
 
-        {/* Delivery Details & Invoice */}
+        {isSide && (
+          <p className="text-sm bg-brand-ivory border border-brand-border rounded-xl px-4 py-3">
+            <strong>{orderStatusLabel(order.orderStatus)}</strong>
+            {when(order.orderStatus) ? ` on ${when(order.orderStatus)}` : ""}. Need help? Email{" "}
+            <a href={`mailto:${SITE.email}`} className="underline text-brand-maroon">{SITE.email}</a>.
+          </p>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-brand-border text-xs">
           <div className="space-y-1">
-            <span className="text-neutral-500 text-[10px] uppercase font-poppins block">Delivery Destination</span>
-            <p className="font-bold text-brand-text font-poppins">{order.customerName}</p>
-            <p className="text-neutral-600 font-light">{order.shippingAddress.street}</p>
-            <p className="text-neutral-600 font-light">
-              {order.shippingAddress.city}, {order.shippingAddress.state} - <strong>{order.shippingAddress.pincode}</strong>
-            </p>
+            <span className="text-neutral-500 text-[10px] uppercase font-poppins block">Delivery address</span>
+            <p className="font-bold font-poppins text-sm">{a.name}</p>
+            <p className="text-neutral-600">{[a.houseNumber, a.street, a.locality].filter(Boolean).join(", ")}</p>
+            <p className="text-neutral-600">{a.city}, {a.state} - <strong>{a.pincode}</strong></p>
           </div>
-
           <div className="sm:text-right space-y-2 font-poppins">
-            <Link
-              href={`/checkout/success?orderNumber=${order.orderNumber}`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-ivory hover:bg-white border border-brand-gold/60 text-brand-maroon font-semibold text-xs rounded-full shadow-sm transition-colors"
-            >
-              <Printer className="w-3.5 h-3.5" /> Download Tax Invoice
+            <Link href={`/checkout/success?orderNumber=${order.orderNumber}`} className="inline-flex items-center gap-1.5 px-4 min-h-[44px] bg-brand-ivory hover:bg-white border border-brand-gold/60 text-brand-maroon font-semibold text-xs rounded-full shadow-sm">
+              Order summary
             </Link>
+            <p>
+              <a href={`https://wa.me/${SITE.whatsappNumber}?text=${encodeURIComponent(`Hello, I need help with order ${order.orderNumber}`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-neutral-600 hover:text-brand-maroon min-h-[44px]">
+                <LifeBuoy className="w-4 h-4" /> Need help with this order?
+              </a>
+            </p>
           </div>
         </div>
       </div>

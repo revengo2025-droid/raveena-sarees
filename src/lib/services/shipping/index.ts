@@ -1,3 +1,4 @@
+import { shippingFeeFor } from "@/lib/pricing";
 // =============================================================================
 // Shipping Service Abstraction
 // =============================================================================
@@ -72,7 +73,7 @@ class ManualShippingService implements ShippingService {
       history: [
         {
           status: "Order Confirmed",
-          description: "Order received at Ravina Sarees Atelier",
+          description: "Order received at Raveena Sarees Atelier",
           location: "Marthadi, Telangana",
           timestamp: new Date(Date.now() - 3600000 * 24).toISOString(),
         },
@@ -99,9 +100,7 @@ class ManualShippingService implements ShippingService {
   }
 
   calculateShippingFee(pincode: string, orderSubtotal: number): number {
-    // Complimentary luxury pan-India express shipping on all authentic orders
-    if (orderSubtotal >= 1000) return 0;
-    return 150;
+    return shippingFeeFor(orderSubtotal);
   }
 }
 

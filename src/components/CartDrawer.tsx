@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   X,
@@ -51,10 +52,10 @@ export const CartDrawer: React.FC = () => {
   const progressPercent = Math.min(100, Math.round((cartSubtotal / freeShippingThreshold) * 100));
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - cartSubtotal);
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     setCouponError("");
-    const res = applyCoupon(couponInput);
+    const res = await applyCoupon(couponInput);
     if (!res.success) {
       setCouponError(res.message);
     } else {
@@ -108,10 +109,10 @@ export const CartDrawer: React.FC = () => {
                 <Truck className="w-3.5 h-3.5 text-brand-gold" />
                 {remainingForFreeShipping > 0 ? (
                   <>
-                    Add <strong className="text-brand-maroon font-semibold">{formatINR(remainingForFreeShipping)}</strong> more for <strong>Complimentary Express Air</strong>
+                    Add <strong className="text-brand-maroon font-semibold">{formatINR(remainingForFreeShipping)}</strong> more for <strong>free shipping</strong>
                   </>
                 ) : (
-                  <strong className="text-brand-gold font-semibold">✨ You have unlocked Complimentary Express Air Courier!</strong>
+                  <strong className="text-brand-gold font-semibold">You have unlocked free shipping!</strong>
                 )}
               </span>
             </div>
@@ -148,9 +149,12 @@ export const CartDrawer: React.FC = () => {
               cart.map((item) => (
                 <div key={`${item.product.id}-${item.selectedColor}`} className="py-4 flex gap-4">
                   {/* Thumbnail */}
-                  <img
+                  <Image
                     src={item.product.images[0]}
                     alt={item.product.name}
+                    width={80}
+                    height={96}
+                    sizes="80px"
                     className="w-20 h-24 object-cover rounded-xl border border-brand-border shrink-0 shadow-sm"
                   />
 
@@ -271,7 +275,7 @@ export const CartDrawer: React.FC = () => {
                   <div className="relative flex items-center">
                     <input
                       type="text"
-                      placeholder="Privilege Code (e.g. RAVINA10)"
+                      placeholder="Privilege Code (e.g. RAVEENA10)"
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value)}
                       className="w-full bg-white border border-brand-border rounded-full py-2.5 pl-9 pr-24 text-xs text-brand-text placeholder-neutral-400 uppercase focus:outline-none focus:border-brand-gold"
@@ -307,10 +311,10 @@ export const CartDrawer: React.FC = () => {
                   </div>
                 )}
                 <div className="flex justify-between text-neutral-600">
-                  <span>Insured Air Delivery</span>
+                  <span>Shipping</span>
                   <span>
                     {cartSubtotal >= freeShippingThreshold ? (
-                      <span className="text-emerald-700 font-semibold uppercase tracking-wider text-[10px]">COMPLIMENTARY</span>
+                      <span className="text-emerald-700 font-semibold uppercase tracking-wider text-[10px]">FREE</span>
                     ) : (
                       formatINR(250)
                     )}

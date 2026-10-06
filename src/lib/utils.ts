@@ -19,9 +19,8 @@ export function calculateDiscountPercentage(price: number, discountPrice?: numbe
 }
 
 export function generateOrderNumber(): string {
-  const timestamp = Date.now().toString().slice(-6);
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `RS-${timestamp}-${random}`;
+  const random = Math.floor(100000 + Math.random() * 900000);
+  return `RVN-${new Date().getFullYear()}-${random}`;
 }
 
 export function generateTrackingNumber(): string {

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ShoppingBag,
@@ -60,10 +61,10 @@ export default function CartPage() {
   );
   const remainingForFree = Math.max(0, freeShippingThreshold - cartSubtotal);
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     setCouponError("");
-    const res = applyCoupon(couponCode);
+    const res = await applyCoupon(couponCode);
     if (!res.success) {
       setCouponError(res.message);
     } else {
@@ -118,10 +119,10 @@ export default function CartPage() {
             <Truck className="w-4 h-4 text-brand-gold" />
             {remainingForFree > 0 ? (
               <>
-                Add <strong className="text-brand-maroon font-semibold">{formatINR(remainingForFree)}</strong> more to unlock <strong>Complimentary Express Pan-India Shipping</strong>
+                Add <strong className="text-brand-maroon font-semibold">{formatINR(remainingForFree)}</strong> more to unlock <strong>free shipping</strong>
               </>
             ) : (
-              <strong className="text-brand-gold font-semibold">✨ You have unlocked Complimentary Express Air Shipping!</strong>
+              <strong className="text-brand-gold font-semibold">You have unlocked free shipping!</strong>
             )}
           </span>
           <span className="text-[11px] text-neutral-500 font-semibold font-mono">{progressPercent}%</span>
@@ -144,11 +145,9 @@ export default function CartPage() {
               className="bg-white border border-brand-border hover:border-brand-gold/60 rounded-3xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 transition-all shadow-card hover:shadow-luxury"
             >
               {/* Image */}
-              <img
-                src={item.product.images[0]}
-                alt={item.product.name}
-                className="w-24 sm:w-28 aspect-[3/4] object-cover rounded-2xl border border-brand-border shrink-0 shadow-sm"
-              />
+              <div className="relative w-24 sm:w-28 aspect-[3/4] rounded-2xl overflow-hidden border border-brand-border shrink-0 shadow-sm">
+                <Image src={item.product.images[0]} alt={item.product.name} fill sizes="112px" className="object-cover" />
+              </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0 space-y-1">
@@ -292,7 +291,7 @@ export default function CartPage() {
                     <Tag className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-3" />
                     <input
                       type="text"
-                      placeholder="e.g. RAVINA10"
+                      placeholder="e.g. RAVEENA10"
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
                       className="w-full bg-white border border-brand-border rounded-full py-2 pl-9 pr-3 text-xs text-brand-text placeholder-neutral-400 uppercase focus:outline-none focus:border-brand-gold"
@@ -307,7 +306,7 @@ export default function CartPage() {
                 </div>
                 {couponError && <p className="text-[11px] text-red-600 pl-3">{couponError}</p>}
                 <div className="text-[10px] text-neutral-500 pt-1 font-mono">
-                  Available: <code className="text-brand-maroon font-bold">RAVINA10</code> (10% off) | <code className="text-brand-maroon font-bold">BRIDAL2026</code> (₹3000 off)
+                  Available: <code className="text-brand-maroon font-bold">RAVEENA10</code> (10% off) | <code className="text-brand-maroon font-bold">BRIDAL2026</code> (₹3000 off)
                 </div>
               </form>
             )}
@@ -340,7 +339,7 @@ export default function CartPage() {
               )}
 
               <div className="flex justify-between text-neutral-600 font-light">
-                <span>Express Insured Shipping</span>
+                <span>Shipping</span>
                 <span>
                   {cartSubtotal >= freeShippingThreshold ? (
                     <span className="text-emerald-700 font-semibold font-poppins">FREE</span>

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Package, Truck, Printer } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { orderStatusLabel } from "@/lib/orders/mapper";
 import { formatINR, formatDate } from "@/lib/utils";
 
 export default function OrdersPage() {
@@ -80,11 +81,17 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="space-y-0.5">
-                  <span className="text-neutral-500 text-[11px] block font-poppins">Courier Partner</span>
-                  <span className="text-brand-text font-medium flex items-center gap-1">
-                    <Truck className="w-3.5 h-3.5 text-brand-gold" /> {order.courierPartner}
-                  </span>
-                  <span className="text-[11px] font-mono text-brand-maroon">AWB: {order.trackingNumber}</span>
+                  <span className="text-neutral-500 text-[11px] block font-poppins">Shipment</span>
+                  {order.trackingNumber ? (
+                    <>
+                      <span className="text-brand-text font-medium flex items-center gap-1">
+                        <Truck className="w-3.5 h-3.5 text-brand-gold" /> {order.courierPartner || "Courier"}
+                      </span>
+                      <span className="text-[11px] font-mono text-brand-maroon">Tracking: {order.trackingNumber}</span>
+                    </>
+                  ) : (
+                    <span className="text-[11px] text-neutral-500">Not shipped yet</span>
+                  )}
                 </div>
 
                 <div className="space-y-0.5 sm:text-right">
@@ -93,7 +100,7 @@ export default function OrdersPage() {
                     {formatINR(order.totalAmount)}
                   </span>
                   <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 font-poppins">
-                    {order.orderStatus.replace("_", " ")}
+                    {orderStatusLabel(order.orderStatus)}
                   </span>
                 </div>
               </div>
@@ -128,7 +135,11 @@ export default function OrdersPage() {
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-brand-border font-poppins">
                 <div className="text-xs text-neutral-500 font-light">
-                  Estimated Delivery: <strong className="text-brand-text font-medium">{order.estimatedDelivery}</strong>
+                  {order.estimatedDelivery ? (
+                    <>Expected delivery: <strong className="text-brand-text font-medium">{formatDate(order.estimatedDelivery)}</strong></>
+                  ) : (
+                    <>Payment: <strong className="text-brand-text font-medium">{order.paymentMethod === "cod" ? "Cash on delivery" : order.paymentStatus}</strong></>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -136,14 +147,14 @@ export default function OrdersPage() {
                     href={`/account/track/${order.orderNumber}`}
                     className="px-4 py-2 bg-brand-ivory hover:bg-white border border-brand-border hover:border-brand-gold text-brand-text text-xs font-semibold rounded-full flex items-center gap-1.5 transition-colors shadow-sm"
                   >
-                    <Truck className="w-3.5 h-3.5 text-brand-gold" /> Track Live Shipment
+                    <Truck className="w-3.5 h-3.5 text-brand-gold" /> Track Order
                   </Link>
 
                   <Link
                     href={`/checkout/success?orderNumber=${order.orderNumber}`}
                     className="px-4 py-2 bg-white hover:bg-brand-ivory border border-brand-gold/60 text-brand-maroon text-xs font-semibold rounded-full flex items-center gap-1.5 transition-colors shadow-sm"
                   >
-                    <Printer className="w-3.5 h-3.5" /> View Invoice
+                    <Printer className="w-3.5 h-3.5" /> Order Summary
                   </Link>
                 </div>
               </div>

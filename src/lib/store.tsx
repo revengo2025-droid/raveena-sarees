@@ -19,9 +19,19 @@ import {
   INITIAL_COUPONS,
   INITIAL_REVIEWS,
 } from "./mockData";
-import { generateOrderNumber, generateTrackingNumber, getEstimatedDeliveryDate } from "./utils";
-import { createProductAction, updateProductAction, deleteProductAction, getProductsAction } from "@/app/actions/products";
-import { updateOrderStatusAction } from "@/app/actions/orders";
+import type { PublicCatalogue } from "@/lib/products/public";
+import { PRICING, shippingFeeFor } from "@/lib/pricing";
+import { validateCouponAction } from "@/app/actions/coupons";
+import { getAllOrdersAdminAction } from "@/app/actions/orders";
+import { getCurrentUserAction, logoutAction } from "@/app/actions/auth";
+import { getMyOrdersAction } from "@/app/actions/my-orders";
+import { mapOrderRow } from "@/lib/orders/mapper";
+import {
+  getMyAddressesAction,
+  saveAddressAction,
+  setDefaultAddressAction,
+  deleteAddressAction,
+} from "@/app/actions/addresses";
 
 interface Toast {
   id: string;
@@ -33,9 +43,8 @@ interface AppContextType {
   // Products & Categories
   products: SareeProduct[];
   categories: Category[];
-  addProduct: (product: Omit<SareeProduct, "id" | "createdAt">) => void;
-  updateProduct: (id: string, updates: Partial<SareeProduct>) => void;
-  deleteProduct: (id: string) => void;
+  /** The two admin-selected Featured Festive Drops (empty slots are omitted). */
+  featuredDrops: SareeProduct[];
   addCategory: (category: Omit<Category, "id">) => void;
   deleteCategory: (id: string) => void;
   getProductBySlug: (slug: string) => SareeProduct | undefined;
@@ -52,9 +61,10 @@ interface AppContextType {
   cartSubtotal: number;
   cartDiscount: number;
   cartTotal: number;
+  shippingFee: number;
   freeShippingThreshold: number;
   appliedCoupon: Coupon | null;
-  applyCoupon: (code: string) => { success: boolean; message: string };
+  applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
   removeCoupon: () => void;
   giftWrap: boolean;
   setGiftWrap: (wrap: boolean) => void;
@@ -80,24 +90,20 @@ interface AppContextType {
 
   // User Auth & Profiles
   user: UserProfile | null;
+  /** False until the first server session check has finished (avoids a signed-out flash on refresh). */
+  authReady: boolean;
   login: (email: string, role?: "customer" | "admin", fullName?: string, phone?: string) => void;
   logout: () => void;
   savedAddresses: SavedAddress[];
-  addAddress: (address: Omit<SavedAddress, "id">) => SavedAddress;
-  updateAddress: (id: string, updates: Partial<SavedAddress>) => void;
-  deleteAddress: (id: string) => void;
+  /** Saves to the database (one default per customer). Resolves to the saved address, or null on failure. */
+  addAddress: (address: Omit<SavedAddress, "id">) => Promise<SavedAddress | null>;
+  updateAddress: (id: string, updates: Partial<SavedAddress>) => Promise<void>;
+  deleteAddress: (id: string) => Promise<void>;
 
   // Orders
   orders: Order[];
-  placeOrder: (orderDetails: {
-    customerName: string;
-    customerEmail: string;
-    customerPhone: string;
-    shippingAddress: SavedAddress;
-    paymentMethod: "razorpay" | "upi" | "card" | "netbanking" | "cod";
-    paymentId?: string;
-  }) => Order;
-  updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string, courierPartner?: string) => void;
+  /** Reloads the signed-in customer's orders (all orders for admins) from the database. */
+  refreshOrders: () => Promise<void>;
   getOrderById: (orderId: string) => Order | undefined;
   getOrderByNumber: (orderNumber: string) => Order | undefined;
 
@@ -114,9 +120,14 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: PublicCatalogue | null }> = ({
+  children,
+  initialCatalogue = null,
+}) => {
+  // When the database catalogue is available it is the single source of truth for every visitor.
+  const databaseCatalogue = initialCatalogue?.products ?? null;
   // State Initialization
-  const [products, setProducts] = useState<SareeProduct[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<SareeProduct[]>(databaseCatalogue ?? INITIAL_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [coupons, setCoupons] = useState<Coupon[]>(INITIAL_COUPONS);
   const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
@@ -134,6 +145,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [authReady, setAuthReady] = useState(false);
 
   // Obsolete demo product IDs that should never be restored from stale browser storage
   const OBSOLETE_DEMO_IDS = new Set([
@@ -147,10 +159,109 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     "saree-08",
   ]);
 
+  // Carts / wishlists saved before the catalogue moved to the database hold the old starter
+  // product ids. Re-point them (by SKU) at the live database products. Idempotent.
+  useEffect(() => {
+    if (!databaseCatalogue) return;
+    const skuByLegacyId = new Map(INITIAL_PRODUCTS.map((p) => [p.id, p.sku]));
+    const idBySku = new Map(databaseCatalogue.map((p) => [p.sku, p.id]));
+    const remapId = (id: string) => {
+      const sku = skuByLegacyId.get(id);
+      return (sku && idBySku.get(sku)) || id;
+    };
+
+    setWishlist((prev) => {
+      const next = Array.from(new Set(prev.map(remapId)));
+      return next.length === prev.length && next.every((v, i) => v === prev[i]) ? prev : next;
+    });
+    setCart((prev) => {
+      let changed = false;
+      const next = prev.map((item) => {
+        const fresh = databaseCatalogue.find((p) => p.sku === item.product.sku);
+        if (fresh && fresh.id !== item.product.id) {
+          changed = true;
+          return { ...item, product: fresh };
+        }
+        return item;
+      });
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wishlist, cart]);
+
+  // Orders are personal data and now live only in the database; scrub any copy left by older versions.
+  useEffect(() => {
+    try {
+      localStorage.removeItem("raveena_orders");
+    } catch {}
+  }, []);
+
+  // Restore the real server session on every page load (the cookie survives refresh, React state does not)
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentUserAction()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.success && res.data?.user) {
+          const u = res.data.user;
+          setUser({
+            id: u.id,
+            email: u.email,
+            fullName: u.fullName || u.email.split("@")[0],
+            phone: u.phone || "",
+            role: u.role === "admin" || u.role === "staff" ? "admin" : "customer",
+            avatarUrl: u.avatarUrl || undefined,
+            joinedDate: "",
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setAuthReady(true));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const refreshOrders = async () => {
+    if (!user) {
+      setOrders([]);
+      return;
+    }
+    if (user.role === "admin") {
+      const res = await getAllOrdersAdminAction();
+      if (res.success) setOrders(((res as any).data || []).map(mapOrderRow));
+    } else {
+      const res = await getMyOrdersAction();
+      if (res.success) setOrders(res.data);
+    }
+  };
+
+  // Load orders + saved addresses whenever the signed-in user changes
+  useEffect(() => {
+    if (!user) {
+      setOrders([]);
+      setSavedAddresses([]);
+      return;
+    }
+    refreshOrders();
+    getMyAddressesAction().then((res) => {
+      if (res.success) setSavedAddresses(res.data);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   // Load / Persist localStorage
   useEffect(() => {
     try {
-      const savedCart = localStorage.getItem("ravina_cart");
+      // One-time migration of keys saved under the pre-rename brand prefix, so existing carts/orders/admin products survive
+      for (const suffix of ["cart", "wishlist", "recent", "orders", "custom_products", "categories", "coupons", "reviews"]) {
+        const legacy = localStorage.getItem(`ravina_${suffix}`);
+        if (legacy !== null && localStorage.getItem(`raveena_${suffix}`) === null) {
+          localStorage.setItem(`raveena_${suffix}`, legacy);
+        }
+        localStorage.removeItem(`ravina_${suffix}`);
+      }
+      const savedCart = localStorage.getItem("raveena_cart");
       if (savedCart) {
         const parsedCart: CartItem[] = JSON.parse(savedCart);
         const cleanCart = parsedCart.filter(
@@ -159,47 +270,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCart(cleanCart);
       }
 
-      const savedWishlist = localStorage.getItem("ravina_wishlist");
+      const savedWishlist = localStorage.getItem("raveena_wishlist");
       if (savedWishlist) {
         const parsedWish: string[] = JSON.parse(savedWishlist);
         setWishlist(parsedWish.filter((id) => !OBSOLETE_DEMO_IDS.has(id)));
       }
 
-      const savedRecently = localStorage.getItem("ravina_recent");
+      const savedRecently = localStorage.getItem("raveena_recent");
       if (savedRecently) {
         const parsedRecent: SareeProduct[] = JSON.parse(savedRecently);
         setRecentlyViewed(parsedRecent.filter((p) => !OBSOLETE_DEMO_IDS.has(p.id)));
       }
 
-      const savedOrders = localStorage.getItem("ravina_orders");
-      if (savedOrders) {
-        const parsedOrders: Order[] = JSON.parse(savedOrders);
-        const cleanOrders = parsedOrders.map((o) => ({
-          ...o,
-          items: o.items.filter((item) => !OBSOLETE_DEMO_IDS.has(item.productId)),
-        })).filter((o) => o.items.length > 0);
-        if (cleanOrders.length > 0) {
-          setOrders(cleanOrders);
-        }
-      }
-
-      const customProducts = localStorage.getItem("ravina_custom_products");
-      if (customProducts) {
-        const parsed: SareeProduct[] = JSON.parse(customProducts);
-        const initialIds = new Set(INITIAL_PRODUCTS.map((p) => p.id));
-        // Keep only valid admin-added products, filtering out obsolete demo products
-        const customOnly = parsed.filter(
-          (p) => !initialIds.has(p.id) && !OBSOLETE_DEMO_IDS.has(p.id)
-        );
-        const merged = [...INITIAL_PRODUCTS, ...customOnly];
-        setProducts(merged);
-        // Clean localStorage of stale products
-        localStorage.setItem("ravina_custom_products", JSON.stringify(merged));
-      } else {
+      if (!databaseCatalogue) {
+        // Fallback (database not configured / catalogue not imported yet): starter catalogue only.
+        // Browser-saved admin products are no longer used; the dashboard now writes to the database.
         setProducts(INITIAL_PRODUCTS);
       }
 
-      const savedCategories = localStorage.getItem("ravina_categories");
+      const savedCategories = localStorage.getItem("raveena_categories");
       if (savedCategories) {
         try {
           const parsedCats: Category[] = JSON.parse(savedCategories);
@@ -217,7 +306,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCategories(INITIAL_CATEGORIES);
       }
 
-      const savedCoupons = localStorage.getItem("ravina_coupons");
+      const savedCoupons = localStorage.getItem("raveena_coupons");
       if (savedCoupons) {
         try {
           const parsedCoupons: Coupon[] = JSON.parse(savedCoupons);
@@ -231,7 +320,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCoupons(INITIAL_COUPONS);
       }
 
-      const savedReviews = localStorage.getItem("ravina_reviews");
+      const savedReviews = localStorage.getItem("raveena_reviews");
       if (savedReviews) {
         try {
           const parsedReviews: Review[] = JSON.parse(savedReviews);
@@ -251,37 +340,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   useEffect(() => {
     try {
-      localStorage.setItem("ravina_cart", JSON.stringify(cart));
+      localStorage.setItem("raveena_cart", JSON.stringify(cart));
     } catch {}
   }, [cart]);
 
   useEffect(() => {
     try {
-      localStorage.setItem("ravina_wishlist", JSON.stringify(wishlist));
+      localStorage.setItem("raveena_wishlist", JSON.stringify(wishlist));
     } catch {}
   }, [wishlist]);
 
   useEffect(() => {
     try {
-      localStorage.setItem("ravina_orders", JSON.stringify(orders));
-    } catch {}
-  }, [orders]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("ravina_categories", JSON.stringify(categories));
+      localStorage.setItem("raveena_categories", JSON.stringify(categories));
     } catch {}
   }, [categories]);
 
   useEffect(() => {
     try {
-      localStorage.setItem("ravina_coupons", JSON.stringify(coupons));
+      localStorage.setItem("raveena_coupons", JSON.stringify(coupons));
     } catch {}
   }, [coupons]);
 
   useEffect(() => {
     try {
-      localStorage.setItem("ravina_reviews", JSON.stringify(reviews));
+      localStorage.setItem("raveena_reviews", JSON.stringify(reviews));
     } catch {}
   }, [reviews]);
 
@@ -304,8 +387,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return acc + effectivePrice * item.quantity;
   }, 0);
 
-  const freeShippingThreshold = 2500;
-  const giftWrapFee = giftWrap ? 150 : 0;
+  const freeShippingThreshold = PRICING.freeShippingThreshold;
+  const giftWrapFee = giftWrap ? PRICING.giftWrapFee : 0;
 
   // Calculate discount from applied coupon
   let cartDiscount = 0;
@@ -318,7 +401,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }
 
-  const shippingFee = cartSubtotal >= freeShippingThreshold || cartSubtotal === 0 ? 0 : 150;
+  const shippingFee = shippingFeeFor(cartSubtotal);
   const cartTotal = Math.max(0, cartSubtotal - cartDiscount + shippingFee + giftWrapFee);
 
   // Cart Operations
@@ -370,23 +453,30 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setGiftWrap(false);
   };
 
-  const applyCoupon = (code: string) => {
-    const cleanCode = code.trim().toUpperCase();
-    const found = coupons.find((c) => c.code.toUpperCase() === cleanCode && c.isActive);
-    if (!found) {
-      showToast("Invalid or expired promo code", "error");
-      return { success: false, message: "Invalid promo code." };
+  const applyCoupon = async (code: string) => {
+    const clean = code.trim().toUpperCase();
+    if (!clean) return { success: false, message: "Enter a promo code." };
+    // Coupons are validated by the server, which is also what decides the final order total
+    const res = await validateCouponAction(clean, cartSubtotal);
+    if (!res.success || !res.data) {
+      const message = res.error || "Invalid or expired promo code.";
+      showToast(message, "error");
+      return { success: false, message };
     }
-    if (cartSubtotal < found.minOrderValue) {
-      showToast(`Requires minimum order of ₹${found.minOrderValue.toLocaleString("en-IN")}`, "error");
-      return {
-        success: false,
-        message: `Add items worth ₹${(found.minOrderValue - cartSubtotal).toLocaleString("en-IN")} more to use this code.`,
-      };
-    }
-    setAppliedCoupon(found);
-    showToast(`Code "${found.code}" applied! You saved on this order.`, "success");
-    return { success: true, message: `Coupon applied: ${found.description}` };
+    const d = res.data;
+    setAppliedCoupon({
+      id: `coupon-${d.code}`,
+      code: d.code,
+      discountType: d.discountType as "percentage" | "fixed",
+      discountValue: d.discountValue,
+      minOrderValue: d.minOrderValue,
+      maxDiscount: d.maxDiscount,
+      description: d.description,
+      isActive: true,
+      expiresAt: "",
+    });
+    showToast(`Code "${d.code}" applied`, "success");
+    return { success: true, message: `Coupon applied: ${d.description}` };
   };
 
   const removeCoupon = () => {
@@ -416,205 +506,73 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const filtered = prev.filter((p) => p.id !== product.id);
       const updated = [product, ...filtered].slice(0, 8);
       try {
-        localStorage.setItem("ravina_recent", JSON.stringify(updated));
+        localStorage.setItem("raveena_recent", JSON.stringify(updated));
       } catch {}
       return updated;
     });
   };
 
   // Addresses
-  const addAddress = (address: Omit<SavedAddress, "id">): SavedAddress => {
-    const newAddress: SavedAddress = {
-      ...address,
-      id: `addr-${Date.now()}`,
-    };
-    if (newAddress.isDefault) {
-      setSavedAddresses((prev) => [...prev.map((a) => ({ ...a, isDefault: false })), newAddress]);
-    } else {
-      setSavedAddresses((prev) => [...prev, newAddress]);
-    }
-    showToast("Address saved successfully", "success");
-    return newAddress;
+  const toPayload = (a: Partial<SavedAddress>) => ({
+    name: a.name,
+    phone: a.phone,
+    houseNumber: a.houseNumber || "-",
+    streetAddress: a.street,
+    locality: a.locality || a.city,
+    landmark: a.landmark || undefined,
+    city: a.city,
+    state: a.state,
+    pincode: a.pincode,
+    addressType: a.type === "Office" ? "office" : a.type === "Other" ? "other" : "home",
+    isDefault: Boolean(a.isDefault),
+  });
+
+  const reloadAddresses = async () => {
+    const res = await getMyAddressesAction();
+    if (res.success) setSavedAddresses(res.data);
   };
 
-  const updateAddress = (id: string, updates: Partial<SavedAddress>) => {
-    setSavedAddresses((prev) =>
-      prev.map((a) => {
-        if (a.id === id) {
-          return { ...a, ...updates };
-        }
-        if (updates.isDefault) {
-          return { ...a, isDefault: false };
-        }
-        return a;
-      })
-    );
+  const addAddress = async (address: Omit<SavedAddress, "id">): Promise<SavedAddress | null> => {
+    const res = await saveAddressAction(toPayload(address));
+    if (!res.success) {
+      showToast(res.error, "error");
+      return null;
+    }
+    await reloadAddresses();
+    showToast("Address saved", "success");
+    return res.data;
+  };
+
+  const updateAddress = async (id: string, updates: Partial<SavedAddress>) => {
+    if (Object.keys(updates).length === 1 && updates.isDefault) {
+      const res = await setDefaultAddressAction(id);
+      if (!res.success) showToast(res.error, "error");
+      else showToast("Default address updated", "success");
+      await reloadAddresses();
+      return;
+    }
+    const current = savedAddresses.find((a) => a.id === id);
+    const res = await saveAddressAction(toPayload({ ...current, ...updates }), id);
+    if (!res.success) {
+      showToast(res.error, "error");
+      return;
+    }
+    await reloadAddresses();
     showToast("Address updated", "success");
   };
 
-  const deleteAddress = (id: string) => {
-    setSavedAddresses((prev) => prev.filter((a) => a.id !== id));
+  const deleteAddress = async (id: string) => {
+    const res = await deleteAddressAction(id);
+    if (!res.success) {
+      showToast(res.error, "error");
+      return;
+    }
+    await reloadAddresses();
     showToast("Address removed", "info");
-  };
-
-  // Orders
-  const placeOrder = (orderDetails: {
-    customerName: string;
-    customerEmail: string;
-    customerPhone: string;
-    shippingAddress: SavedAddress;
-    paymentMethod: "razorpay" | "upi" | "card" | "netbanking" | "cod";
-    paymentId?: string;
-  }): Order => {
-    const newOrder: Order = {
-      id: `ord-${Date.now()}`,
-      orderNumber: generateOrderNumber(),
-      userId: user?.id,
-      customerName: orderDetails.customerName,
-      customerEmail: orderDetails.customerEmail,
-      customerPhone: orderDetails.customerPhone,
-      shippingAddress: orderDetails.shippingAddress,
-      items: cart.map((item) => ({
-        productId: item.product.id,
-        productName: item.product.name,
-        sku: item.product.sku,
-        selectedColor: item.selectedColor,
-        price: item.product.discountPrice || item.product.price,
-        quantity: item.quantity,
-        imageUrl: item.product.images[0] || "",
-      })),
-      subtotal: cartSubtotal,
-      discountAmount: cartDiscount,
-      shippingFee,
-      giftWrapFee,
-      totalAmount: cartTotal,
-      paymentMethod: orderDetails.paymentMethod,
-      paymentStatus: orderDetails.paymentMethod === "cod" ? "pending" : "paid",
-      paymentId: orderDetails.paymentId || `pay_${Date.now()}`,
-      orderStatus: "confirmed",
-      courierPartner: "BlueDart Express",
-      trackingNumber: generateTrackingNumber(),
-      trackingUrl: "https://www.bluedart.com/tracking",
-      giftWrap,
-      giftMessage: giftWrap ? giftMessage : undefined,
-      appliedCoupon: appliedCoupon?.code,
-      createdAt: new Date().toISOString(),
-      estimatedDelivery: getEstimatedDeliveryDate(4),
-    };
-
-    setOrders((prev) => [newOrder, ...prev]);
-    clearCart();
-    return newOrder;
-  };
-
-  const updateOrderStatus = (
-    orderId: string,
-    status: OrderStatus,
-    trackingNumber?: string,
-    courierPartner?: string
-  ) => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id === orderId || o.orderNumber === orderId) {
-          return {
-            ...o,
-            orderStatus: status,
-            trackingNumber: trackingNumber || o.trackingNumber,
-            courierPartner: courierPartner || o.courierPartner,
-          };
-        }
-        return o;
-      })
-    );
-    updateOrderStatusAction(orderId, status, trackingNumber).catch(() => {});
-    showToast(`Order status updated to ${status.replace("_", " ").toUpperCase()}`, "success");
   };
 
   const getOrderById = (orderId: string) => orders.find((o) => o.id === orderId || o.orderNumber === orderId);
   const getOrderByNumber = (num: string) => orders.find((o) => o.orderNumber === num);
-
-  // Products CRUD for Admin
-  const addProduct = (productData: Omit<SareeProduct, "id" | "createdAt">) => {
-    const newProduct: SareeProduct = {
-      ...productData,
-      id: `saree-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [newProduct, ...products];
-    setProducts(updated);
-    try {
-      localStorage.setItem("ravina_custom_products", JSON.stringify(updated));
-    } catch {}
-    
-    // Background Server Sync
-    createProductAction({
-      sku: newProduct.sku,
-      name: newProduct.name,
-      slug: newProduct.slug,
-      categoryName: (newProduct as any).categoryName || (newProduct as any).category || "Silk Sarees",
-      description: newProduct.description,
-      price: newProduct.price,
-      discountPrice: newProduct.discountPrice,
-      stock: newProduct.stock,
-      fabric: newProduct.fabric,
-      zariType: newProduct.zariType,
-      weaveType: newProduct.weaveType,
-      sareeLength: newProduct.sareeLength,
-      blouseIncluded: newProduct.blouseIncluded,
-      blouseLength: newProduct.blouseLength,
-      occasion: newProduct.occasion,
-      careInstructions: newProduct.careInstructions,
-      availableColors: newProduct.availableColors,
-      primaryColor: newProduct.primaryColor,
-      images: newProduct.images,
-      rating: newProduct.rating,
-      reviewCount: newProduct.reviewCount,
-      isFeatured: Boolean(newProduct.isFeatured),
-      isBestseller: Boolean(newProduct.isBestseller),
-      isNewArrival: Boolean(newProduct.isNewArrival),
-      isActive: true,
-    }).catch(() => {});
-
-    showToast(`Product "${newProduct.name}" created!`, "success");
-  };
-
-  const updateProduct = (id: string, updates: Partial<SareeProduct>) => {
-    const updated = products.map((p) => (p.id === id ? { ...p, ...updates } : p));
-    setProducts(updated);
-    try {
-      localStorage.setItem("ravina_custom_products", JSON.stringify(updated));
-    } catch {}
-
-    // Background Server Sync
-    updateProductAction(id, {
-      ...(updates.name && { name: updates.name }),
-      ...(updates.price !== undefined && { price: updates.price }),
-      ...(updates.discountPrice !== undefined && { discountPrice: updates.discountPrice }),
-      ...(updates.stock !== undefined && { stock: updates.stock }),
-      ...(updates.fabric && { fabric: updates.fabric }),
-      ...(updates.description && { description: updates.description }),
-      ...(updates.images && { images: updates.images }),
-      ...(((updates as any).categoryName || (updates as any).category) && { categoryName: (updates as any).categoryName || (updates as any).category }),
-      ...(updates.isFeatured !== undefined && { isFeatured: updates.isFeatured }),
-      ...(updates.isBestseller !== undefined && { isBestseller: updates.isBestseller }),
-      ...(updates.isNewArrival !== undefined && { isNewArrival: updates.isNewArrival }),
-    }).catch(() => {});
-
-    showToast("Product updated successfully", "success");
-  };
-
-  const deleteProduct = (id: string) => {
-    const updated = products.filter((p) => p.id !== id);
-    setProducts(updated);
-    try {
-      localStorage.setItem("ravina_custom_products", JSON.stringify(updated));
-    } catch {}
-
-    // Background Server Sync
-    deleteProductAction(id).catch(() => {});
-
-    showToast("Product deleted", "info");
-  };
 
   const addCategory = (categoryData: Omit<Category, "id">) => {
     const newCat: Category = {
@@ -629,6 +587,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCategories((prev) => prev.filter((c) => c.id !== id));
     showToast("Category removed", "info");
   };
+
+  const featuredDrops = (initialCatalogue?.featuredDropIds ?? [])
+    .map((id) => products.find((p) => p.id === id))
+    .filter((p): p is SareeProduct => Boolean(p))
+    .slice(0, 2);
 
   const getProductBySlug = (slug: string) => products.find((p) => p.slug === slug);
   const getProductById = (id: string) => products.find((p) => p.id === id);
@@ -671,22 +634,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // User Auth
   const login = (email: string, role: "customer" | "admin" = "customer", fullName?: string, phone?: string) => {
-    const isAdm = role === "admin" || email.includes("admin");
+    // Display-only: the server decides the real role (profiles table)
+    const isAdm = role === "admin";
     const formattedName = fullName || (isAdm ? "Raveena Admin" : email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
     setUser({
-      id: isAdm ? "usr-admin-001" : `usr-${Date.now()}`,
+      id: `session-${email}`,
       email,
       fullName: formattedName,
       phone: phone || "",
       role: isAdm ? "admin" : "customer",
       joinedDate: new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(formattedName)}&background=C8A24D&color=fff`,
     });
     showToast(`Welcome back, ${formattedName}!`, "success");
   };
 
   const logout = () => {
     setUser(null);
+    setOrders([]);
+    setSavedAddresses([]);
+    // End the real server session too (otherwise the cookie keeps the user signed in)
+    logoutAction().catch(() => {});
     showToast("You have been signed out", "info");
   };
 
@@ -695,9 +662,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       value={{
         products,
         categories,
-        addProduct,
-        updateProduct,
-        deleteProduct,
+        featuredDrops,
         addCategory,
         deleteCategory,
         getProductBySlug,
@@ -712,6 +677,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         cartSubtotal,
         cartDiscount,
         cartTotal,
+        shippingFee,
         freeShippingThreshold,
         appliedCoupon,
         applyCoupon,
@@ -734,13 +700,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         user,
         login,
         logout,
+        authReady,
         savedAddresses,
         addAddress,
         updateAddress,
         deleteAddress,
         orders,
-        placeOrder,
-        updateOrderStatus,
+        refreshOrders,
         getOrderById,
         getOrderByNumber,
         reviews,

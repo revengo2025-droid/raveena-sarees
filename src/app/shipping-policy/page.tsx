@@ -1,67 +1,76 @@
-import React from "react";
-import { Truck, ShieldCheck, Clock } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { LegalPage, Section } from "@/components/legal/LegalPage";
+import { SITE } from "@/lib/site";
+import { PRICING } from "@/lib/pricing";
+import { formatINR } from "@/lib/utils";
+
+export const metadata: Metadata = {
+  title: "Shipping Policy",
+  description: `${SITE.name} shipping: where we deliver, shipping charges, dispatch, tracking and what to do about damaged or undelivered parcels.`,
+  alternates: { canonical: "/shipping-policy" },
+};
 
 export default function ShippingPolicyPage() {
   return (
-    <div className="min-h-screen bg-brand-white text-brand-text py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto font-sans space-y-8">
-      <div className="border-b border-brand-border pb-6">
-        <span className="text-xs font-semibold text-brand-gold uppercase tracking-[0.3em] block mb-1 font-poppins">
-          Client Information
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-serif text-brand-text font-normal">
-          Pan-India Shipping & Delivery Policy
-        </h1>
-        <p className="text-xs text-neutral-500 mt-1 font-light">
-          Last updated: 2026 • Ravina Sarees Flagship Atelier, Marthadi, Bejjur, Telangana
+    <LegalPage
+      title="Shipping Policy"
+      intro="This policy explains where we deliver, what shipping costs, and how you can follow your parcel."
+    >
+      <Section title="Where we deliver">
+        <p>
+          We currently deliver within India, to PIN codes served by our courier partners. If your PIN code cannot be served we
+          will contact you and cancel the order with a full refund.
         </p>
-      </div>
+      </Section>
 
-      <div className="space-y-6 text-xs sm:text-sm text-neutral-700 leading-relaxed font-light">
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold flex items-center gap-2">
-            <Truck className="w-4 h-4 text-brand-gold" /> 1. Complimentary Insured Air Shipping
-          </h2>
-          <p>
-            Ravina Sarees offers complimentary express air shipping across all serviceable pin codes in India
-            on orders above ₹2,500. For orders below this threshold, a flat nominal express fee of ₹150 applies.
-          </p>
-        </section>
+      <Section title="Shipping charges">
+        <ul>
+          <li>Orders with a merchandise value of <strong>{formatINR(PRICING.freeShippingThreshold)} or more</strong> ship free.</li>
+          <li>Orders below {formatINR(PRICING.freeShippingThreshold)} have a flat shipping fee of <strong>{formatINR(PRICING.shippingFee)}</strong>.</li>
+          <li>Optional gift packaging is {formatINR(PRICING.giftWrapFee)}.</li>
+        </ul>
+        <p>The exact amount is always shown at checkout before you pay.</p>
+      </Section>
 
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold flex items-center gap-2">
-            <Clock className="w-4 h-4 text-brand-gold" /> 2. Dispatch & Delivery Timelines
-          </h2>
-          <p>
-            All sarees undergo final quality audits (fall and pico finishing, zari inspection) at our atelier
-            before being packaged in luxury keepsake boxes. Orders are dispatched within 24 to 48 hours.
-          </p>
-          <ul className="list-disc pl-5 space-y-1 text-neutral-600">
-            <li><strong>Telangana & South India:</strong> 1 to 2 Business Days.</li>
-            <li><strong>Major Metros (Bengaluru, Chennai, Mumbai, Delhi NCR, Kolkata):</strong> 2 to 3 Business Days.</li>
-            <li><strong>Rest of India:</strong> 3 to 4 Business Days.</li>
-          </ul>
-        </section>
+      <Section title="Order processing and dispatch">
+        <p>
+          We start preparing your order once it is confirmed: after payment is verified for online orders, or after we accept a
+          cash-on-delivery order. Each saree is checked and packed before it is handed to the courier. We will email you when
+          your order ships.
+        </p>
+      </Section>
 
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-brand-gold" /> 3. 100% Transit Insurance
-          </h2>
-          <p>
-            Every single saree parcel dispatched by Ravina Sarees is fully insured against damage or loss in transit.
-            A unique BlueDart AWB tracking number is shared via SMS, WhatsApp, and Email immediately upon dispatch.
-          </p>
-        </section>
+      <Section title="Delivery time">
+        <p>
+          Delivery time depends on your location and the courier. When your order ships, the courier and tracking number (and,
+          where the courier provides it, the expected delivery date) are shown on your order page. We do not guarantee a
+          delivery date, because transit is outside our control; festivals, weather and local restrictions can cause delays.
+        </p>
+      </Section>
 
-        <section className="space-y-2 bg-brand-ivory p-6 rounded-2xl border border-brand-border">
-          <h2 className="text-lg font-serif text-brand-text font-semibold">
-            4. Cash on Delivery (COD)
-          </h2>
-          <p>
-            Cash on Delivery is available for eligible pin codes across India for orders up to ₹50,000.
-            Our courier partners accept cash and doorstep UPI QR scans upon delivery.
-          </p>
-        </section>
-      </div>
-    </div>
+      <Section title="Tracking your order">
+        <p>
+          Sign in and open <Link href="/account/orders">My Orders</Link> to see your order status and, once shipped, the
+          courier name, tracking number and a tracking link.
+        </p>
+      </Section>
+
+      <Section title="Delivery attempts and addresses">
+        <ul>
+          <li>Please give a complete address and a mobile number on which you can be reached.</li>
+          <li>If delivery fails because the address is wrong or the parcel is refused, the order may be returned to us. We will contact you; re-shipping or refund charges may apply.</li>
+          <li>For cash on delivery orders, please keep the exact amount ready.</li>
+        </ul>
+      </Section>
+
+      <Section title="Damaged, tampered or missing parcels">
+        <p>
+          Please record a video while opening your parcel. If it looks tampered with or the item is damaged or missing,
+          contact us immediately and within {SITE.returnWindowDays} days of delivery with your order number and the photos or
+          video. See the <Link href="/return-policy">Return Policy</Link> and <Link href="/refund-policy">Refund Policy</Link>.
+        </p>
+      </Section>
+    </LegalPage>
   );
 }

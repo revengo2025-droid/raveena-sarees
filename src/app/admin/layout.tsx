@@ -30,6 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { label: "Dashboard Overview", href: "/admin", icon: LayoutDashboard },
     { label: "Products & Sarees", href: "/admin/products", icon: Package },
+    { label: "Featured Festive Drops", href: "/admin/festive-drops", icon: Sparkles },
     { label: "Categories", href: "/admin/categories", icon: Layers },
     { label: "Orders & Shipping", href: "/admin/orders", icon: ShoppingBag },
     { label: "Customer Directory", href: "/admin/customers", icon: Users },
@@ -59,7 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="p-6 border-b border-[#1F1F1F] flex items-center justify-between">
             <Link href="/admin" className="flex items-center gap-3">
               <img
-                src="/images/logo/raveena-brand-logo.jpg"
+                src="/images/logo/raveena-mark.png"
                 alt="Raveena Sarees"
                 className="h-9 w-auto object-contain rounded-md border border-[#D4AF37]/30 shadow-sm"
               />

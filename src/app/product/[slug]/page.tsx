@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import {
   Star,
@@ -20,12 +21,13 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { SITE } from "@/lib/site";
+import { lookupPincodeAction } from "@/app/actions/geo";
 import { ProductCard } from "@/components/ProductCard";
 import {
   formatINR,
   calculateDiscountPercentage,
-  validateIndianPincode,
-  formatDate,
+    formatDate,
 } from "@/lib/utils";
 import { getProductBySlugAction } from "@/app/actions/products";
 
@@ -114,7 +116,7 @@ export default function ProductDetailPage() {
     return (
       <div className="min-h-[70vh] bg-brand-white flex flex-col items-center justify-center p-8 text-center text-brand-text">
         <div className="w-10 h-10 border-2 border-brand-gold border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-xs text-neutral-500 font-light">Retrieving heirloom saree details from atelier...</p>
+        <p className="text-xs text-neutral-500 font-light">Loading saree details…</p>
       </div>
     );
   }
@@ -124,7 +126,7 @@ export default function ProductDetailPage() {
       <div className="min-h-[70vh] bg-brand-white flex flex-col items-center justify-center p-8 text-center text-brand-text">
         <h2 className="text-2xl font-serif mb-2">Saree Not Found</h2>
         <p className="text-xs text-neutral-500 mb-6 font-light">
-          The requested saree creation could not be found in our atelier.
+          We could not find this saree.
         </p>
         <Link
           href="/shop"
@@ -154,11 +156,20 @@ export default function ProductDetailPage() {
   ).slice(0, 4);
 
   // Pincode Check
-  const handlePincodeCheck = (e: React.FormEvent) => {
+  const handlePincodeCheck = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pincode.trim()) return;
-    const res = validateIndianPincode(pincode);
-    setPincodeResult(res);
+    const clean = pincode.trim();
+    if (!/^[1-9]\d{5}$/.test(clean)) {
+      setPincodeResult({ isValid: false });
+      return;
+    }
+    const res = await lookupPincodeAction(clean);
+    setPincodeResult(
+      res.success
+        ? { isValid: true, city: res.data.districts[0] || clean, state: res.data.state || "India" }
+        : { isValid: false }
+    );
   };
 
   const handleBuyNow = () => {
@@ -186,7 +197,7 @@ export default function ProductDetailPage() {
 
   const handleWhatsAppShare = () => {
     const text = encodeURIComponent(
-      `Admire this handwoven masterpiece from Ravina Sarees: ${product.name} - ${window.location.href}`
+      `Admire this handwoven masterpiece from Raveena Sarees: ${product.name} - ${window.location.href}`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };
@@ -216,52 +227,6 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-brand-white text-brand-text py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto font-sans animate-fade-in">
       {/* Schema.org Product JSON-LD Structured Data for Google Rich Snippets */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org/",
-            "@type": "Product",
-            name: product.name,
-            image: (product.images || []).map((img: string) =>
-              img.startsWith("http") ? img : `https://ravinasarees.com${img}`
-            ),
-            description: product.description,
-            sku: product.sku,
-            mpn: product.sku,
-            brand: {
-              "@type": "Brand",
-              name: "Ravina Sarees",
-            },
-            offers: {
-              "@type": "Offer",
-              url: `https://ravinasarees.com/product/${product.slug}`,
-              priceCurrency: "INR",
-              price: product.discountPrice || product.price,
-              priceValidUntil: "2026-12-31",
-              itemCondition: "https://schema.org/NewCondition",
-              availability:
-                product.stock > 0
-                  ? "https://schema.org/InStock"
-                  : "https://schema.org/OutOfStock",
-              seller: {
-                "@type": "Organization",
-                name: "Ravina Sarees",
-              },
-            },
-            aggregateRating: {
-              "@type": "AggregateRating",
-              ratingValue: product.rating,
-              reviewCount: product.reviewCount || 1,
-              bestRating: "5",
-              worstRating: "1",
-            },
-            category: product.categoryName,
-            material: product.fabric,
-            color: product.primaryColor,
-          }),
-        }}
-      />
 
       {/* 1. Breadcrumbs */}
       <nav className="flex items-center gap-2 text-xs text-neutral-500 mb-8 overflow-x-auto whitespace-nowrap pb-2 font-poppins">
@@ -286,17 +251,18 @@ export default function ProductDetailPage() {
         <div className="lg:col-span-7 space-y-4">
           {/* Main Large Image with Zoom */}
           <div className="relative aspect-[3/4] w-full rounded-3xl overflow-hidden bg-brand-ivory border border-brand-border shadow-luxury group">
-            <img
+            <Image
               src={product.images[selectedImageIndex] || product.images[0]}
               alt={product.name}
-              className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105 cursor-zoom-in"
+              fill
+              priority
+              quality={85}
+              sizes="(min-width: 1024px) 58vw, 100vw"
+              className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105 cursor-zoom-in motion-reduce:transition-none"
             />
 
             {/* Badges */}
             <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-              <span className="bg-brand-gold text-white font-bold text-[10px] uppercase tracking-wider px-3 py-1 rounded-full shadow-md flex items-center gap-1 font-poppins">
-                <Award className="w-3.5 h-3.5" /> Pure Silk Mark
-              </span>
               {discountPercent > 0 && (
                 <span className="bg-brand-maroon text-white font-semibold text-[10px] uppercase tracking-wider px-3 py-1 rounded-full shadow-md font-poppins">
                   Save {discountPercent}%
@@ -325,13 +291,14 @@ export default function ProductDetailPage() {
                 <button
                   key={idx}
                   onClick={() => setSelectedImageIndex(idx)}
-                  className={`w-20 sm:w-24 aspect-[3/4] rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${
+                  aria-label={`Show photo ${idx + 1}`}
+                  className={`relative w-20 sm:w-24 aspect-[3/4] rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${
                     selectedImageIndex === idx
                       ? "border-brand-gold scale-105 shadow-md ring-2 ring-brand-gold/30"
                       : "border-brand-border opacity-70 hover:opacity-100"
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <Image src={img} alt="" fill sizes="96px" className="object-cover" />
                 </button>
               ))}
             </div>
@@ -352,7 +319,8 @@ export default function ProductDetailPage() {
               {product.name}
             </h1>
 
-            {/* Ratings Summary */}
+            {/* Ratings Summary: only shown once real reviews exist */}
+            {product.reviewCount > 0 && (
             <div className="flex items-center gap-3">
               <div className="flex items-center text-brand-gold">
                 {[...Array(5)].map((_, i) => (
@@ -373,9 +341,10 @@ export default function ProductDetailPage() {
                 onClick={() => setActiveTab("reviews")}
                 className="text-xs text-brand-maroon hover:underline font-poppins font-medium"
               >
-                ({product.reviewCount} Verified Reviews)
+                ({product.reviewCount} {product.reviewCount === 1 ? "review" : "reviews"})
               </button>
             </div>
+            )}
 
             {/* Price & Discount */}
             <div className="p-4 bg-brand-ivory border border-brand-border rounded-2xl shadow-sm">
@@ -395,7 +364,7 @@ export default function ProductDetailPage() {
                 )}
               </div>
               <p className="text-[11px] text-neutral-500 mt-1 font-light">
-                Inclusive of all taxes (GST) • Complimentary Insured Express Pan-India Shipping
+                Prices are in ₹. Shipping is calculated at checkout (free on orders of ₹2,500 or more).
               </p>
             </div>
 
@@ -479,12 +448,11 @@ export default function ProductDetailPage() {
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>
-                        Delivery to <strong>{pincodeResult.city}, {pincodeResult.state}</strong> in{" "}
-                        <strong>{pincodeResult.deliveryDays} business day(s)</strong>. Cash on Delivery & Express Air Courier available.
+                        <strong>{pincodeResult.city}, {pincodeResult.state}</strong>. The courier and expected delivery date are shown on your order once it ships. See our <Link href="/shipping-policy" className="underline">shipping policy</Link>.
                       </span>
                     </div>
                   ) : (
-                    <span>Please enter a valid 6-digit Indian PIN code.</span>
+                    <span>We could not find that PIN code. Please check it and try again.</span>
                   )}
                 </div>
               )}
@@ -530,15 +498,15 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-3 gap-2 pt-4 border-t border-brand-border text-center text-[10px] text-neutral-600 font-poppins">
               <div className="p-2.5 bg-brand-ivory rounded-xl border border-brand-border">
                 <ShieldCheck className="w-4 h-4 text-brand-gold mx-auto mb-1" />
-                <span>100% Silk Mark Authenticated</span>
+                <span>Secure Razorpay payment</span>
               </div>
               <div className="p-2.5 bg-brand-ivory rounded-xl border border-brand-border">
                 <RotateCcw className="w-4 h-4 text-brand-gold mx-auto mb-1" />
-                <span>7-Day Easy Exchange</span>
+                <span>7-day return window</span>
               </div>
               <div className="p-2.5 bg-brand-ivory rounded-xl border border-brand-border">
-                <Sparkles className="w-4 h-4 text-brand-gold mx-auto mb-1" />
-                <span>Handloom Certified</span>
+                <Truck className="w-4 h-4 text-brand-gold mx-auto mb-1" />
+                <span>Order tracking</span>
               </div>
             </div>
           </div>
@@ -577,13 +545,8 @@ export default function ProductDetailPage() {
         <div className="py-8 text-xs sm:text-sm text-neutral-700 leading-relaxed max-w-4xl">
           {activeTab === "description" && (
             <div className="space-y-4">
-              <h3 className="text-xl font-serif text-brand-text">The Artisan Narrative</h3>
+              <h3 className="text-xl font-serif text-brand-text">About this saree</h3>
               <p className="font-light">{product.description}</p>
-              <p className="font-light">
-                Each saree in our atelier undergoes a rigorous 4-step quality audit:
-                warp-weft tension inspection, pure gold zari lustre appraisal, fall-and-pico readiness, and certified
-                Silk Mark tagging.
-              </p>
             </div>
           )}
 
@@ -642,15 +605,12 @@ export default function ProductDetailPage() {
 
           {activeTab === "shipping" && (
             <div className="space-y-4">
-              <h3 className="text-xl font-serif text-brand-text">Pan-India Express Shipping & 7-Day Returns</h3>
+              <h3 className="text-xl font-serif text-brand-text">Shipping &amp; returns</h3>
               <p className="font-light">
-                <strong>Express Air Shipping:</strong> All orders are dispatched via BlueDart Express Air Courier within 24-48 hours. Transit insurance is included at zero extra cost.
+                <strong>Shipping:</strong> Free on orders of ₹2,500 or more; ₹150 below that. When your order ships, the courier and tracking number appear on your order page. See the <Link href="/shipping-policy" className="underline text-brand-maroon">Shipping Policy</Link>.
               </p>
               <p className="font-light">
-                <strong>Local Deliveries:</strong> Express dispatch available across Telangana & South India.
-              </p>
-              <p className="font-light">
-                <strong>7-Day Returns & Exchanges:</strong> If you are not completely enchanted by your saree, request a doorstep return pickup or exchange within 7 days of delivery.
+                <strong>Returns:</strong> You can request a return within {SITE.returnWindowDays} days of delivery if the item is damaged, wrong, or not as described. See the <Link href="/return-policy" className="underline text-brand-maroon">Return Policy</Link> and <Link href="/refund-policy" className="underline text-brand-maroon">Refund Policy</Link>.
               </p>
             </div>
           )}
@@ -708,7 +668,7 @@ export default function ProductDetailPage() {
 
               {/* Write Review Form */}
               <div className="bg-brand-ivory p-6 rounded-2xl border border-brand-border space-y-4 shadow-card">
-                <h4 className="font-serif text-base text-brand-text font-semibold">Write a Certified Review</h4>
+                <h4 className="font-serif text-base text-brand-text font-semibold">Write a Review</h4>
                 <form onSubmit={handleSubmitReview} className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
@@ -816,7 +776,7 @@ export default function ProductDetailPage() {
               View More from {product.categoryName} &rarr;
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {relatedProducts.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
@@ -840,11 +800,9 @@ export default function ProductDetailPage() {
                   href={`/product/${p.slug}`}
                   className="group bg-white rounded-2xl overflow-hidden border border-brand-border hover:border-brand-gold transition-all p-2 shadow-card"
                 >
-                  <img
-                    src={p.images[0]}
-                    alt={p.name}
-                    className="aspect-[3/4] w-full object-cover rounded-xl mb-2"
-                  />
+                  <div className="relative aspect-[3/4] w-full rounded-xl overflow-hidden mb-2">
+                    <Image src={p.images[0]} alt={p.name} fill sizes="(min-width: 640px) 16vw, 33vw" className="object-cover" />
+                  </div>
                   <h4 className="text-[11px] text-brand-text line-clamp-1 font-medium group-hover:text-brand-maroon">
                     {p.name}
                   </h4>

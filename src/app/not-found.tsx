@@ -22,7 +22,7 @@ export default function NotFound() {
           href="/"
           className="btn-primary px-8 py-3.5 text-xs font-bold uppercase tracking-widest rounded-full shadow-md"
         >
-          Return to Atelier Home
+          Return to Home
         </Link>
         <Link
           href="/shop"

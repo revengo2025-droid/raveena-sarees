@@ -1,104 +1,74 @@
-"use client";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronDown } from "lucide-react";
+import { FAQ_CATEGORIES } from "@/lib/faqs";
+import { SITE } from "@/lib/site";
 
-import React, { useState } from "react";
-import { ChevronDown, ChevronUp, MessageCircle } from "lucide-react";
+export const metadata: Metadata = {
+  title: "Frequently Asked Questions",
+  description: `Answers about ordering, payments, shipping, returns, refunds, products and support at ${SITE.name}.`,
+  alternates: { canonical: "/faq" },
+};
 
 export default function FAQPage() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
-
-  const faqs = [
-    {
-      q: "How can I verify that Ravina Sarees are 100% pure silk?",
-      a: "Every pure silk saree from Ravina Sarees arrives with an authenticated Silk Mark India tag issued by the Central Silk Board. This tag certifies that the warp and weft fibres are 100% natural mulberry, tussar, or katan silk with zero synthetic mixing.",
-      category: "Authenticity & Silk Purity",
-    },
-    {
-      q: "What type of zari is woven into the Kanjivaram and Banarasi sarees?",
-      a: "We exclusively use authentic metallic zari (silver wire electroplated with pure 24K gold) for our bridal and heirloom masterloom collections. For lightweight festive drapes, tested high-grade metallic zari is used to ensure featherlight comfort while maintaining lustrous courtly shine.",
-      category: "Authenticity & Silk Purity",
-    },
-    {
-      q: "Does every saree include an unstitched blouse piece?",
-      a: "Yes! All 5.5-meter sarees at Ravina Sarees include a coordinated 0.80m to 1.00m unstitched pure silk blouse piece with matching zari borders, running alongside the saree length.",
-      category: "Product & Specifications",
-    },
-    {
-      q: "How long does shipping take across India?",
-      a: "We offer complimentary express air shipping across India via BlueDart Express. Orders are dispatched within 24-48 hours. Metros take 2-3 business days. Rest of India takes 3-4 business days.",
-      category: "Shipping & Delivery",
-    },
-    {
-      q: "What is your 7-Day Return and Exchange Policy?",
-      a: "If you wish to exchange or return a saree, simply notify us within 7 days of delivery. We will arrange a complimentary insured doorstep reverse pickup. Upon receiving the saree in original unused condition with Silk Mark tags intact, your refund or exchange is processed instantly.",
-      category: "Returns & Exchanges",
-    },
-    {
-      q: "Can I visit your atelier or boutique for private bridal trials?",
-      a: "Yes, our flagship atelier is located at Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana – 504224. We are Open 24×7 and offer private bespoke bridal styling consultations. You can also connect directly with our stylists on WhatsApp for video viewing.",
-      category: "Showroom & Appointments",
-    },
-  ];
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ_CATEGORIES.flatMap((c) =>
+      c.items.map((i) => ({
+        "@type": "Question",
+        name: i.q,
+        acceptedAnswer: { "@type": "Answer", text: i.a },
+      }))
+    ),
+  };
 
   return (
-    <div className="min-h-screen bg-brand-white text-brand-text py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto font-sans">
-      <div className="text-center max-w-xl mx-auto mb-14 space-y-2">
-        <span className="text-xs font-semibold text-brand-gold uppercase tracking-[0.3em] block font-poppins">
-          Patron Assistance
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-serif text-brand-text font-normal">
-          Frequently Asked Questions
-        </h1>
-        <p className="text-xs text-neutral-500 font-light">
-          Everything you need to know about our handlooms, zari certification, delivery, and care.
+    <div className="bg-brand-white text-brand-text font-sans">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+        <nav aria-label="Breadcrumb" className="text-xs text-neutral-500 mb-5 font-poppins">
+          <Link href="/" className="hover:text-brand-gold">Home</Link> <span aria-hidden="true">/</span> FAQ
+        </nav>
+        <h1 className="text-3xl sm:text-4xl font-serif font-normal">Frequently Asked Questions</h1>
+        <p className="mt-3 text-[15px] text-neutral-600">
+          Quick answers about orders, payments, shipping, returns and more. Can&rsquo;t find what you need? See{" "}
+          <Link href="/contact" className="text-brand-maroon underline">Contact</Link>.
         </p>
-      </div>
 
-      <div className="space-y-4">
-        {faqs.map((faq, idx) => {
-          const isOpen = openIndex === idx;
-          return (
-            <div
-              key={idx}
-              className="bg-white border border-brand-border hover:border-brand-gold/50 rounded-2xl overflow-hidden transition-all shadow-card"
-            >
-              <button
-                onClick={() => setOpenIndex(isOpen ? null : idx)}
-                className="w-full p-5 text-left flex items-center justify-between gap-4 focus:outline-none"
-              >
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-brand-gold tracking-wider block mb-1 font-poppins">
-                    {faq.category}
-                  </span>
-                  <h3 className="font-serif text-base text-brand-text font-medium">{faq.q}</h3>
-                </div>
-                <div className="p-1 rounded-full bg-brand-ivory text-neutral-500">
-                  {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </div>
-              </button>
+        <nav aria-label="FAQ categories" className="mt-6 flex flex-wrap gap-2">
+          {FAQ_CATEGORIES.map((c) => (
+            <a key={c.id} href={`#${c.id}`} className="px-3.5 min-h-[36px] inline-flex items-center rounded-full border border-brand-border bg-brand-ivory text-xs font-poppins text-neutral-700 hover:border-brand-gold hover:text-brand-maroon">
+              {c.title}
+            </a>
+          ))}
+        </nav>
 
-              {isOpen && (
-                <div className="px-5 pb-5 text-xs text-neutral-600 leading-relaxed border-t border-brand-border pt-3 font-light animate-fadeIn">
-                  {faq.a}
-                </div>
-              )}
+        {FAQ_CATEGORIES.map((c) => (
+          <section key={c.id} id={c.id} aria-labelledby={`${c.id}-h`} className="mt-10 scroll-mt-28">
+            <h2 id={`${c.id}-h`} className="text-xl sm:text-2xl font-serif mb-3">{c.title}</h2>
+            <div className="divide-y divide-brand-border border border-brand-border rounded-2xl bg-white overflow-hidden">
+              {c.items.map((item) => (
+                <details key={item.q} className="group">
+                  <summary className="flex items-center justify-between gap-4 cursor-pointer list-none px-4 sm:px-5 min-h-[56px] py-3 text-[15px] font-medium hover:bg-brand-ivory/60 [&::-webkit-details-marker]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-gold">
+                    {item.q}
+                    <ChevronDown className="w-4 h-4 shrink-0 text-brand-gold transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+                  </summary>
+                  <p className="px-4 sm:px-5 pb-4 text-[15px] leading-7 text-neutral-700">{item.a}</p>
+                </details>
+              ))}
             </div>
-          );
-        })}
-      </div>
+          </section>
+        ))}
 
-      <div className="mt-12 p-6 bg-brand-ivory border border-brand-border rounded-3xl text-center space-y-3 shadow-card">
-        <h3 className="font-serif text-lg text-brand-text font-semibold">Have a Specific Question?</h3>
-        <p className="text-xs text-neutral-500 max-w-sm mx-auto font-light">
-          Our drape concierge is available on WhatsApp 24×7 to assist you.
+        <p className="mt-10 text-sm text-neutral-600">
+          Policies:{" "}
+          <Link href="/shipping-policy" className="underline text-brand-maroon">Shipping</Link>,{" "}
+          <Link href="/return-policy" className="underline text-brand-maroon">Returns</Link>,{" "}
+          <Link href="/refund-policy" className="underline text-brand-maroon">Refunds</Link>,{" "}
+          <Link href="/cancellation-policy" className="underline text-brand-maroon">Cancellation</Link>,{" "}
+          <Link href="/grievance-redressal" className="underline text-brand-maroon">Grievance Redressal</Link>.
         </p>
-        <a
-          href="https://wa.me/917780756009"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-full transition-colors font-poppins shadow-md"
-        >
-          <MessageCircle className="w-4 h-4" /> Ask Concierge on WhatsApp
-        </a>
       </div>
     </div>
   );

@@ -1,9 +1,12 @@
 "use server";
 
+import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase";
 import { INITIAL_PRODUCTS } from "@/lib/mockData";
 
 export async function getDashboardStatsAction() {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
   try {
     const adminClient = createAdminClient();
 
@@ -53,6 +56,8 @@ export async function getDashboardStatsAction() {
 }
 
 export async function getCustomersAction() {
+  const auth = await requireAdmin();
+  if (!auth.ok) return { success: false, error: auth.error };
   try {
     const adminClient = createAdminClient();
     const { data: profiles, error } = await adminClient

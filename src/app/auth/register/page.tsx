@@ -38,7 +38,7 @@ function RegisterContent() {
 
       if (res.success) {
         login(email, "customer", fullName, phone);
-        showToast("Account created successfully! Welcome to Ravina Sarees.", "success");
+        showToast("Account created successfully! Welcome to Raveena Sarees.", "success");
         router.push(redirectParam);
       } else {
         showToast(res.error || "Could not create account. Please try again.", "error");
@@ -57,9 +57,9 @@ function RegisterContent() {
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block">
             <img
-              src="/images/logo/raveena-logo-light.png"
+              src="/images/logo/raveena-logo.jpg"
               alt="Raveena Sarees"
-              className="h-14 w-auto object-contain mx-auto"
+              className="h-24 w-24 object-cover rounded-2xl shadow-md mx-auto"
             />
             <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-0.5 font-poppins">
               New Patron Registration
@@ -69,7 +69,7 @@ function RegisterContent() {
             Join the Privileged Circle
           </h1>
           <p className="text-xs text-neutral-500 font-light">
-            Enjoy express checkout, order tracking, and exclusive bridal privileges.
+            Create an account to check out faster and track your orders.
           </p>
         </div>
 

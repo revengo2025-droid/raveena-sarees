@@ -31,9 +31,9 @@ class ConsoleEmailService implements EmailService {
   async sendOrderConfirmation(order: any) {
     const html = `
       <div style="font-family: serif; padding: 20px; color: #111;">
-        <h1 style="color: #991b1b;">Ravina Sarees — Order Confirmed</h1>
+        <h1 style="color: #991b1b;">Raveena Sarees — Order Confirmed</h1>
         <p>Dear ${order.customer_name || "Valued Customer"},</p>
-        <p>Thank you for shopping with Ravina Sarees. Your royal handloom order <strong>#${order.order_number}</strong> has been received.</p>
+        <p>Thank you for shopping with Raveena Sarees. Your royal handloom order <strong>#${order.order_number}</strong> has been received.</p>
         <p><strong>Order Total:</strong> ₹${Number(order.total_amount).toLocaleString("en-IN")}</p>
         <p><strong>Delivery Address:</strong> ${typeof order.shipping_address === "string" ? order.shipping_address : JSON.stringify(order.shipping_address)}</p>
         <p>Our master weavers are meticulously inspecting your silk sarees before secure pan-India dispatch.</p>
@@ -41,7 +41,7 @@ class ConsoleEmailService implements EmailService {
     `;
     await this.sendEmail({
       to: order.customer_email,
-      subject: `Order Confirmed: #${order.order_number} — Ravina Sarees`,
+      subject: `Order Confirmed: #${order.order_number} — Raveena Sarees`,
       html,
     });
   }
@@ -49,7 +49,7 @@ class ConsoleEmailService implements EmailService {
   async sendShippingNotification(order: any) {
     await this.sendEmail({
       to: order.customer_email,
-      subject: `Your Ravina Sarees Order #${order.order_number} is on the way!`,
+      subject: `Your Raveena Sarees Order #${order.order_number} is on the way!`,
       html: `<p>Your parcel has been dispatched with ${order.courier_partner || "BlueDart Express"}. Tracking: ${order.tracking_number || "Pending"}</p>`,
     });
   }
@@ -57,7 +57,7 @@ class ConsoleEmailService implements EmailService {
   async sendPasswordReset(email: string, resetLink: string) {
     await this.sendEmail({
       to: email,
-      subject: "Reset your Ravina Sarees Password",
+      subject: "Reset your Raveena Sarees Password",
       html: `<p>Click here to reset your password: <a href="${resetLink}">${resetLink}</a></p>`,
     });
   }
@@ -67,7 +67,7 @@ class ResendEmailService implements EmailService {
   private apiKey: string;
   private from: string;
 
-  constructor(apiKey: string, fromEmail: string, fromName = "Ravina Sarees") {
+  constructor(apiKey: string, fromEmail: string, fromName = "Raveena Sarees") {
     this.apiKey = apiKey;
     this.from = `${fromName} <${fromEmail}>`;
   }
@@ -107,7 +107,7 @@ class ResendEmailService implements EmailService {
     const html = `
       <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
         <div style="text-align: center; border-bottom: 2px solid #C8A24D; padding-bottom: 16px; margin-bottom: 24px;">
-          <h1 style="color: #630b1c; margin: 0; font-size: 24px; letter-spacing: 2px;">RAVINA SAREES</h1>
+          <h1 style="color: #630b1c; margin: 0; font-size: 24px; letter-spacing: 2px;">RAVEENA SAREES</h1>
           <p style="color: #6b7280; font-size: 12px; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase;">Royal Handlooms of India</p>
         </div>
         <h2 style="font-size: 18px; color: #111827;">Thank you for your order, ${order.customer_name || "Esteemed Client"}!</h2>
@@ -132,7 +132,7 @@ class ResendEmailService implements EmailService {
 
     await this.sendEmail({
       to: order.customer_email,
-      subject: `Confirmed: Order #${order.order_number} — Ravina Sarees`,
+      subject: `Confirmed: Order #${order.order_number} — Raveena Sarees`,
       html,
     });
   }
@@ -150,7 +150,7 @@ class ResendEmailService implements EmailService {
 
     await this.sendEmail({
       to: order.customer_email,
-      subject: `Shipped: Order #${order.order_number} — Ravina Sarees`,
+      subject: `Shipped: Order #${order.order_number} — Raveena Sarees`,
       html,
     });
   }
@@ -159,7 +159,7 @@ class ResendEmailService implements EmailService {
     const html = `
       <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #630b1c;">Reset Your Password</h2>
-        <p>We received a request to reset your password for your Ravina Sarees account.</p>
+        <p>We received a request to reset your password for your Raveena Sarees account.</p>
         <p><a href="${resetLink}" style="background-color: #630b1c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Reset Password</a></p>
         <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">If you didn't request this, you can safely ignore this message.</p>
       </div>
@@ -167,7 +167,7 @@ class ResendEmailService implements EmailService {
 
     await this.sendEmail({
       to: email,
-      subject: "Reset your Ravina Sarees Password",
+      subject: "Reset your Raveena Sarees Password",
       html,
     });
   }
@@ -175,10 +175,10 @@ class ResendEmailService implements EmailService {
 
 export function getEmailService(): EmailService {
   const apiKey = process.env.EMAIL_API_KEY;
-  const fromEmail = process.env.EMAIL_FROM_ADDRESS || "orders@ravinasarees.in";
-  const fromName = process.env.EMAIL_FROM_NAME || "Ravina Sarees";
+  const fromEmail = process.env.EMAIL_FROM_ADDRESS;
+  const fromName = process.env.EMAIL_FROM_NAME || "Raveena Sarees";
 
-  if (apiKey && !apiKey.includes("re_xxxxxxxx")) {
+  if (apiKey && fromEmail && !apiKey.includes("re_xxxxxxxx")) {
     return new ResendEmailService(apiKey, fromEmail, fromName);
   }
 

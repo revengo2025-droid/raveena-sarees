@@ -63,7 +63,7 @@ export const INITIAL_CATEGORIES: Category[] = [
   },
 ];
 
-export const INITIAL_PRODUCTS: SareeProduct[] = [
+const STARTER_PRODUCTS: SareeProduct[] = [
   {
     id: "saree-09",
     sku: "RAV-TIS-009",
@@ -296,13 +296,16 @@ export const INITIAL_PRODUCTS: SareeProduct[] = [
   },
 ];
 
+// Starter ratings are not published: ratings and review counts start at zero until real reviews exist.
+export const INITIAL_PRODUCTS: SareeProduct[] = STARTER_PRODUCTS.map((p) => ({ ...p, rating: 0, reviewCount: 0 }));
+
 export const HERO_SLIDES: HeroSlide[] = [
   {
     id: "hero-1",
     tagline: "The Festive & Wedding Edit 2026",
     title: "Tradition · Grace · For Every You",
     subtitle: "Handcrafted pure zari sarees, Banarasi masterlooms, and heirloom bridal silks starting at ₹1,794.",
-    accentText: "Accessible Luxury · 100% Pure Silk Mark",
+    
     imageUrl: "/images/hero/hero-banner-1.png",
     linkUrl: "/shop",
     buttonText: "Explore Collection",
@@ -310,9 +313,9 @@ export const HERO_SLIDES: HeroSlide[] = [
   {
     id: "hero-2",
     tagline: "Festive Loom Heritage",
-    title: "Happy Onam · Sarees That Celebrate Our Roots",
+    title: "Festive Collection",
     subtitle: "Pure South Indian weaves, golden temple borders, and festive handloom drapes for sacred celebrations.",
-    accentText: "Complimentary Express Pan-India Delivery",
+    
     imageUrl: "/images/hero/hero-banner-2.png",
     linkUrl: "/shop",
     buttonText: "Shop Festive Collection",
@@ -322,7 +325,7 @@ export const HERO_SLIDES: HeroSlide[] = [
     tagline: "Sarees For Every You",
     title: "Tradition in Every Drape",
     subtitle: "Soft shimmering tissue drapes, intricate floral jaals, and bespoke designer sarees starting at ₹1,794.",
-    accentText: "40% to 44% Introductory Discounts",
+    
     imageUrl: "/images/hero/hero-banner-3.png",
     linkUrl: "/product/turquoise-blue-tissue-silver-zariwork-saree-with-matching-blouse-piece",
     buttonText: "Discover Shimmer Sarees",
@@ -332,7 +335,7 @@ export const HERO_SLIDES: HeroSlide[] = [
 export const INITIAL_COUPONS: Coupon[] = [
   {
     id: "coup-1",
-    code: "RAVINA10",
+    code: "RAVEENA10",
     discountType: "percentage",
     discountValue: 10,
     minOrderValue: 2500,
@@ -358,7 +361,7 @@ export const INITIAL_COUPONS: Coupon[] = [
     discountValue: 15,
     minOrderValue: 1500,
     maxDiscount: 350,
-    description: "15% off for your first royal saree order at Ravina Sarees",
+    description: "15% off for your first royal saree order at Raveena Sarees",
     isActive: true,
     expiresAt: "2026-12-31T23:59:59Z",
   },
@@ -374,152 +377,7 @@ export const INITIAL_COUPONS: Coupon[] = [
   },
 ];
 
-export const INITIAL_REVIEWS: Review[] = [
-  {
-    id: "rev-4",
-    productId: "saree-09",
-    userName: "Meghana Deshmukh",
-    userCity: "Pune",
-    rating: 5,
-    title: "Mesmerizing turquoise shade and dazzling silver zari!",
-    comment: "The tissue fabric is so light and shimmering! The silver zari embroidery and scalloped border look ten times more expensive than ₹1,794. Wore it to my best friend's reception and received endless compliments!",
-    verifiedPurchase: true,
-    status: "approved",
-    createdAt: "2026-03-02T11:30:00Z",
-    likes: 31,
-  },
-  {
-    id: "rev-5",
-    productId: "saree-09",
-    userName: "Sanjana Roy",
-    userCity: "Hyderabad",
-    rating: 5,
-    title: "Unbelievable value at 40% discount!",
-    comment: "Received the saree in 24 hours in Hyderabad. The matching blouse piece is high quality and the shine under chandelier lights is breathtaking.",
-    verifiedPurchase: true,
-    status: "approved",
-    createdAt: "2026-03-05T14:15:00Z",
-    likes: 19,
-  },
-  {
-    id: "rev-6",
-    productId: "saree-10",
-    userName: "Pooja Hegde",
-    userCity: "Hyderabad",
-    rating: 5,
-    title: "The Rani Pink color & silver zari pallu are exquisite!",
-    comment: "The soft litchi silk drapes like butter! The tassel details on the pallu are so well-finished. Absolute value for money at ₹1,949. Packed beautifully in a luxury box.",
-    verifiedPurchase: true,
-    status: "approved",
-    createdAt: "2026-03-08T15:00:00Z",
-    likes: 27,
-  },
-  {
-    id: "rev-7",
-    productId: "saree-10",
-    userName: "Nandini Sharma",
-    userCity: "Mumbai",
-    rating: 5,
-    title: "Stunning festive saree, received so many compliments",
-    comment: "Wore this for a family wedding sangeet. The contrast blouse and silver zari work looks extremely royal. Delivered in just 2 days to Mumbai.",
-    verifiedPurchase: true,
-    status: "approved",
-    createdAt: "2026-03-09T12:30:00Z",
-    likes: 14,
-  },
-  {
-    id: "rev-8",
-    productId: "saree-11",
-    userName: "Kavitha Raghunath",
-    userCity: "Bengaluru",
-    rating: 5,
-    title: "Temple border and emerald tone look pure regal!",
-    comment: "The dual tone gold zari and rich contrast crimson border are magnificent. The drape stays perfectly structured throughout the ceremony without feeling heavy. Ravina Sarees has won a customer for life!",
-    verifiedPurchase: true,
-    status: "approved",
-    createdAt: "2026-03-15T10:20:00Z",
-    likes: 22,
-  },
-  {
-    id: "rev-9",
-    productId: "saree-12",
-    userName: "Sunita Agarwal",
-    userCity: "Varanasi",
-    rating: 5,
-    title: "Authentic Banarasi Kadhwa feel at an unbeatable price",
-    comment: "Coming from Varanasi, I know fine handlooms. The son-rupa dual zari and dense floral jaal work on this maroon saree are heirloom quality. Arrived in immaculate packaging with certification.",
-    verifiedPurchase: true,
-    status: "approved",
-    createdAt: "2026-03-17T16:45:00Z",
-    likes: 38,
-  },
-  {
-    id: "rev-10",
-    productId: "saree-13",
-    userName: "Aarti Mehra",
-    userCity: "Delhi",
-    rating: 5,
-    title: "The rose gold zari against midnight navy is breathtaking",
-    comment: "Modern, chic, and completely unique. Wore this to an evening cocktail reception and turned heads all night. Fabric has a delicate shimmer and doesn't crease.",
-    verifiedPurchase: true,
-    status: "approved",
-    createdAt: "2026-03-19T13:10:00Z",
-    likes: 17,
-  },
-  {
-    id: "rev-11",
-    productId: "saree-14",
-    userName: "Deepika Rao",
-    userCity: "Chennai",
-    rating: 5,
-    title: "Cloud-light organza and fairy-tale lavender shade",
-    comment: "I was worried organza might puff up, but this crystal silk blend falls so softly! The silver scalloped border is delicately embroidered. Perfect for daytime occasions.",
-    verifiedPurchase: true,
-    status: "approved",
-    createdAt: "2026-03-21T09:40:00Z",
-    likes: 24,
-  },
-  {
-    id: "rev-12",
-    productId: "saree-15",
-    userName: "Shravya Reddy",
-    userCity: "Warangal",
-    rating: 5,
-    title: "Masterpiece wedding saree! Felt like a royal bride",
-    comment: "The Swarna gold lustre and deep crimson red temple pallu with chariot motifs are pure artistry. We used this for our family muhurtham and everyone asked where we bought it!",
-    verifiedPurchase: true,
-    status: "approved",
-    createdAt: "2026-03-23T18:05:00Z",
-    likes: 41,
-  },
-];
+// No placeholder reviews: only real, moderated customer reviews are ever shown.
+export const INITIAL_REVIEWS: Review[] = [];
 
-export const TESTIMONIALS = [
-  {
-    id: "test-1",
-    name: "Lakshmi Narayanan",
-    role: "Bride & Classical Dancer",
-    city: "Hyderabad",
-    rating: 5,
-    quote: "Ravina Sarees understands the soul of South Indian handlooms. The fall, the zari lustre, and the sheer elegance of their silks are unmatched in Telangana.",
-    image: "/images/products/golden-kanchipuram-1.jpg",
-  },
-  {
-    id: "test-2",
-    name: "Sunita Deshmukh",
-    role: "Art Collector & Curator",
-    city: "Mumbai",
-    rating: 5,
-    quote: "Ordering sarees online was daunting until I found Ravina. The packaging, certified silk authenticity, and quick BlueDart delivery made it a five-star luxury boutique experience.",
-    image: "/images/products/maroon-banarasi-1.jpg",
-  },
-  {
-    id: "test-3",
-    name: "Pooja Singhania",
-    role: "Fashion Stylist",
-    city: "Delhi NCR",
-    rating: 5,
-    quote: "The intricate zari tissue and soft jacquard silk sarees from Ravina have become my top recommendation for bridal styling across North and South weddings.",
-    image: "/images/products/lavender-organza-1.jpg",
-  },
-];
+

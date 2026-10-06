@@ -53,9 +53,9 @@ function LoginContent() {
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block">
             <img
-              src="/images/logo/raveena-logo-light.png"
+              src="/images/logo/raveena-logo.jpg"
               alt="Raveena Sarees"
-              className="h-14 w-auto object-contain mx-auto"
+              className="h-24 w-24 object-cover rounded-2xl shadow-md mx-auto"
             />
             <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-0.5 font-poppins">
               Patron Authentication
@@ -119,7 +119,7 @@ function LoginContent() {
 
         {/* Footer */}
         <div className="text-center pt-2 border-t border-brand-border text-xs text-neutral-500">
-          New to Ravina Sarees?{" "}
+          New to Raveena Sarees?{" "}
           <Link
             href={
               redirectParam !== "/account"
