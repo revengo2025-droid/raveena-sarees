@@ -6,11 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Lock, Mail, ArrowRight } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { loginAction } from "@/app/actions/auth";
+import { safeRedirectPath } from "@/lib/auth/roles";
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectParam = searchParams.get("redirect") || "/account";
+  const redirectParam = safeRedirectPath(searchParams.get("redirect"), "/account");
   const { login, showToast } = useApp();
 
   const [email, setEmail] = useState("");
@@ -26,16 +27,14 @@ function LoginContent() {
     setIsLoading(true);
 
     try {
-      const res = await loginAction({ email, password });
+      const res = await loginAction({ email, password }, redirectParam);
       if (res.success && res.data?.user) {
-        login(res.data.user.email, res.data.user.role as any, res.data.user.fullName);
+        const isStaff = res.data.user.role === "admin" || res.data.user.role === "staff";
+        login(res.data.user.email, isStaff ? "admin" : "customer", res.data.user.fullName);
         setIsLoading(false);
-        showToast("Signed in successfully. Welcome back!", "success");
-        if (res.data.user.role === "admin") {
-          router.push("/admin");
-        } else {
-          router.push(redirectParam);
-        }
+        // The destination is decided by the server from the database role (admin -> /admin, customer -> account)
+        router.replace(res.data.redirectTo || "/account");
+        router.refresh();
       } else {
         setIsLoading(false);
         showToast(res.error || "Invalid email or password", "error");

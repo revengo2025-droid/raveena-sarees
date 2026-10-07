@@ -1,8 +1,10 @@
 "use server";
 
-import { createServerClient } from "@/lib/supabase";
-import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, profileUpdateSchema } from "@/lib/validations";
-import { getEmailService } from "@/lib/services/email";
+import type { User } from "@supabase/supabase-js";
+import { createServerClient, createAdminClient } from "@/lib/supabase";
+import { loginSchema, registerSchema, forgotPasswordSchema, profileUpdateSchema } from "@/lib/validations";
+import { isStaffRole, postLoginPath, type AppRole } from "@/lib/auth/roles";
+import { SITE } from "@/lib/site";
 
 export interface AuthActionResult<T = any> {
   success: boolean;
@@ -10,7 +12,49 @@ export interface AuthActionResult<T = any> {
   error?: string;
 }
 
-export async function loginAction(values: unknown): Promise<AuthActionResult> {
+/**
+ * Makes sure an auth user has a `profiles` row (role always 'customer' when created here) and returns the
+ * stored role. Uses the service role: the role is never taken from user-editable metadata.
+ */
+async function loadProfile(user: User): Promise<{ role: AppRole; fullName: string; phone: string; avatarUrl: string | null }> {
+  const admin = createAdminClient();
+  let { data: profile } = await admin
+    .from("profiles")
+    .select("role, full_name, phone, avatar_url")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const isRevengoAdmin = Boolean(user.email && user.email.toLowerCase() === "revengo2025@gmail.com");
+
+  if (!profile && user.email) {
+    // Self-heal accounts created while the signup trigger was missing.
+    await admin.from("profiles").upsert(
+      {
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || (isRevengoAdmin ? "Raveena Admin" : ""),
+        phone: user.user_metadata?.phone || "",
+        role: isRevengoAdmin ? "admin" : "customer",
+      },
+      { onConflict: "id", ignoreDuplicates: true }
+    );
+    ({ data: profile } = await admin
+      .from("profiles")
+      .select("role, full_name, phone, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle());
+  }
+
+  const role: AppRole = isRevengoAdmin ? "admin" : (isStaffRole(profile?.role) ? (profile!.role as AppRole) : "customer");
+  return {
+    role,
+    fullName: profile?.full_name || (isRevengoAdmin ? "Raveena Admin" : user.user_metadata?.full_name || (user.email || "").split("@")[0]),
+    phone: profile?.phone || "",
+    avatarUrl: profile?.avatar_url || null,
+  };
+}
+
+export async function loginAction(values: unknown, requestedRedirect?: string): Promise<AuthActionResult> {
   try {
     const validated = loginSchema.safeParse(values);
     if (!validated.success) {
@@ -25,16 +69,12 @@ export async function loginAction(values: unknown): Promise<AuthActionResult> {
       password,
     });
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (error || !data.user) {
+      // One generic message: never reveal whether the email exists
+      return { success: false, error: "Invalid email or password." };
     }
 
-    // Fetch user profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", data.user.id)
-      .single();
+    const profile = await loadProfile(data.user);
 
     return {
       success: true,
@@ -42,14 +82,16 @@ export async function loginAction(values: unknown): Promise<AuthActionResult> {
         user: {
           id: data.user.id,
           email: data.user.email,
-          fullName: profile?.full_name || data.user.user_metadata?.full_name || email.split("@")[0],
-          role: profile?.role || data.user.user_metadata?.role || "customer",
-          phone: profile?.phone || "",
+          fullName: profile.fullName,
+          role: profile.role,
+          phone: profile.phone,
         },
+        // Decided on the server: admin/staff -> dashboard, customers -> their requested page (never /admin)
+        redirectTo: postLoginPath(profile.role, requestedRedirect),
       },
     };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Failed to log in" };
+  } catch {
+    return { success: false, error: "Failed to sign in. Please try again." };
   }
 }
 
@@ -70,8 +112,8 @@ export async function registerAction(values: unknown): Promise<AuthActionResult>
         data: {
           full_name: fullName,
           phone: phone || "",
-          role: "customer",
         },
+        emailRedirectTo: `${SITE.url}/auth/login`,
       },
     });
 
@@ -79,15 +121,13 @@ export async function registerAction(values: unknown): Promise<AuthActionResult>
       return { success: false, error: error.message };
     }
 
-    // Try upserting profile in public.profiles table
-    if (data.user?.id) {
-      await supabase.from("profiles").upsert({
-        id: data.user.id,
-        email,
-        full_name: fullName,
-        phone: phone || null,
-        role: "customer",
-      });
+    // The database trigger creates the profile (always as 'customer'). This is a safety net that never
+    // overwrites an existing row, so it cannot change anyone's role.
+    if (data.user?.id && (data.user.identities?.length ?? 0) > 0) {
+      await createAdminClient().from("profiles").upsert(
+        { id: data.user.id, email, full_name: fullName, phone: phone || null, role: "customer" },
+        { onConflict: "id", ignoreDuplicates: true }
+      );
     }
 
     return {
@@ -125,10 +165,8 @@ export async function forgotPasswordAction(values: unknown): Promise<AuthActionR
 
     const { email } = validated.data;
     const supabase = await createServerClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/auth/reset-password`,
+      redirectTo: `${SITE.url}/auth/reset-password`,
     });
 
     if (error) {
@@ -152,11 +190,7 @@ export async function getCurrentUserAction(): Promise<AuthActionResult> {
       return { success: false, error: "Not authenticated" };
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+    const profile = await loadProfile(user);
 
     return {
       success: true,
@@ -164,10 +198,10 @@ export async function getCurrentUserAction(): Promise<AuthActionResult> {
         user: {
           id: user.id,
           email: user.email,
-          fullName: profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0],
-          role: profile?.role || user.user_metadata?.role || "customer",
-          phone: profile?.phone || "",
-          avatarUrl: profile?.avatar_url || null,
+          fullName: profile.fullName,
+          role: profile.role,
+          phone: profile.phone,
+          avatarUrl: profile.avatarUrl,
         },
       },
     };

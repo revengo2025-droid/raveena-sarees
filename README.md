@@ -51,14 +51,14 @@
 * Customer Profile & Sign In / Register / Password Reset
 * Saved Address Book (Add, Edit, Delete, Default tags)
 * Order History with live status pills
-* Step-by-step Visual Shipment Tracking Timeline (BlueDart Air Express integration)
+* Order tracking page with live Shiprocket courier updates
 * Royal Wishlist with 1-click "Move to Bag"
 
 ### 🛡️ 4. Executive Admin Management Suite (`/admin`)
 * **Overview:** Gross revenue KPIs, average order value, low stock warnings, sales revenue charts.
 * **Product Management (CRUD):** Add new saree with multi-image URLs, SKU, category, prices, stock, fabric specs, and promotional badges.
 * **Category Management:** Manage categories, slugs, descriptions, and banners.
-* **Order Fulfillment:** Live status updates (Confirmed, Processing, Shipped, Delivered), BlueDart AWB tracking updates, and invoice printing.
+* **Order Fulfillment:** Live status updates (Confirmed, Processing, Shipped, Delivered), Shiprocket AWB & tracking with sync status and safe retries, and invoice printing.
 * **Customer Directory:** VIP patron list, order history counts, lifetime spend.
 * **Coupon Engine:** Create promo discount vouchers (% or flat ₹, min order value).
 * **Review Moderation:** Approve or reject customer reviews.

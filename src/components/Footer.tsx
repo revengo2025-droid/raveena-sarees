@@ -17,18 +17,31 @@ import { useApp } from "@/lib/store";
 import { SITE } from "@/lib/site";
 import { PRICING } from "@/lib/pricing";
 import { formatINR } from "@/lib/utils";
+import { subscribeNewsletterAction } from "@/app/actions/newsletter";
 
 export const Footer: React.FC = () => {
   const { categories, showToast } = useApp();
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && email.includes("@")) {
-      setSubscribed(true);
-      showToast("Welcome! Use code FIRSTBUY for 15% off your first order.", "success");
-      setEmail("");
+    if (!email || !email.includes("@") || subscribing) return;
+    setSubscribing(true);
+    try {
+      const res = await subscribeNewsletterAction(email);
+      if (res.success) {
+        setSubscribed(true);
+        showToast("Welcome! Use code FIRSTBUY for 15% off your first order.", "success");
+        setEmail("");
+      } else {
+        showToast(res.error || "Could not subscribe. Please try again.", "error");
+      }
+    } catch {
+      showToast("Could not subscribe. Please try again.", "error");
+    } finally {
+      setSubscribing(false);
     }
   };
 
@@ -61,12 +74,14 @@ export const Footer: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-white border border-brand-border rounded-full py-3.5 pl-5 pr-32 text-sm text-brand-text placeholder-brand-textMuted focus:outline-none focus:border-brand-gold transition-all font-body shadow-soft"
+                    disabled={subscribing}
                   />
                   <button
                     type="submit"
-                    className="absolute right-1.5 px-5 py-2.5 bg-brand-gold hover:bg-brand-maroon text-white font-button font-semibold text-[11px] uppercase tracking-wider rounded-full transition-all flex items-center gap-1.5 shadow-gold"
+                    disabled={subscribing}
+                    className="absolute right-1.5 px-5 py-2.5 bg-brand-gold hover:bg-brand-maroon text-white font-button font-semibold text-[11px] uppercase tracking-wider rounded-full transition-all flex items-center gap-1.5 shadow-gold disabled:opacity-60"
                   >
-                    Subscribe <ArrowRight className="w-3.5 h-3.5" />
+                    {subscribing ? "Sending..." : "Subscribe"} <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </form>
               )}
@@ -102,8 +117,14 @@ export const Footer: React.FC = () => {
               </p>
               <p className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-brand-gold shrink-0" />
-                <a href="mailto:raveenasarees22@gmail.com" className="hover:text-brand-gold transition-colors">
-                  raveenasarees22@gmail.com
+                <a href={`mailto:${SITE.email}`} className="hover:text-brand-gold transition-colors">
+                  {SITE.email}
+                </a>
+              </p>
+              <p className="flex items-center gap-2.5">
+                <Mail className="w-4 h-4 text-brand-gold shrink-0" />
+                <a href={`mailto:${SITE.infoEmail}`} className="hover:text-brand-gold transition-colors">
+                  {SITE.infoEmail}
                 </a>
               </p>
               <p className="flex items-center gap-2.5">
@@ -254,16 +275,40 @@ export const Footer: React.FC = () => {
             © {new Date().getFullYear()} {SITE.legalName || SITE.name}. All rights reserved.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-2.5 text-[11px] uppercase tracking-wider text-neutral-500">
-            <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full">
-              Razorpay Secured
-            </span>
-            <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full">
-              UPI & NetBanking
-            </span>
-            <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full">
-              Visa / MasterCard
-            </span>
+          {/* Accepted payment methods (all processed by Razorpay). Fixed sizes: no layout shift. */}
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">We accept</span>
+            <ul className="flex flex-wrap items-center justify-center gap-2" aria-label="Accepted payment methods">
+              {[
+                { src: "/images/payments/upi.svg", alt: "UPI" },
+                { src: "/images/payments/visa.svg", alt: "Visa" },
+                { src: "/images/payments/master.svg", alt: "Mastercard" },
+                { src: "/images/payments/rupay.svg", alt: "RuPay" },
+                { src: "/images/payments/netbanking.svg", alt: "Net Banking" },
+              ].map((m) => (
+                <li key={m.alt} className="rounded-[5px] bg-white/95 shadow-sm ring-1 ring-white/10 leading-none">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={m.src} alt={m.alt} title={m.alt} width={46} height={29} loading="lazy" decoding="async" className="block w-[46px] h-[29px]" />
+                </li>
+              ))}
+            </ul>
+            <a
+              href="https://razorpay.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md opacity-90 hover:opacity-100 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/payments/razorpay-badge-dark.png"
+                alt="Payments powered by Razorpay"
+                width={92}
+                height={37}
+                loading="lazy"
+                decoding="async"
+                className="block w-[92px] h-[37px]"
+              />
+            </a>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- Raveena Sarees - Comprehensive Production Seed Script
--- Atelier: Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana - 504224
+-- Atelier: Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana - 504299
 -- Brand: Raveena Sarees
 -- ==============================================================================
 
@@ -11,8 +11,8 @@ VALUES
     'Party Wear Sarees',
     'party-wear-sarees',
     'Glamorous contemporary drapes, shimmering tissue silks, sheer organzas, and modern cocktail sarees that turn heads.',
-    '/images/products/lavender-organza-1.jpg',
-    '/images/products/lavender-organza-1.jpg',
+    '/images/collections/party-wear.jpg',
+    '/images/collections/party-wear.jpg',
     1,
     true
   ),
@@ -20,44 +20,44 @@ VALUES
     'Silk Sarees',
     'silk-sarees',
     'Pure Kanjivaram, Mulberry, and soft Litchi Silk creations that drape with effortless grace and liquid lustre.',
-    '/images/products/emerald-kanjivaram-1.jpg',
-    '/images/products/emerald-kanjivaram-1.jpg',
+    '/images/collections/silk-sarees.jpg',
+    '/images/collections/silk-sarees.jpg',
     2,
-    true
-  ),
-  (
-    'Designer Sarees',
-    'designer-sarees',
-    'Exclusive festive concepts, midnight jacquards, scalloped zari borders, and artisanal limited-edition creations.',
-    '/images/products/navy-designer-1.jpg',
-    '/images/products/navy-designer-1.jpg',
-    3,
     true
   ),
   (
     'Wedding Sarees',
     'wedding-sarees',
     'Regal bridal masterpieces designed for sacred wedding vows, muhurtham moments, and grand reception ceremonies.',
-    '/images/products/golden-kanchipuram-1.jpg',
-    '/images/products/golden-kanchipuram-1.jpg',
-    4,
+    '/images/collections/wedding-sarees.jpg',
+    '/images/collections/wedding-sarees.jpg',
+    3,
     true
   ),
   (
     'Banarasi Heritage',
     'banarasi-sarees',
     'Authentic Varanasi Kadhwa brocades, son-rupa gold and silver motifs, and royal court-inspired heirloom masterworks.',
-    '/images/products/maroon-banarasi-1.jpg',
-    '/images/products/maroon-banarasi-1.jpg',
-    5,
+    '/images/collections/banarasi-heritage.jpg',
+    '/images/collections/banarasi-heritage.jpg',
+    4,
     true
   ),
   (
     'Handloom Silks',
     'handloom-sarees',
     'Traditional masterloom craftsmanship, certified Silk Mark drapes, temple Korvai borders, and generational bridal weaves.',
-    '/images/products/rani-pink-silk-1.jpg',
-    '/images/products/rani-pink-silk-1.jpg',
+    '/images/collections/handloom-silks.jpg',
+    '/images/collections/handloom-silks.jpg',
+    5,
+    true
+  ),
+  (
+    'Designer Sarees',
+    'designer-sarees',
+    'Exclusive festive concepts, midnight jacquards, scalloped zari borders, and artisanal limited-edition creations.',
+    '/images/collections/party-wear.jpg',
+    '/images/collections/party-wear.jpg',
     6,
     true
   )
@@ -263,6 +263,33 @@ INSERT INTO products (
   true,
   true,
   true
+),
+(
+  'RAV-PTY-016',
+  'Regal Plum Wine & Sage Mint Zari Embroidered Festive Party Wear Saree',
+  'regal-plum-wine-sage-mint-zari-embroidered-festive-party-wear-saree',
+  'Party Wear Sarees',
+  'Opulent regal glamour crafted for celestial evenings. Woven in sheer lustrous tissue georgette, richly hand-embellished with intricate antique gold zardozi bootis, cutdana scalloped borders, and delicate resham floral motifs. Comes with an unstitched coordinating designer blouse piece. A magnificent choice for glamorous sangeet ceremonies, cocktail galas, and wedding receptions.',
+  4490.00,
+  2694.00,
+  16,
+  'Pure Tissue Georgette Silk Blend',
+  'Antique Gold Zardozi & Resham Scalloped Embroidery',
+  'Handcrafted Embroidered Jacquard Edge',
+  '5.5 Meters',
+  true,
+  '0.85 Meters (Deep Wine Embroidered Designer Blouse Piece)',
+  'Cocktail Gala / Sangeet / Reception / Festive Soiree',
+  'Dry Clean Only. Avoid perfumes directly on embroidery. Store in a soft cotton muslin bag.',
+  ARRAY['Plum Wine', 'Sage Mint', 'Rose Gold', 'Royal Burgundy'],
+  'Plum Wine',
+  ARRAY['/images/products/party-wear-embroidered-1.jpg'],
+  5.0,
+  38,
+  true,
+  true,
+  true,
+  true
 )
 ON CONFLICT (slug) DO UPDATE
 SET price = EXCLUDED.price,
@@ -288,7 +315,7 @@ SET discount_type = EXCLUDED.discount_type,
 -- 4. SEED STORE SETTINGS
 INSERT INTO store_settings (key, value)
 VALUES
-  ('store_info', '{"name": "Raveena Sarees", "tagline": "Royal Handlooms of India", "phone": "+91 77807 56009", "email": "raveenasarees22@gmail.com", "address": "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana - 504224"}'::jsonb),
+  ('store_info', '{"name": "Raveena Sarees", "tagline": "Royal Handlooms of India", "phone": "+91 77807 56009", "email": "raveenasarees22@gmail.com", "info_email": "info@raveenasarees.com", "address": "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana - 504299"}'::jsonb),
   ('shipping_config', '{"free_shipping_threshold": 1000, "default_shipping_fee": 150, "gift_wrap_fee": 250, "courier_partner": "BlueDart Express"}'::jsonb),
   ('payment_config', '{"razorpay_enabled": true, "cod_enabled": true, "upi_enabled": true, "currency": "INR"}'::jsonb)
 ON CONFLICT (key) DO UPDATE

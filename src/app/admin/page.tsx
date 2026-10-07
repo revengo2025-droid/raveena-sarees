@@ -47,6 +47,7 @@ import { useApp } from "@/lib/store";
 import { ORDER_STATUS_LABELS, orderStatusLabel } from "@/lib/orders/mapper";
 import { updateOrderStatusAction } from "@/app/actions/orders";
 import { formatINR, formatDate } from "@/lib/utils";
+import { OperationsPanel } from "@/components/admin/OperationsPanel";
 
 export default function AdminDashboardPage() {
   const { products, orders, categories, coupons, reviews, refreshOrders, showToast } = useApp();
@@ -62,9 +63,10 @@ export default function AdminDashboardPage() {
   const [timeRange, setTimeRange] = useState<"today" | "week" | "month" | "all">("all");
 
   // ═══ CRM ANALYTICS ═══
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const paidOrders = orders.filter((o) => o.paymentStatus === "paid");
+  const totalRevenue = paidOrders.reduce((sum, o) => sum + o.totalAmount, 0);
   const totalOrdersCount = orders.length;
-  const avgOrderValue = totalOrdersCount > 0 ? Math.round(totalRevenue / totalOrdersCount) : 0;
+  const avgOrderValue = paidOrders.length > 0 ? Math.round(totalRevenue / paidOrders.length) : 0;
   const lowStockProducts = products.filter((p) => p.stock <= 5);
   const totalProductsInStock = products.reduce((sum, p) => sum + p.stock, 0);
   const activeProducts = products.filter((p) => p.stock > 0).length;
@@ -90,7 +92,7 @@ export default function AdminDashboardPage() {
         const d = new Date(o.createdAt);
         return d.getMonth() === mIdx;
       });
-      const rev = monthOrders.reduce((s, o) => s + o.totalAmount, 0);
+      const rev = monthOrders.filter((o) => o.paymentStatus === "paid").reduce((s, o) => s + o.totalAmount, 0);
       return {
         label: months[mIdx],
         revenue: rev,
@@ -201,12 +203,15 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* ═══════════ OPERATIONS: pipeline, payments, Shiprocket + email health ═══════════ */}
+      <OperationsPanel orders={orders} />
+
       {/* ═══════════ 2. KEY PERFORMANCE METRICS ═══════════ */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Total Revenue */}
         <div className="bg-gradient-to-br from-[#1A1508] to-[#0E0E0E] border border-[#D4AF37]/30 rounded-2xl p-5 space-y-2 col-span-2 sm:col-span-1 lg:col-span-2">
           <div className="flex items-center justify-between text-gray-400 text-xs">
-            <span className="uppercase font-bold tracking-wider">Total Revenue</span>
+            <span className="uppercase font-bold tracking-wider">Revenue (paid)</span>
             <div className="p-2 bg-[#D4AF37]/20 text-[#D4AF37] rounded-lg">
               <IndianRupee className="w-4 h-4" />
             </div>
@@ -215,7 +220,7 @@ export default function AdminDashboardPage() {
             {formatINR(totalRevenue)}
           </span>
           <div className="flex items-center gap-1 text-[11px] text-green-400">
-            <ArrowUpRight className="w-3 h-3" /> {orders.length > 0 ? `${orders.length} order${orders.length === 1 ? '' : 's'} recorded` : "Real-time ledger"}
+            <ArrowUpRight className="w-3 h-3" /> {paidOrders.length} paid order{paidOrders.length === 1 ? "" : "s"}
           </div>
         </div>
 
@@ -228,7 +233,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <span className="text-2xl font-bold text-white block">{totalOrdersCount}</span>
-          <span className="text-[10px] text-gray-500">BlueDart Express</span>
+          <span className="text-[10px] text-gray-500">All statuses</span>
         </div>
 
         {/* Average Order Value */}

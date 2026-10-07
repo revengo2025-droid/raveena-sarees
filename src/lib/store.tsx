@@ -229,7 +229,7 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
     }
     if (user.role === "admin") {
       const res = await getAllOrdersAdminAction();
-      if (res.success) setOrders(((res as any).data || []).map(mapOrderRow));
+      if (res.success) setOrders(((res as any).data || []).map((row: any) => mapOrderRow(row, { admin: true })));
     } else {
       const res = await getMyOrdersAction();
       if (res.success) setOrders(res.data);

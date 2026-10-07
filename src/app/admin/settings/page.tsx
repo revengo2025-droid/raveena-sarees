@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Save, MapPin, Sparkles, Truck, Globe, Shield, Phone, Mail } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { SITE } from "@/lib/site";
+import { OfferSettingsCard } from "@/components/admin/OfferSettingsCard";
 
 export default function AdminSettingsPage() {
   const { showToast } = useApp();
@@ -11,7 +12,7 @@ export default function AdminSettingsPage() {
   const [storeName, setStoreName] = useState("Raveena Sarees");
   const [domain, setDomain] = useState(SITE.url.replace(/^https?:\/\//, ""));
   const [showroomAddress, setShowroomAddress] = useState(
-    "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana – 504224, India"
+    "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana – 504299, India"
   );
   const [conciergePhone, setConciergePhone] = useState("+91 77807 56009");
   const [conciergeEmail, setConciergeEmail] = useState<string>(SITE.email);
@@ -38,6 +39,8 @@ export default function AdminSettingsPage() {
           Configure flagship atelier details in Telangana, shipping rules, tax settings, and Silk Mark licensing.
         </p>
       </div>
+
+      <OfferSettingsCard />
 
       <form onSubmit={handleSave} className="space-y-6 text-xs">
         {/* Brand Information */}

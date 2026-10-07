@@ -1,5 +1,10 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { ADMIN_HOME, isStaffRole } from "@/lib/auth/roles";
+
+const isAdminPath = (p: string) => p === "/admin" || p.startsWith("/admin/");
+const isCustomerOnlyPath = (p: string) =>
+  p === "/account" || p.startsWith("/account/") || p === "/checkout" || p.startsWith("/checkout/");
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
@@ -57,28 +62,27 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Route protection logic
   const path = request.nextUrl.pathname;
-
-  // Protect /account routes
-  if (path.startsWith("/account") && !user) {
+  const toLogin = () => {
     const redirectUrl = new URL("/auth/login", request.url);
     redirectUrl.searchParams.set("redirect", path);
     return NextResponse.redirect(redirectUrl);
-  }
+  };
 
-  // Protect /admin routes - in real production, check profile role
-  if (path.startsWith("/admin")) {
-    if (!user) {
-      const redirectUrl = new URL("/auth/login", request.url);
-      redirectUrl.searchParams.set("redirect", path);
-      return NextResponse.redirect(redirectUrl);
+  if ((path.startsWith("/account") || isAdminPath(path)) && !user) return toLogin();
+
+  if (user && (isAdminPath(path) || isCustomerOnlyPath(path))) {
+    // Role is read from the profiles table (never from user-editable metadata). RLS lets a user read only their own row.
+    const { data: profile, error } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+    const staff = !error && isStaffRole(profile?.role);
+
+    // Dashboard: admin/staff only. Every admin page and action re-checks this on the server.
+    if (isAdminPath(path) && !staff) {
+      return NextResponse.redirect(new URL("/?denied=admin", request.url));
     }
-
-    // Role is read from the profiles table (never from user-editable metadata)
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-    if (profile?.role !== "admin" && profile?.role !== "staff") {
-      return NextResponse.redirect(new URL("/", request.url));
+    // Admin accounts are not customer accounts: keep them out of /account and checkout
+    if (isCustomerOnlyPath(path) && staff) {
+      return NextResponse.redirect(new URL(ADMIN_HOME, request.url));
     }
   }
 

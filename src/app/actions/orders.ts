@@ -1,12 +1,15 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth/admin";
+import { isStaffRole } from "@/lib/auth/roles";
 import { createServerClient, createAdminClient } from "@/lib/supabase";
 import { checkoutSchema, razorpayVerificationSchema, type CheckoutInput } from "@/lib/validations";
 import { PRICING } from "@/lib/pricing";
 import { createRazorpayOrder, verifyRazorpaySignature, fetchRazorpayOrder, isRazorpayLive } from "@/lib/services/payment/razorpay";
-import { getEmailService } from "@/lib/services/email";
-import { getShippingService } from "@/lib/services/shipping";
+import { calculateShippingFee } from "@/lib/services/shipping";
+import { cancelShiprocketOrder } from "@/lib/services/shipping/fulfillment";
+import { confirmOnlinePayment, startPostConfirmation } from "@/lib/orders/payment";
+import { ORDER_STATUSES, transitionOrderStatus } from "@/lib/orders/transitions";
 import { INITIAL_PRODUCTS, INITIAL_COUPONS as STARTER_COUPONS } from "@/lib/mockData";
 
 // Bundled sample coupons are for local development only.
@@ -149,21 +152,31 @@ export async function createOrderAction(values: CheckoutInput) {
     }
 
     // 4. Shipping fee calculation
-    const shippingService = getShippingService();
-    const shippingFee = shippingService.calculateShippingFee(shippingAddress.pincode, calculatedSubtotal);
+    const shippingFee = calculateShippingFee(shippingAddress.pincode, calculatedSubtotal);
 
     // 5. Final total
     const giftWrapFee = giftWrap ? PRICING.giftWrapFee : 0;
     const finalTotal = Math.max(0, calculatedSubtotal - discountAmount + shippingFee + giftWrapFee);
 
-    // 6. Generate unique order number
-    const randomPart = Math.floor(100000 + Math.random() * 900000);
-    const orderNumber = `RVN-${new Date().getFullYear()}-${randomPart}`;
-
-    // 7. Handle Payment Provider (Razorpay)
+    // 6. Signed-in customers only. Admin/staff accounts are not customer accounts.
     if (!user) {
       return { success: false, error: "Please sign in to place your order." };
     }
+    const { data: profile } = await adminClient.from("profiles").select("role").eq("id", user.id).maybeSingle();
+    if (isStaffRole(profile?.role)) {
+      return { success: false, error: "Admin accounts cannot place orders. Please sign in with a customer account." };
+    }
+
+    // 7. Unique order number (RVN-YYYY-NNNNNN). It is also the Shiprocket / Razorpay reference.
+    let orderNumber = "";
+    for (let i = 0; i < 5 && !orderNumber; i++) {
+      const candidate = `RVN-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+      const { data: clash } = await adminClient.from("orders").select("id").eq("order_number", candidate).maybeSingle();
+      if (!clash) orderNumber = candidate;
+    }
+    if (!orderNumber) return { success: false, error: "Please try again." };
+
+    // 8. Payment provider (Razorpay)
     const orderEmail = user.email || customerEmail;
 
     let razorpayOrderId: string | undefined;
@@ -212,8 +225,10 @@ export async function createOrderAction(values: CheckoutInput) {
           shipping_fee: shippingFee,
           total_amount: finalTotal,
           payment_method: paymentMethod,
-          payment_status: paymentMethod === "cod" ? "pending" : "pending",
+          payment_status: "pending",
           order_status: paymentMethod === "cod" ? "confirmed" : "pending",
+          // COD is confirmed now and ships right away; online orders become shippable once paid
+          fulfillment_status: paymentMethod === "cod" ? "pending" : null,
           gift_wrap: giftWrap || false,
           gift_message: giftMessage || null,
           applied_coupon: appliedCoupon,
@@ -294,18 +309,8 @@ export async function createOrderAction(values: CheckoutInput) {
       };
     }
 
-    // 9. If Cash on Delivery, send immediate confirmation email
-    if (paymentMethod === "cod") {
-      const emailService = getEmailService();
-      await emailService.sendOrderConfirmation({
-        order_number: orderNumber,
-        customer_name: customerName,
-        customer_email: orderEmail,
-        total_amount: finalTotal,
-        payment_status: "Pending (Cash On Delivery)",
-        shipping_address: `${shippingAddress.houseNumber}, ${shippingAddress.streetAddress}, ${shippingAddress.locality}, ${shippingAddress.city}, ${shippingAddress.state} - ${shippingAddress.pincode}`,
-      });
-    }
+    // 9. Cash on Delivery is confirmed immediately: confirmation email + Shiprocket, after the response
+    if (paymentMethod === "cod") startPostConfirmation(createdOrderId);
 
     revalidatePath("/admin/orders");
 
@@ -327,8 +332,9 @@ export async function createOrderAction(values: CheckoutInput) {
       },
     };
   } catch (err: any) {
-    console.error("createOrderAction error:", err);
-    return { success: false, error: err.message || "Failed to create order" };
+    console.error("createOrderAction error:", err?.message || err);
+    // Never surface provider/internal error details to the browser
+    return { success: false, error: "We could not place your order. You have not been charged. Please try again." };
   }
 }
 
@@ -366,112 +372,34 @@ export async function verifyPaymentAction(values: unknown) {
       }
     }
 
-    // Update order status in Supabase
-    const { data: order, error } = await adminClient
-      .from("orders")
-      .update({
-        payment_status: "paid",
-        order_status: "confirmed",
-        payment_id: razorpayPaymentId,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("order_number", orderNumber)
-      .select()
-      .single();
-
-    if (order) {
-      // Record payment
-      await adminClient.from("payments").insert({
-        order_id: order.id,
-        payment_provider: "razorpay",
-        transaction_id: razorpayPaymentId,
-        razorpay_order_id: razorpayOrderId,
-        razorpay_payment_id: razorpayPaymentId,
-        razorpay_signature: razorpaySignature,
-        amount: order.total_amount,
-        currency: "INR",
-        status: "captured",
-      });
-
-      // Record order history
-      await adminClient.from("order_status_history").insert({
-        order_id: order.id,
-        previous_status: "pending",
-        new_status: "confirmed",
-        notes: `Razorpay payment captured: ${razorpayPaymentId}`,
-      });
-
-      // Send order confirmation email
-      const emailService = getEmailService();
-      await emailService.sendOrderConfirmation(order);
-
-      // Create automated shipment
-      const shippingService = getShippingService();
-      const addr = order.shipping_address as any;
-      const shipment = await shippingService.createShipment({
-        orderNumber: order.order_number,
-        recipientName: order.customer_name,
-        recipientPhone: order.customer_phone,
-        streetAddress: addr?.streetAddress || "",
-        city: addr?.city || "Hyderabad",
-        state: addr?.state || "Telangana",
-        pincode: addr?.pincode || "500001",
-        itemCount: 1,
-      });
-
-      if (shipment.success) {
-        await adminClient
-          .from("orders")
-          .update({
-            courier_partner: shipment.courierPartner,
-            tracking_number: shipment.trackingNumber,
-            tracking_url: shipment.trackingUrl,
-            estimated_delivery: shipment.estimatedDeliveryDate,
-          })
-          .eq("id", order.id);
-      }
+    // Only the order's owner can confirm it from the browser (the webhook confirms independently)
+    const supabase = await createServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const { data: target } = await adminClient.from("orders").select("user_id, total_amount").eq("order_number", orderNumber).maybeSingle();
+    if (!target || !user || target.user_id !== user.id) {
+      return { success: false, error: "Payment could not be matched to this order." };
     }
+
+    // Marks paid exactly once (the Razorpay webhook may arrive first); email + Shiprocket run in the background
+    const result = await confirmOnlinePayment({
+      orderNumber,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+      amountRupees: Number(target.total_amount),
+      source: "client",
+    });
+    if (!result.ok) return { success: false, error: "Payment could not be matched to this order." };
 
     revalidatePath("/admin/orders");
     revalidatePath(`/account/track/${orderNumber}`);
 
     return { success: true, orderNumber };
   } catch (err: any) {
-    console.error("verifyPaymentAction error:", err);
-    return { success: false, error: err.message || "Payment verification failed" };
-  }
-}
-
-export async function getOrderByNumberAction(orderNumber: string) {
-  try {
-    const supabase = await createServerClient();
-    const { data: order, error } = await supabase
-      .from("orders")
-      .select(`
-        *,
-        order_items (*)
-      `)
-      .eq("order_number", orderNumber)
-      .single();
-
-    if (error || !order) {
-      return { success: false, error: "Order not found" };
-    }
-
-    const shippingService = getShippingService();
-    const tracking = order.tracking_number
-      ? await shippingService.trackShipment(order.tracking_number, order.courier_partner || undefined)
-      : null;
-
-    return {
-      success: true,
-      data: {
-        ...order,
-        tracking,
-      },
-    };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+    console.error("verifyPaymentAction error:", err?.message || err);
+    return { success: false, error: "Payment verification failed. If money was debited, it will be confirmed shortly." };
   }
 }
 
@@ -495,11 +423,11 @@ export async function getAllOrdersAdminAction() {
   }
 }
 
-const ORDER_STATUSES = [
-  "pending", "confirmed", "processing", "packed", "shipped", "out_for_delivery", "delivered",
-  "cancelled", "return_requested", "returned", "refund_processing", "refunded",
-];
-
+/**
+ * Admin status change. Uses the shared transition (history + customer email, deduplicated).
+ * Cancelling an order that is already in Shiprocket cancels it there first.
+ * A manually entered AWB/courier is kept only for orders shipped outside Shiprocket.
+ */
 export async function updateOrderStatusAction(
   orderId: string,
   newStatus: string,
@@ -509,61 +437,51 @@ export async function updateOrderStatusAction(
 ) {
   const auth = await requireAdmin();
   if (!auth.ok) return { success: false, error: auth.error };
-  if (!ORDER_STATUSES.includes(newStatus)) return { success: false, error: "Invalid order status." };
+  if (!(ORDER_STATUSES as readonly string[]).includes(newStatus)) return { success: false, error: "Invalid order status." };
   if (!/^[0-9a-f-]{36}$/i.test(orderId)) return { success: false, error: "Invalid order." };
   try {
     const adminClient = createAdminClient();
-
     const { data: currentOrder } = await adminClient
       .from("orders")
-      .select("order_status, customer_email, order_number, courier_partner")
+      .select("order_status, courier_partner, shiprocket_awb, tracking_number")
       .eq("id", orderId)
       .single();
+    if (!currentOrder) return { success: false, error: "Order not found." };
+    const previousStatus = currentOrder.order_status || "pending";
 
-    const previousStatus = currentOrder?.order_status || "pending";
-
-    const updatePayload: Record<string, any> = {
-      order_status: newStatus,
-      updated_at: new Date().toISOString(),
-    };
-
-    const courier = (courierPartner || currentOrder?.courier_partner || "").trim();
-    if (courierPartner) updatePayload.courier_partner = courier.slice(0, 100);
-    if (trackingNumber) {
-      updatePayload.tracking_number = trackingNumber.trim().slice(0, 100);
-      updatePayload.tracking_url = /bluedart/i.test(courier)
-        ? `https://www.bluedart.com/tracking?trackid=${encodeURIComponent(trackingNumber.trim())}`
-        : null;
+    if (newStatus === "cancelled" && previousStatus !== "cancelled") {
+      const sr = await cancelShiprocketOrder(orderId);
+      if (!sr.ok) return { success: false, error: `Not cancelled: ${sr.message}` };
     }
 
-    const { error } = await adminClient.from("orders").update(updatePayload).eq("id", orderId);
-    if (error) return { success: false, error: error.message };
+    // Manual courier details (only when the shipment is not managed by Shiprocket)
+    const extra: Record<string, unknown> = {};
+    const tn = (trackingNumber || "").trim();
+    const courier = (courierPartner || "").trim();
+    if (!currentOrder.shiprocket_awb) {
+      if (tn && !/^[A-Za-z0-9-]{4,40}$/.test(tn)) return { success: false, error: "Tracking number may only contain letters, numbers and dashes." };
+      if (tn) extra.tracking_number = tn;
+      if (courier) extra.courier_partner = courier.slice(0, 100);
+    }
 
-    // Record history
-    await adminClient.from("order_status_history").insert({
-      order_id: orderId,
-      previous_status: previousStatus,
-      new_status: newStatus,
-      notes: notes || `Status changed from ${previousStatus} to ${newStatus}`,
-    });
+    if (newStatus === previousStatus) {
+      if (Object.keys(extra).length) {
+        await adminClient.from("orders").update({ ...extra, updated_at: new Date().toISOString() }).eq("id", orderId);
+      }
+    } else {
+      const moved = await transitionOrderStatus(orderId, previousStatus, newStatus, {
+        notes: (notes || `Status changed from ${previousStatus} to ${newStatus} by admin`).slice(0, 500),
+        changedBy: auth.userId,
+        extraUpdate: extra,
+      });
+      if (!moved) return { success: false, error: "The order was updated by someone else. Refresh and try again." };
+    }
 
     console.info(`[order-status] ${orderId} ${previousStatus} -> ${newStatus} by=${auth.userId}`);
-
-    // Notify customer if dispatched
-    if (newStatus === "shipped" && currentOrder) {
-      const emailService = getEmailService();
-      await emailService.sendShippingNotification({
-        customer_email: currentOrder.customer_email,
-        order_number: currentOrder.order_number,
-        courier_partner: courier || "Courier",
-        tracking_number: trackingNumber,
-        tracking_url: updatePayload.tracking_url ?? null,
-      });
-    }
-
     revalidatePath("/admin/orders");
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    console.error("[order-status] update failed:", err?.message || err);
+    return { success: false, error: "Could not update the order." };
   }
 }

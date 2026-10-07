@@ -9,6 +9,7 @@ import { QuickViewModal } from "@/components/QuickViewModal";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ToastContainer } from "@/components/ToastContainer";
+import { OfferPopup } from "@/components/OfferPopup";
 
 export function StoreLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -43,6 +44,7 @@ export function StoreLayoutWrapper({ children }: { children: React.ReactNode }) 
       <QuickViewModal />
       <WhatsAppButton />
       {!isCheckout && <MobileBottomNav />}
+      <OfferPopup />
       <ToastContainer />
     </>
   );

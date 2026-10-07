@@ -6,11 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { User, Mail, Phone, Lock, ArrowRight } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { registerAction } from "@/app/actions/auth";
+import { postLoginPath } from "@/lib/auth/roles";
 
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectParam = searchParams.get("redirect") || "/account";
+  // Only same-site relative paths, and never the admin area (prevents open redirects)
+  const redirectParam = postLoginPath("customer", searchParams.get("redirect"));
   const { login, showToast } = useApp();
 
   const [fullName, setFullName] = useState("");

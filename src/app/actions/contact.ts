@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase";
-import { getEmailService } from "@/lib/services/email";
+import { queueEmail, sendInternalEmail } from "@/lib/services/email";
+import { escapeHtml } from "@/lib/services/email/templates";
 import { INDIAN_MOBILE_RE, normaliseIndianMobile } from "@/lib/geo/india";
 import { SITE } from "@/lib/site";
 
@@ -14,9 +15,6 @@ const schema = z.object({
   message: z.string().trim().min(10, "Please write a few more words so we can help").max(3000),
   website: z.string().max(0).optional(), // honeypot: real people leave this empty
 });
-
-const escapeHtml = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 
 const MAX_PER_HOUR = 5;
 
@@ -49,33 +47,41 @@ export async function submitContactMessageAction(values: unknown) {
       return { success: false as const, error: "You have sent several messages recently. Please wait a while, or contact us on WhatsApp." };
     }
 
-    const { error } = await admin.from("contact_messages").insert({
-      name: m.name,
-      email: m.email.toLowerCase(),
-      phone,
-      subject: m.subject,
-      message: m.message,
-    });
-    if (error) {
-      console.error("[contact] save failed:", error.message);
+    const { data: saved, error } = await admin
+      .from("contact_messages")
+      .insert({
+        name: m.name,
+        email: m.email.toLowerCase(),
+        phone,
+        subject: m.subject,
+        message: m.message,
+      })
+      .select("id")
+      .single();
+    if (error || !saved) {
+      console.error("[contact] save failed:", error?.message);
       return {
         success: false as const,
         error: `We could not send your message right now. Please email ${SITE.email} or WhatsApp ${SITE.phoneDisplay}.`,
       };
     }
 
-    // Notify the store by email when an email provider is configured (failure never blocks the customer)
-    try {
-      await getEmailService().sendEmail({
-        to: SITE.email,
-        subject: `New contact message: ${m.subject}`,
-        html: `<p><strong>${escapeHtml(m.name)}</strong> (${escapeHtml(m.email)}${phone ? `, ${phone}` : ""})</p><p>${escapeHtml(m.message).replace(/\n/g, "<br>")}</p>`,
-      });
-    } catch (err) {
-      console.error("[contact] notification email failed:", err);
-    }
+    const ticketRef = `RS-${String(saved.id).replace(/-/g, "").slice(0, 8).toUpperCase()}`;
 
-    return { success: true as const };
+    // Acknowledgement to the customer (once per message) and an alert to the store. Failures never block the customer.
+    await queueEmail({
+      eventKey: `support_ticket_created:${saved.id}`,
+      template: "support_ticket_created",
+      recipient: m.email,
+      data: { customerName: m.name, ticketRef, subject: m.subject, message: m.message },
+    });
+    await sendInternalEmail({
+      to: [SITE.email, SITE.infoEmail],
+      subject: `New contact message [${ticketRef}]: ${m.subject}`,
+      html: `<p><strong>${escapeHtml(m.name)}</strong> (${escapeHtml(m.email)}${phone ? `, ${escapeHtml(phone)}` : ""})</p><p>${escapeHtml(m.message).replace(/\n/g, "<br>")}</p>`,
+    });
+
+    return { success: true as const, ticketRef };
   } catch (err) {
     console.error("[contact] error:", err);
     return { success: false as const, error: `Something went wrong. Please email ${SITE.email}.` };

@@ -21,6 +21,9 @@ const nextConfig = {
     return [
       { source: "/terms-and-conditions", destination: "/terms", permanent: true },
       { source: "/products/:slug", destination: "/product/:slug", permanent: true },
+      // The admin dashboard lives at /admin (access is enforced by middleware + server checks)
+      { source: "/dashboard", destination: "/admin", permanent: false },
+      { source: "/dashboard/:path*", destination: "/admin/:path*", permanent: false },
     ];
   },
   async headers() {

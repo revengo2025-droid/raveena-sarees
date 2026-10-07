@@ -1,186 +1,291 @@
 // =============================================================================
-// Email Service Abstraction
+// Centralised email service (Resend)
+// -----------------------------------------------------------------------------
+// - Every transactional email goes through `queueEmail()`: one `email_events` row per logical email,
+//   keyed by a unique `event_key`, so duplicate webhooks / retries / refreshes never send twice.
+// - Delivery claims the row with a short lease, calls Resend with an Idempotency-Key, and records
+//   the outcome. Failures are kept with the error and retried with backoff (cron or admin retry).
+// - A failed email never affects the order or shipment.
+// Server-only: the API key is never sent to the browser.
 // =============================================================================
+import "server-only";
+import { createAdminClient } from "@/lib/supabase";
+import { SITE } from "@/lib/site";
+import { renderEmail, type EmailData, type EmailTemplate } from "./templates";
 
-export interface EmailRecipient {
-  email: string;
-  name?: string;
+export type { EmailTemplate } from "./templates";
+
+const RESEND_ENDPOINT = "https://api.resend.com/emails";
+export const EMAIL_MAX_ATTEMPTS = 6;
+const LEASE_MS = 60_000;
+
+export interface EmailConfig {
+  apiKey: string;
+  from: string;
+  replyTo: string;
 }
 
-export interface SendEmailOptions {
+/** Reads Resend settings. Returns null (and the reason) when email is not configured. */
+export function getEmailConfig(): { config: EmailConfig | null; reason?: string } {
+  const apiKey = (process.env.RESEND_API_KEY || "").trim();
+  const fromEmail = (process.env.RESEND_FROM_EMAIL || "").trim();
+  const fromName = (process.env.RESEND_FROM_NAME || SITE.name).trim();
+  const replyTo = (process.env.RESEND_REPLY_TO || SITE.email).trim();
+
+  if (!apiKey || /placeholder|re_x{4,}/i.test(apiKey)) return { config: null, reason: "RESEND_API_KEY is not set" };
+  if (!fromEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromEmail)) return { config: null, reason: "RESEND_FROM_EMAIL is not set" };
+  // A sender must be on a domain verified in Resend; free mailbox domains cannot be verified.
+  if (/@(gmail|yahoo|outlook|hotmail)\./i.test(fromEmail)) {
+    return { config: null, reason: "RESEND_FROM_EMAIL must use your verified domain (e.g. orders@raveenasarees.com), not a Gmail address" };
+  }
+  return { config: { apiKey, from: `${fromName} <${fromEmail}>`, replyTo } };
+}
+
+export interface SendResult {
+  ok: boolean;
+  id?: string;
+  error?: string;
+  retryable?: boolean;
+}
+
+/** Low-level Resend call. Prefer `queueEmail()` for anything customer-facing. */
+export async function sendViaResend(msg: {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
-}
-
-export interface EmailService {
-  sendEmail(options: SendEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }>;
-  sendOrderConfirmation(order: any): Promise<void>;
-  sendShippingNotification(order: any): Promise<void>;
-  sendPasswordReset(email: string, resetLink: string): Promise<void>;
-}
-
-class ConsoleEmailService implements EmailService {
-  async sendEmail(options: SendEmailOptions) {
-    console.log(`[Email Console Fallback] To: ${Array.isArray(options.to) ? options.to.join(", ") : options.to}`);
-    console.log(`[Email Console Fallback] Subject: ${options.subject}`);
-    return { success: true, messageId: `msg_${Date.now()}` };
-  }
-
-  async sendOrderConfirmation(order: any) {
-    const html = `
-      <div style="font-family: serif; padding: 20px; color: #111;">
-        <h1 style="color: #991b1b;">Raveena Sarees — Order Confirmed</h1>
-        <p>Dear ${order.customer_name || "Valued Customer"},</p>
-        <p>Thank you for shopping with Raveena Sarees. Your royal handloom order <strong>#${order.order_number}</strong> has been received.</p>
-        <p><strong>Order Total:</strong> ₹${Number(order.total_amount).toLocaleString("en-IN")}</p>
-        <p><strong>Delivery Address:</strong> ${typeof order.shipping_address === "string" ? order.shipping_address : JSON.stringify(order.shipping_address)}</p>
-        <p>Our master weavers are meticulously inspecting your silk sarees before secure pan-India dispatch.</p>
-      </div>
-    `;
-    await this.sendEmail({
-      to: order.customer_email,
-      subject: `Order Confirmed: #${order.order_number} — Raveena Sarees`,
-      html,
-    });
-  }
-
-  async sendShippingNotification(order: any) {
-    await this.sendEmail({
-      to: order.customer_email,
-      subject: `Your Raveena Sarees Order #${order.order_number} is on the way!`,
-      html: `<p>Your parcel has been dispatched with ${order.courier_partner || "BlueDart Express"}. Tracking: ${order.tracking_number || "Pending"}</p>`,
-    });
-  }
-
-  async sendPasswordReset(email: string, resetLink: string) {
-    await this.sendEmail({
-      to: email,
-      subject: "Reset your Raveena Sarees Password",
-      html: `<p>Click here to reset your password: <a href="${resetLink}">${resetLink}</a></p>`,
-    });
-  }
-}
-
-class ResendEmailService implements EmailService {
-  private apiKey: string;
-  private from: string;
-
-  constructor(apiKey: string, fromEmail: string, fromName = "Raveena Sarees") {
-    this.apiKey = apiKey;
-    this.from = `${fromName} <${fromEmail}>`;
-  }
-
-  async sendEmail(options: SendEmailOptions) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: this.from,
-          to: Array.isArray(options.to) ? options.to : [options.to],
-          subject: options.subject,
-          html: options.html,
-          text: options.text,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Resend API error:", errorText);
-        return { success: false, error: errorText };
-      }
-
-      const data = await res.json();
-      return { success: true, messageId: data.id };
-    } catch (err: any) {
-      console.error("Resend send error:", err);
-      return { success: false, error: err.message };
+  idempotencyKey?: string;
+}): Promise<SendResult> {
+  const { config, reason } = getEmailConfig();
+  if (!config) {
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`[email:dev] not sent (${reason}) -> ${Array.isArray(msg.to) ? msg.to.join(", ") : msg.to}: ${msg.subject}`);
     }
+    return { ok: false, error: `Email provider not configured: ${reason}`, retryable: true };
   }
 
-  async sendOrderConfirmation(order: any) {
-    const html = `
-      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
-        <div style="text-align: center; border-bottom: 2px solid #C8A24D; padding-bottom: 16px; margin-bottom: 24px;">
-          <h1 style="color: #630b1c; margin: 0; font-size: 24px; letter-spacing: 2px;">RAVEENA SAREES</h1>
-          <p style="color: #6b7280; font-size: 12px; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase;">Royal Handlooms of India</p>
-        </div>
-        <h2 style="font-size: 18px; color: #111827;">Thank you for your order, ${order.customer_name || "Esteemed Client"}!</h2>
-        <p style="color: #4b5563; font-size: 14px; line-height: 1.6;">
-          Your order <strong>#${order.order_number}</strong> has been successfully placed. We are preparing your authentic handloom pieces for dispatch.
-        </p>
-        <div style="background-color: #f9fafb; padding: 16px; border-radius: 6px; margin: 20px 0;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #6b7280; font-size: 13px;">Total Amount:</span>
-            <strong style="color: #111827; font-size: 15px;">₹${Number(order.total_amount).toLocaleString("en-IN")}</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: #6b7280; font-size: 13px;">Payment Status:</span>
-            <span style="color: #059669; font-weight: 600; font-size: 13px; text-transform: uppercase;">${order.payment_status}</span>
-          </div>
-        </div>
-        <p style="color: #6b7280; font-size: 12px; text-align: center; margin-top: 32px;">
-          For concierge assistance, WhatsApp us at +91-7780756009 or reply to this email.
-        </p>
-      </div>
-    `;
-
-    await this.sendEmail({
-      to: order.customer_email,
-      subject: `Confirmed: Order #${order.order_number} — Raveena Sarees`,
-      html,
+  try {
+    const res = await fetch(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+        ...(msg.idempotencyKey ? { "Idempotency-Key": msg.idempotencyKey.slice(0, 256) } : {}),
+      },
+      body: JSON.stringify({
+        from: config.from,
+        to: Array.isArray(msg.to) ? msg.to : [msg.to],
+        reply_to: config.replyTo,
+        subject: msg.subject,
+        html: msg.html,
+        text: msg.text,
+      }),
+      signal: AbortSignal.timeout(15_000),
     });
-  }
 
-  async sendShippingNotification(order: any) {
-    const html = `
-      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px;">
-        <h2 style="color: #630b1c;">Your Sarees Have Been Dispatched!</h2>
-        <p>Dear ${order.customer_name || "Valued Client"},</p>
-        <p>Your order <strong>#${order.order_number}</strong> is in transit with <strong>${order.courier_partner || "BlueDart Express"}</strong>.</p>
-        ${order.tracking_number ? `<p><strong>Tracking Number:</strong> ${order.tracking_number}</p>` : ""}
-        ${order.tracking_url ? `<p><a href="${order.tracking_url}" style="background-color: #C8A24D; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Track Your Package</a></p>` : ""}
-      </div>
-    `;
-
-    await this.sendEmail({
-      to: order.customer_email,
-      subject: `Shipped: Order #${order.order_number} — Raveena Sarees`,
-      html,
-    });
-  }
-
-  async sendPasswordReset(email: string, resetLink: string) {
-    const html = `
-      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-        <h2 style="color: #630b1c;">Reset Your Password</h2>
-        <p>We received a request to reset your password for your Raveena Sarees account.</p>
-        <p><a href="${resetLink}" style="background-color: #630b1c; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Reset Password</a></p>
-        <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">If you didn't request this, you can safely ignore this message.</p>
-      </div>
-    `;
-
-    await this.sendEmail({
-      to: email,
-      subject: "Reset your Raveena Sarees Password",
-      html,
-    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      let message = body.slice(0, 300);
+      try {
+        message = JSON.parse(body)?.message || message;
+      } catch {}
+      // 4xx (except 409/429) are permanent problems such as an unverified domain or invalid address
+      const retryable = res.status >= 500 || res.status === 429 || res.status === 409;
+      return { ok: false, error: `Resend ${res.status}: ${message}`, retryable };
+    }
+    const data = (await res.json().catch(() => ({}))) as { id?: string };
+    return { ok: true, id: data.id };
+  } catch (err: any) {
+    return { ok: false, error: `Resend request failed: ${err?.message || "network error"}`, retryable: true };
   }
 }
 
-export function getEmailService(): EmailService {
-  const apiKey = process.env.EMAIL_API_KEY;
-  const fromEmail = process.env.EMAIL_FROM_ADDRESS;
-  const fromName = process.env.EMAIL_FROM_NAME || "Raveena Sarees";
+async function stillRelevant(ev: { template: string; order_id: string | null }): Promise<string | null> {
+  if (ev.template !== "payment_failed" || !ev.order_id) return null;
+  const { data } = await createAdminClient().from("orders").select("payment_status").eq("id", ev.order_id).maybeSingle();
+  return data?.payment_status === "paid" ? "Skipped: the order was paid after the failed attempt" : null;
+}
 
-  if (apiKey && fromEmail && !apiKey.includes("re_xxxxxxxx")) {
-    return new ResendEmailService(apiKey, fromEmail, fromName);
+const backoffMs = (attempt: number) => Math.min(6 * 60 * 60_000, 5 * 60_000 * 2 ** Math.max(0, attempt - 1));
+
+/**
+ * Delivers one queued email. Safe to call concurrently: only the caller that wins the lease sends.
+ * `force` lets an admin retry an email that already used all automatic attempts.
+ */
+export async function deliverEmailEvent(id: string, opts: { force?: boolean } = {}): Promise<SendResult & { skipped?: boolean }> {
+  const db = createAdminClient();
+  const now = new Date();
+  const { data: claimed, error: claimError } = await db
+    .from("email_events")
+    .update({ status: "sending", locked_until: new Date(now.getTime() + LEASE_MS).toISOString(), updated_at: now.toISOString() })
+    .eq("id", id)
+    .in("status", ["pending", "failed"])
+    .or(`locked_until.is.null,locked_until.lt.${now.toISOString()}`)
+    .select("*")
+    .maybeSingle();
+
+  if (claimError) return { ok: false, error: claimError.message };
+  if (!claimed) return { ok: false, skipped: true, error: "Already sent or being sent" };
+  if (!opts.force && claimed.attempts >= EMAIL_MAX_ATTEMPTS) {
+    await db.from("email_events").update({ status: "failed", locked_until: null, next_retry_at: null }).eq("id", id);
+    return { ok: false, skipped: true, error: "Maximum attempts reached" };
   }
 
-  return new ConsoleEmailService();
+  // Some emails are only relevant while a condition still holds (e.g. "payment failed" but the customer paid since)
+  const skipReason = await stillRelevant(claimed);
+  if (skipReason) {
+    await db
+      .from("email_events")
+      .update({ status: "skipped", last_error: skipReason, locked_until: null, next_retry_at: null, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    return { ok: false, skipped: true, error: skipReason };
+  }
+
+  let result: SendResult;
+  try {
+    const rendered = renderEmail(claimed.template as EmailTemplate, claimed.payload as EmailData);
+    result = await sendViaResend({
+      to: claimed.recipient,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      idempotencyKey: `rvn-${claimed.event_key}`,
+    });
+  } catch (err: any) {
+    result = { ok: false, error: `Render failed: ${err?.message || err}`, retryable: false };
+  }
+
+  const attempts = (claimed.attempts || 0) + 1;
+  if (result.ok) {
+    await db
+      .from("email_events")
+      .update({
+        status: "sent",
+        attempts,
+        provider_message_id: result.id || null,
+        last_error: null,
+        locked_until: null,
+        next_retry_at: null,
+        sent_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+  } else {
+    const canRetry = result.retryable !== false && attempts < EMAIL_MAX_ATTEMPTS;
+    await db
+      .from("email_events")
+      .update({
+        status: "failed",
+        attempts,
+        last_error: (result.error || "Unknown error").slice(0, 1000),
+        locked_until: null,
+        next_retry_at: canRetry ? new Date(Date.now() + backoffMs(attempts)).toISOString() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    console.error(`[email] ${claimed.template} for ${claimed.event_key} failed (attempt ${attempts}): ${result.error}`);
+  }
+  return result;
+}
+
+/**
+ * Queues (and immediately tries to deliver) a transactional email exactly once per `eventKey`.
+ * Returns 'duplicate' when the same logical email was already queued — nothing is sent again.
+ */
+export async function queueEmail(input: {
+  eventKey: string;
+  template: EmailTemplate;
+  recipient: string;
+  data: EmailData;
+  orderId?: string | null;
+  /** Delay delivery (picked up by the maintenance job). */
+  sendAfter?: Date;
+}): Promise<{ status: "sent" | "failed" | "queued" | "duplicate" | "error"; id?: string; error?: string }> {
+  try {
+    if (!input.recipient || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.recipient)) {
+      return { status: "error", error: "Invalid recipient" };
+    }
+    const rendered = renderEmail(input.template, input.data); // validates the data before storing
+    const db = createAdminClient();
+    const { data: rows, error } = await db
+      .from("email_events")
+      .upsert(
+        {
+          event_key: input.eventKey.slice(0, 200),
+          template: input.template,
+          order_id: input.orderId || null,
+          recipient: input.recipient.trim().toLowerCase(),
+          subject: rendered.subject.slice(0, 255),
+          payload: input.data as any,
+          status: "pending",
+          next_retry_at: input.sendAfter ? input.sendAfter.toISOString() : null,
+        },
+        { onConflict: "event_key", ignoreDuplicates: true }
+      )
+      .select("id");
+
+    if (error) {
+      console.error(`[email] could not queue ${input.eventKey}: ${error.message}`);
+      return { status: "error", error: error.message };
+    }
+    const id = rows?.[0]?.id as string | undefined;
+    if (!id) return { status: "duplicate" };
+    if (input.sendAfter && input.sendAfter.getTime() > Date.now()) return { status: "queued", id };
+
+    const result = await deliverEmailEvent(id);
+    return { status: result.ok ? "sent" : "failed", id, error: result.error };
+  } catch (err: any) {
+    console.error(`[email] queue error for ${input.eventKey}:`, err?.message || err);
+    return { status: "error", error: err?.message || "Unknown error" };
+  }
+}
+
+/** Retries failed emails whose backoff has elapsed (called by the cron endpoint). */
+export async function retryDueEmails(limit = 20): Promise<{ attempted: number; sent: number }> {
+  const db = createAdminClient();
+  const nowIso = new Date().toISOString();
+  const { data } = await db
+    .from("email_events")
+    .select("id")
+    .eq("status", "failed")
+    .not("next_retry_at", "is", null)
+    .lte("next_retry_at", nowIso)
+    .order("next_retry_at", { ascending: true })
+    .limit(limit);
+  // Rows stuck in 'sending' after a crash become claimable again once their lease expires
+  const { data: stuck } = await db
+    .from("email_events")
+    .select("id")
+    .eq("status", "sending")
+    .lt("locked_until", nowIso)
+    .limit(limit);
+  if (stuck?.length) {
+    await db.from("email_events").update({ status: "failed", locked_until: null, next_retry_at: nowIso }).in("id", stuck.map((r) => r.id));
+  }
+
+  // Scheduled emails that are due, and queued emails never attempted (the request ended before delivery)
+  const { data: orphaned } = await db
+    .from("email_events")
+    .select("id")
+    .eq("status", "pending")
+    .or(`next_retry_at.lte.${nowIso},and(next_retry_at.is.null,created_at.lt.${new Date(Date.now() - 2 * 60_000).toISOString()})`)
+    .limit(limit);
+
+  let sent = 0;
+  const ids = [...(data || []), ...(stuck || []), ...(orphaned || [])].map((r) => r.id as string);
+  for (const id of ids) {
+    const r = await deliverEmailEvent(id);
+    if (r.ok) sent++;
+  }
+  return { attempted: ids.length, sent };
+}
+
+/**
+ * Back-compat for internal (non-customer) notifications such as the contact-form alert to the store.
+ * Logs failures; never throws.
+ */
+export async function sendInternalEmail(msg: { to: string | string[]; subject: string; html: string; text?: string }) {
+  const r = await sendViaResend(msg);
+  if (!r.ok) console.error(`[email] internal notification failed: ${r.error}`);
+  return r;
 }

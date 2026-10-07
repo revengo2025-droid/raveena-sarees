@@ -66,11 +66,23 @@ export const productSchema = z.object({
   sku: z.string().min(3, "SKU is required"),
   name: z.string().min(3, "Product name is required"),
   slug: z.string().min(3, "Slug is required"),
-  categoryId: z.string().uuid().optional().nullable(),
+  categoryId: z
+    .string()
+    .uuid("Invalid category ID")
+    .optional()
+    .nullable()
+    .or(z.literal(""))
+    .transform((val) => (val ? val : null)),
   categoryName: z.string().min(2, "Category name is required"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   price: z.number().positive("Price must be greater than zero"),
-  discountPrice: z.number().positive("Discount price must be positive").optional().nullable(),
+  discountPrice: z
+    .number()
+    .positive("Discount price must be positive")
+    .optional()
+    .nullable()
+    .or(z.literal(0))
+    .transform((val) => (val && val > 0 ? val : null)),
   stock: z.number().int().min(0, "Stock cannot be negative"),
   fabric: z.string().min(2, "Fabric is required"),
   zariType: z.string().default("Pure Gold Zari"),
@@ -84,9 +96,21 @@ export const productSchema = z.object({
     .default("Dry Clean Only. Store wrapped in pure cotton or muslin fabric."),
   availableColors: z.array(z.string()).default([]),
   primaryColor: z.string().min(2, "Primary color is required"),
-  images: z.array(z.string()).default([]),
-  rating: z.number().min(1).max(5).default(5),
-  reviewCount: z.number().int().default(0),
+  images: z.array(z.string()).default([]).optional(),
+  rating: z
+    .number()
+    .min(0, "Rating cannot be negative")
+    .max(5, "Rating cannot exceed 5")
+    .default(0)
+    .optional()
+    .nullable(),
+  reviewCount: z
+    .number()
+    .int()
+    .min(0, "Review count cannot be negative")
+    .default(0)
+    .optional()
+    .nullable(),
   isFeatured: z.boolean().default(false),
   isBestseller: z.boolean().default(false),
   isNewArrival: z.boolean().default(false),
@@ -96,14 +120,16 @@ export const productSchema = z.object({
 // =============================================================================
 // CHECKOUT & ORDER SCHEMAS
 // =============================================================================
+// IDs/SKUs are used in database filters: allow only a strict character set (no filter injection)
+const SAFE_KEY = /^[A-Za-z0-9_-]{1,64}$/;
 export const orderItemInputSchema = z.object({
-  productId: z.string(),
-  productName: z.string(),
-  sku: z.string(),
-  selectedColor: z.string().optional(),
+  productId: z.string().regex(SAFE_KEY, "Invalid product"),
+  productName: z.string().max(255),
+  sku: z.string().regex(SAFE_KEY, "Invalid product"),
+  selectedColor: z.string().max(100).optional(),
   price: z.number().positive(),
-  quantity: z.number().int().positive(),
-  imageUrl: z.string().optional(),
+  quantity: z.number().int().positive().max(20, "Please contact us for bulk orders"),
+  imageUrl: z.string().max(1000).optional(),
 });
 
 export const checkoutSchema = z.object({
@@ -114,19 +140,19 @@ export const checkoutSchema = z.object({
     .regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit mobile number"),
   shippingAddress: addressSchema,
   billingAddress: addressSchema.optional(),
-  items: z.array(orderItemInputSchema).min(1, "Cart must have at least one item"),
+  items: z.array(orderItemInputSchema).min(1, "Cart must have at least one item").max(50),
   paymentMethod: z.enum(["razorpay", "upi", "card", "netbanking", "cod"]),
-  couponCode: z.string().optional(),
+  couponCode: z.string().max(50).optional(),
   giftWrap: z.boolean().optional().default(false),
   giftMessage: z.string().max(250).optional(),
   notes: z.string().max(500).optional(),
 });
 
 export const razorpayVerificationSchema = z.object({
-  razorpayOrderId: z.string().min(1),
-  razorpayPaymentId: z.string().min(1),
-  razorpaySignature: z.string().min(1),
-  orderNumber: z.string().min(1),
+  razorpayOrderId: z.string().regex(/^[A-Za-z0-9_]{1,64}$/),
+  razorpayPaymentId: z.string().regex(/^[A-Za-z0-9_]{1,64}$/),
+  razorpaySignature: z.string().regex(/^[A-Za-z0-9_]{1,128}$/),
+  orderNumber: z.string().regex(/^[A-Za-z0-9-]{4,50}$/),
 });
 
 // =============================================================================

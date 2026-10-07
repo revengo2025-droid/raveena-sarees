@@ -23,12 +23,6 @@ export function generateOrderNumber(): string {
   return `RVN-${new Date().getFullYear()}-${random}`;
 }
 
-export function generateTrackingNumber(): string {
-  const prefix = "BLU";
-  const num = Math.floor(100000000 + Math.random() * 900000000);
-  return `${prefix}${num}IN`;
-}
-
 export function formatDate(dateString: string): string {
   try {
     const d = new Date(dateString);

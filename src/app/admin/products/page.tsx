@@ -175,9 +175,17 @@ export default function AdminProductsPage() {
       return;
     }
 
+    const matchedCategory = categories.find((c) => c.name === categoryName);
+    const resolvedCatId =
+      matchedCategory?.id &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(matchedCategory.id)
+        ? matchedCategory.id
+        : null;
+
     const payload = {
       sku: sku.trim() || `RVN-${Date.now().toString().slice(-6)}`,
       name: name.trim(),
+      categoryId: resolvedCatId,
       categoryName: categoryName || categories[0]?.name || "Sarees",
       description: description.trim(),
       price: Number(price),
@@ -186,11 +194,11 @@ export default function AdminProductsPage() {
       fabric: fabric.trim(),
       zariType: zariType.trim() || "Not specified",
       weaveType: weaveType.trim() || "Not specified",
-      sareeLength: sareeLength.trim(),
+      sareeLength: sareeLength.trim() || "5.5 Meters",
       blouseIncluded,
-      blouseLength: blouseLength.trim(),
+      blouseLength: blouseLength.trim() || "0.80 Meters (Unstitched)",
       occasion: occasion.trim(),
-      careInstructions: careInstructions.trim(),
+      careInstructions: careInstructions.trim() || "Dry Clean Only. Store wrapped in pure cotton or muslin fabric.",
       availableColors: availableColors
         .split(",")
         .map((s) => s.trim())

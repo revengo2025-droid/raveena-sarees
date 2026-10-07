@@ -1,0 +1,6 @@
+visa.svg, master.svg, upi.svg, rupay.svg, netbanking.svg:
+  From https://github.com/activemerchant/payment_icons (MIT License, Copyright (c) Shopify Inc.).
+  The marks themselves are trademarks of their owners (Visa, Mastercard, NPCI) and are shown
+  only to indicate the payment methods accepted through Razorpay checkout.
+razorpay-badge-dark.png:
+  Razorpay's official merchant badge, from https://badges.razorpay.com/badge-dark.png

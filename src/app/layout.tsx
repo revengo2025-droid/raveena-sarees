@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   authors: [{ name: SITE.name }],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Raveena Sarees",
+    title: "Raveena Sarees | Silk, Party Wear, Designer & Wedding Sarees",
     description: DESCRIPTION,
     url: SITE.url,
     siteName: SITE.name,
@@ -56,11 +56,12 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Raveena Sarees",
+    title: "Raveena Sarees | Silk, Party Wear, Designer & Wedding Sarees",
     description: DESCRIPTION,
     images: [`${SITE.url}/images/hero/hero-banner-1.png`],
   },
-  robots: { index: true, follow: true },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+  formatDetection: { telephone: false },
 };
 
 export default async function RootLayout({
@@ -80,11 +81,20 @@ export default async function RootLayout({
             __html: JSON.stringify([
               {
                 "@context": "https://schema.org",
-                "@type": "OnlineStore",
+                "@type": ["Organization", "OnlineStore"],
+                "@id": `${SITE.url}/#organization`,
                 name: SITE.name,
                 url: SITE.url,
-                logo: `${SITE.url}${SITE.logo}`,
-                image: `${SITE.url}${SITE.logo}`,
+                logo: {
+                  "@type": "ImageObject",
+                  "@id": `${SITE.url}/#logo`,
+                  url: `${SITE.url}${SITE.logo}`,
+                  contentUrl: `${SITE.url}${SITE.logo}`,
+                  width: 1020,
+                  height: 1018,
+                  caption: SITE.name,
+                },
+                image: { "@id": `${SITE.url}/#logo` },
                 email: SITE.email,
                 telephone: "+" + SITE.whatsappNumber,
                 ...(SITE.legalName && { legalName: SITE.legalName }),
@@ -103,8 +113,12 @@ export default async function RootLayout({
               {
                 "@context": "https://schema.org",
                 "@type": "WebSite",
+                "@id": `${SITE.url}/#website`,
                 name: SITE.name,
+                alternateName: SITE.url.replace(/^https?:\/\/(www\.)?/, ""),
                 url: SITE.url,
+                publisher: { "@id": `${SITE.url}/#organization` },
+                inLanguage: "en-IN",
                 potentialAction: {
                   "@type": "SearchAction",
                   target: { "@type": "EntryPoint", urlTemplate: `${SITE.url}/shop?q={search_term_string}` },

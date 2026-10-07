@@ -45,8 +45,11 @@ function mapAddress(raw: any, fallbackName: string, fallbackPhone: string): Save
   };
 }
 
-/** Maps an `orders` row (with `order_items`) to the client Order shape. Nothing is invented. */
-export function mapOrderRow(row: any): Order {
+/**
+ * Maps an `orders` row (with `order_items`) to the client Order shape. Nothing is invented.
+ * `opts.admin` adds operational fields (Shiprocket ids, sync errors) for the dashboard only.
+ */
+export function mapOrderRow(row: any, opts: { admin?: boolean } = {}): Order {
   const items = (row.order_items || []).map((i: any) => ({
     productId: i.product_id || "",
     productName: i.product_name,
@@ -87,5 +90,25 @@ export function mapOrderRow(row: any): Order {
     appliedCoupon: row.applied_coupon || undefined,
     createdAt: row.created_at,
     estimatedDelivery: row.estimated_delivery || "",
+    shipmentStatus: row.shipment_status || null,
+    shipmentStatusLabel: row.shiprocket_status || null,
+    deliveredAt: row.delivered_at || null,
+    ...(opts.admin
+      ? {
+          ops: {
+            shiprocketOrderId: row.shiprocket_order_id ?? null,
+            shipmentId: row.shiprocket_shipment_id ?? null,
+            awb: row.shiprocket_awb ?? null,
+            shiprocketStatus: row.shiprocket_status ?? null,
+            pickupStatus: row.pickup_status ?? null,
+            fulfillmentStatus: row.fulfillment_status ?? null,
+            fulfillmentError: row.fulfillment_error ?? null,
+            fulfillmentOperation: row.fulfillment_operation ?? null,
+            fulfillmentAttempts: row.fulfillment_attempts ?? 0,
+            syncedAt: row.synced_at ?? null,
+            lastTrackingUpdate: row.last_tracking_update ?? null,
+          },
+        }
+      : {}),
   };
 }

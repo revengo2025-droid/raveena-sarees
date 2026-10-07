@@ -423,7 +423,7 @@ export default function ProductDetailPage() {
                 <input
                   type="text"
                   maxLength={6}
-                  placeholder="Enter 6-digit Pincode (e.g. 504224)"
+                  placeholder="Enter 6-digit Pincode (e.g. 504299)"
                   value={pincode}
                   onChange={(e) => setPincode(e.target.value)}
                   className="flex-1 bg-brand-ivory border border-brand-border rounded-full px-3.5 py-2 text-xs text-brand-text placeholder-neutral-400 focus:outline-none focus:border-brand-gold"

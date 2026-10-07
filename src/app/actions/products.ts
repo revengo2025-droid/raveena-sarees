@@ -106,12 +106,24 @@ export async function createProductAction(values: ProductInput) {
     const adminClient = createAdminClient();
     const p = validated.data;
 
+    // Ensure slug uniqueness if collision occurs
+    let finalSlug = p.slug;
+    const { data: existingSlug } = await adminClient
+      .from("products")
+      .select("id")
+      .eq("slug", finalSlug)
+      .maybeSingle();
+
+    if (existingSlug) {
+      finalSlug = `${p.slug}-${Date.now().toString().slice(-4)}`;
+    }
+
     const { data, error } = await adminClient
       .from("products")
       .insert({
         sku: p.sku,
         name: p.name,
-        slug: p.slug,
+        slug: finalSlug,
         category_id: p.categoryId || null,
         category_name: p.categoryName,
         description: p.description,
@@ -128,7 +140,9 @@ export async function createProductAction(values: ProductInput) {
         care_instructions: p.careInstructions,
         available_colors: p.availableColors,
         primary_color: p.primaryColor,
-        images: p.images,
+        images: p.images || [],
+        rating: typeof p.rating === "number" ? p.rating : 0,
+        review_count: typeof p.reviewCount === "number" ? p.reviewCount : 0,
         is_featured: p.isFeatured,
         is_bestseller: p.isBestseller,
         is_new_arrival: p.isNewArrival,
@@ -141,16 +155,20 @@ export async function createProductAction(values: ProductInput) {
       return { success: false, error: error.message };
     }
 
-    // Record initial inventory log
+    // Record initial inventory log (non-critical)
     if (data?.id) {
-      await adminClient.from("inventory_logs").insert({
-        product_id: data.id,
-        change_type: "manual_adjustment",
-        quantity_change: p.stock,
-        previous_stock: 0,
-        new_stock: p.stock,
-        reason: "Initial product stock creation",
-      });
+      try {
+        await adminClient.from("inventory_logs").insert({
+          product_id: data.id,
+          change_type: "manual_adjustment",
+          quantity_change: p.stock,
+          previous_stock: 0,
+          new_stock: p.stock,
+          reason: "Initial product stock creation",
+        });
+      } catch (logErr) {
+        console.warn("[inventory_logs] initial creation log error:", logErr);
+      }
     }
 
     revalidateCatalogue();
@@ -187,6 +205,7 @@ export async function updateProductAction(id: string, values: Partial<ProductInp
         ...(values.primaryColor !== undefined && { primary_color: values.primaryColor }),
         ...(values.description !== undefined && { description: values.description }),
         ...(values.categoryName !== undefined && { category_name: values.categoryName }),
+        ...(values.categoryId !== undefined && { category_id: values.categoryId || null }),
         ...(values.isFeatured !== undefined && { is_featured: values.isFeatured }),
         ...(values.isBestseller !== undefined && { is_bestseller: values.isBestseller }),
         ...(values.isNewArrival !== undefined && { is_new_arrival: values.isNewArrival }),

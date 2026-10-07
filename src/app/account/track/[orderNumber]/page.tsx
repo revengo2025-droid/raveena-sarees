@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { CheckCircle2, Clock, ChevronRight, ExternalLink, Loader2, Truck, LifeBuoy } from "lucide-react";
+import { CheckCircle2, Clock, ChevronRight, ExternalLink, Loader2, Truck, LifeBuoy, MapPin, AlertTriangle, PackageCheck } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { formatDate, formatINR } from "@/lib/utils";
 import { SITE } from "@/lib/site";
 import { getMyOrderAction } from "@/app/actions/my-orders";
 import { orderStatusLabel, PAYMENT_STATUS_LABELS } from "@/lib/orders/mapper";
+import { SHIPMENT_ALERT_STATUSES, SHIPMENT_STATUS_LABELS, type ShipmentStatus } from "@/lib/services/shipping/status";
 import type { Order, OrderStatus } from "@/lib/types";
 
 // The normal journey of an order. Every timestamp shown comes from the real status history.
@@ -22,6 +23,16 @@ const JOURNEY: { status: OrderStatus; title: string; description: string }[] = [
 ];
 const SIDE_STATES: OrderStatus[] = ["cancelled", "return_requested", "returned", "refund_processing", "refunded"];
 
+type Scan = { label: string | null; activity: string | null; location: string | null; at: string | null };
+
+const formatDateTime = (iso: string | null) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+};
+
 export default function OrderTrackingPage() {
   const params = useParams();
   const orderNumber = params?.orderNumber as string;
@@ -30,6 +41,8 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [history, setHistory] = useState<{ status: string; at: string }[]>([]);
   const [trackingUrl, setTrackingUrl] = useState<string | null>(null);
+  const [scans, setScans] = useState<Scan[]>([]);
+  const [showAllScans, setShowAllScans] = useState(false);
   const [state, setState] = useState<"loading" | "ready" | "missing">("loading");
 
   useEffect(() => {
@@ -43,6 +56,7 @@ export default function OrderTrackingPage() {
         setOrder(res.data);
         setHistory(res.history);
         setTrackingUrl(res.trackingUrl);
+        setScans(res.scans);
         setState("ready");
       } else setState("missing");
     });
@@ -116,26 +130,64 @@ export default function OrderTrackingPage() {
         </div>
 
         {/* Shipment */}
-        <div className="rounded-2xl bg-brand-ivory border border-brand-border p-4 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {order.trackingNumber ? (
-            <>
-              <p className="flex items-center gap-2">
-                <Truck className="w-4 h-4 text-brand-gold shrink-0" />
-                <span>{order.courierPartner || "Courier"} · Tracking no. <strong className="font-mono">{order.trackingNumber}</strong></span>
-              </p>
-              {trackingUrl && (
-                <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-maroon underline min-h-[44px]">
-                  Track with courier <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+        {(() => {
+          const ship = (order.shipmentStatus || null) as ShipmentStatus | null;
+          const shipLabel = ship && ship !== "unknown" ? SHIPMENT_STATUS_LABELS[ship] : order.shipmentStatusLabel || null;
+          const alert = ship ? SHIPMENT_ALERT_STATUSES.includes(ship) : false;
+          return (
+            <section aria-label="Shipment" className="rounded-2xl bg-brand-ivory border border-brand-border p-4 sm:p-5 text-sm space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="flex items-center gap-2 font-serif text-base">
+                  <Truck className="w-4 h-4 text-brand-gold shrink-0" /> Shipment
+                </h2>
+                {shipLabel && (
+                  <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold font-poppins border ${alert ? "bg-amber-50 text-amber-800 border-amber-300" : "bg-white text-brand-maroon border-brand-gold/40"}`}>
+                    {shipLabel}
+                  </span>
+                )}
+              </div>
+              {order.trackingNumber ? (
+                <>
+                  <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <dt className="text-neutral-500 text-[10px] uppercase font-poppins">Courier</dt>
+                      <dd className="font-semibold mt-0.5">{order.courierPartner || "Assigned"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-neutral-500 text-[10px] uppercase font-poppins">Tracking number (AWB)</dt>
+                      <dd className="font-mono font-semibold mt-0.5 select-all break-all">{order.trackingNumber}</dd>
+                    </div>
+                    {order.estimatedDelivery && order.orderStatus !== "delivered" && (
+                      <div>
+                        <dt className="text-neutral-500 text-[10px] uppercase font-poppins">Expected delivery</dt>
+                        <dd className="font-semibold mt-0.5">{formatDate(order.estimatedDelivery)}</dd>
+                      </div>
+                    )}
+                  </dl>
+                  {trackingUrl && (
+                    <a href={trackingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-maroon underline min-h-[44px]">
+                      Open courier tracking <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  {alert && (
+                    <p className="flex items-start gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      There is an issue with this delivery. Our team is following up with the courier; you can also contact us below.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="text-neutral-600 text-xs">
+                  {awaitingPayment
+                    ? "Shipment starts once your payment is confirmed."
+                    : order.shipmentStatus === "created"
+                      ? "Your shipment has been created. The courier and tracking number will appear here as soon as they are assigned."
+                      : "Not shipped yet. The courier and tracking number will appear here as soon as it ships."}
+                </p>
               )}
-            </>
-          ) : (
-            <p className="text-neutral-600 flex items-center gap-2">
-              <Truck className="w-4 h-4 text-neutral-400 shrink-0" />
-              {awaitingPayment ? "Shipment starts once your payment is confirmed." : "Not shipped yet. Courier and tracking number will appear here as soon as it ships."}
-            </p>
-          )}
-        </div>
+            </section>
+          );
+        })()}
 
         {/* Timeline */}
         {awaitingPayment ? (
@@ -167,6 +219,69 @@ export default function OrderTrackingPage() {
             })}
           </ol>
         )}
+
+        {/* Courier updates (real scans reported by the courier via Shiprocket) */}
+        {scans.length > 0 && (
+          <section aria-label="Courier updates" className="space-y-3">
+            <h2 className="font-serif text-base flex items-center gap-2">
+              <PackageCheck className="w-4 h-4 text-brand-gold" /> Courier updates
+            </h2>
+            <ol className="space-y-3">
+              {(showAllScans ? scans : scans.slice(0, 5)).map((sc, i) => (
+                <li key={i} className="flex gap-3 text-xs">
+                  <span className={`mt-1 w-2.5 h-2.5 rounded-full shrink-0 ${i === 0 ? "bg-brand-maroon" : "bg-brand-gold/50"}`} aria-hidden="true" />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-brand-text">{sc.activity || sc.label}</p>
+                    <p className="text-neutral-500 flex flex-wrap gap-x-3">
+                      {sc.at && <span>{formatDateTime(sc.at)}</span>}
+                      {sc.location && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {sc.location}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {scans.length > 5 && (
+              <button type="button" onClick={() => setShowAllScans((v) => !v)} className="text-xs font-semibold text-brand-maroon underline min-h-[44px]">
+                {showAllScans ? "Show fewer updates" : `Show all ${scans.length} updates`}
+              </button>
+            )}
+          </section>
+        )}
+
+        {/* Items and price breakdown */}
+        <section aria-label="Items in this order" className="pt-6 border-t border-brand-border space-y-3">
+          <h2 className="font-serif text-base">Items</h2>
+          <ul className="divide-y divide-brand-border">
+            {order.items.map((it, i) => (
+              <li key={`${it.productId}-${i}`} className="py-3 flex items-center gap-3 text-xs">
+                {it.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={it.imageUrl} alt="" width={48} height={56} loading="lazy" className="w-12 h-14 rounded-lg object-cover border border-brand-border shrink-0" />
+                ) : (
+                  <span className="w-12 h-14 rounded-lg bg-brand-ivory border border-brand-border shrink-0" aria-hidden="true" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate">{it.productName}</p>
+                  <p className="text-neutral-500">
+                    {it.selectedColor ? `${it.selectedColor} · ` : ""}Qty {it.quantity} × {formatINR(it.price)}
+                  </p>
+                </div>
+                <span className="font-semibold text-sm">{formatINR(it.price * it.quantity)}</span>
+              </li>
+            ))}
+          </ul>
+          <dl className="text-xs space-y-1.5 max-w-xs ml-auto">
+            <div className="flex justify-between"><dt className="text-neutral-500">Subtotal</dt><dd>{formatINR(order.subtotal)}</dd></div>
+            {order.discountAmount > 0 && <div className="flex justify-between"><dt className="text-neutral-500">Discount</dt><dd>- {formatINR(order.discountAmount)}</dd></div>}
+            <div className="flex justify-between"><dt className="text-neutral-500">Shipping</dt><dd>{order.shippingFee > 0 ? formatINR(order.shippingFee) : "Free"}</dd></div>
+            {order.giftWrapFee > 0 && <div className="flex justify-between"><dt className="text-neutral-500">Gift wrap</dt><dd>{formatINR(order.giftWrapFee)}</dd></div>}
+            <div className="flex justify-between text-sm font-semibold border-t border-brand-border pt-1.5"><dt>Total</dt><dd className="text-brand-maroon">{formatINR(order.totalAmount)}</dd></div>
+          </dl>
+        </section>
 
         {isSide && (
           <p className="text-sm bg-brand-ivory border border-brand-border rounded-xl px-4 py-3">

@@ -115,6 +115,26 @@ export interface Order {
   appliedCoupon?: string;
   createdAt: string;
   estimatedDelivery: string;
+  /** Normalised shipment status (see lib/services/shipping/status.ts) and the courier's own label. */
+  shipmentStatus?: string | null;
+  shipmentStatusLabel?: string | null;
+  deliveredAt?: string | null;
+  /** Admin-only operational fields (never mapped for customers). */
+  ops?: OrderOps;
+}
+
+export interface OrderOps {
+  shiprocketOrderId: number | null;
+  shipmentId: number | null;
+  awb: string | null;
+  shiprocketStatus: string | null;
+  pickupStatus: string | null;
+  fulfillmentStatus: string | null;
+  fulfillmentError: string | null;
+  fulfillmentOperation: string | null;
+  fulfillmentAttempts: number;
+  syncedAt: string | null;
+  lastTrackingUpdate: string | null;
 }
 
 export interface Coupon {

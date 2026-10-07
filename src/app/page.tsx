@@ -214,7 +214,7 @@ export default function HomePage() {
       {/* ─────────────────────────────────────────────────────────────
           4. ROYAL WEAVES BENTO GALLERY (Shop by Category)
       ────────────────────────────────────────────────────────────── */}
-      <section className="py-20 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+      <section id="curated-collections" className="py-20 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
         <ScrollReveal direction="up" delay={80}>
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-brand-border pb-6">
             <div>
@@ -235,62 +235,90 @@ export default function HomePage() {
           </div>
         </ScrollReveal>
 
-        {/* Dynamic Asymmetric Bento Grid - 6 Curated Categories */}
+        {/* Dynamic Asymmetric Bento Grid - 5 Curated Categories */}
         <ScrollReveal direction="up" delay={150}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {categories.slice(0, 6).map((category, idx) => {
-            const isTall = idx === 1;
-            const isWide = idx === 0 || idx === 4;
+          {(() => {
+            const curatedSlugs = [
+              "party-wear-sarees",
+              "silk-sarees",
+              "wedding-sarees",
+              "banarasi-sarees",
+              "handloom-sarees",
+            ];
+            const curatedList = curatedSlugs
+              .map((slug) => categories.find((c) => c.slug === slug))
+              .filter((c): c is (typeof categories)[0] => Boolean(c));
+            const displayCategories = curatedList.length === 5 ? curatedList : categories.slice(0, 5);
 
-            return (
-              <div
-                key={category.id}
-                className={`group rounded-2xl overflow-hidden shadow-card border border-brand-border/60 hover:shadow-luxury transition-all duration-500 bg-brand-ivory relative ${
-                  isWide ? "md:col-span-2" : "md:col-span-1"
-                } ${isTall ? "md:row-span-2" : ""}`}
-              >
-                <Link
-                  href={`/category/${category.slug}`}
-                  className={`relative block overflow-hidden w-full ${
-                    isTall
-                      ? "h-full min-h-[380px] md:min-h-[580px]"
-                      : isWide
-                      ? "h-[280px] sm:h-[340px]"
-                      : "h-[280px]"
-                  }`}
+            return displayCategories.map((category, idx) => {
+              const isTall = idx === 1;
+              const isWide = idx === 0;
+              const isFull = idx === 4;
+
+              const objectPositionClass =
+                idx === 1
+                  ? "object-top"
+                  : idx === 2
+                  ? "object-[35%_25%]"
+                  : idx === 3
+                  ? "object-[40%_25%]"
+                  : idx === 0
+                  ? "object-[center_18%]"
+                  : "object-center";
+
+              return (
+                <div
+                  key={category.id}
+                  className={`group rounded-2xl overflow-hidden shadow-card border border-brand-border/60 hover:shadow-luxury transition-all duration-500 bg-brand-ivory relative ${
+                    isFull ? "md:col-span-3" : isWide ? "md:col-span-2" : "md:col-span-1"
+                  } ${isTall ? "md:row-span-2" : ""}`}
                 >
-                  <img
-                    src={category.imageUrl}
-                    alt={category.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
-                  {/* Luxury Multi-layer Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity group-hover:from-black/95" />
+                  <Link
+                    href={`/category/${category.slug}`}
+                    className={`relative block overflow-hidden w-full ${
+                      isTall
+                        ? "h-full min-h-[380px] md:min-h-[580px]"
+                        : isFull
+                        ? "h-[280px] sm:h-[340px]"
+                        : isWide
+                        ? "h-[280px] sm:h-[340px]"
+                        : "h-[280px]"
+                    }`}
+                  >
+                    <img
+                      src={category.imageUrl}
+                      alt={category.name}
+                      loading="lazy"
+                      decoding="async"
+                      className={`absolute inset-0 w-full h-full object-cover ${objectPositionClass} group-hover:scale-105 transition-transform duration-700 ease-out`}
+                    />
+                    {/* Luxury Multi-layer Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent transition-opacity group-hover:from-black/95" />
 
-                  {/* Text Overlay */}
-                  <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 flex flex-col justify-end text-white z-10">
-                    <span className="text-[10px] text-amber-200 uppercase tracking-[0.25em] font-semibold mb-1.5 flex items-center gap-1.5 font-poppins">
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse" />
-                      {products.filter((p) => p.categoryId === category.id).length || category.itemCount || 1} Curated Drape{products.filter((p) => p.categoryId === category.id).length === 1 ? "" : "s"}
-                    </span>
-                    <h3 className="text-xl sm:text-2xl lg:text-3xl font-serif text-white font-normal group-hover:text-amber-200 transition-colors leading-snug">
-                      {category.name}
-                    </h3>
-                    <p className="text-xs text-neutral-200 mt-2 line-clamp-2 max-w-lg opacity-90 group-hover:opacity-100 transition-opacity font-light leading-relaxed">
-                      {category.description}
-                    </p>
-                    <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between">
-                      <span className="text-[11px] uppercase tracking-[0.2em] text-brand-gold font-semibold group-hover:text-white flex items-center gap-1.5 font-poppins">
-                        Discover Collection <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    {/* Text Overlay */}
+                    <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 flex flex-col justify-end text-white z-10">
+                      <span className="text-[10px] text-amber-200 uppercase tracking-[0.25em] font-semibold mb-1.5 flex items-center gap-1.5 font-poppins">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-gold animate-pulse" />
+                        {products.filter((p) => p.categoryId === category.id).length || category.itemCount || 1} Curated Drape{products.filter((p) => p.categoryId === category.id).length === 1 ? "" : "s"}
                       </span>
+                      <h3 className="text-xl sm:text-2xl lg:text-3xl font-serif text-white font-normal group-hover:text-amber-200 transition-colors leading-snug">
+                        {category.name}
+                      </h3>
+                      <p className="text-xs text-neutral-200 mt-2 line-clamp-2 max-w-xl opacity-90 group-hover:opacity-100 transition-opacity font-light leading-relaxed">
+                        {category.description}
+                      </p>
+                      <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between">
+                        <span className="text-[11px] uppercase tracking-[0.2em] text-brand-gold font-semibold group-hover:text-white flex items-center gap-1.5 font-poppins">
+                          Discover Collection <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              </div>
-            );
-          })}
+                  </Link>
+                </div>
+              );
+            });
+          })()}
         </div>
         </ScrollReveal>
       </section>
