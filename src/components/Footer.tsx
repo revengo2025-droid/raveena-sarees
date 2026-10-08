@@ -122,15 +122,9 @@ export const Footer: React.FC = () => {
                 </a>
               </p>
               <p className="flex items-center gap-2.5">
-                <Mail className="w-4 h-4 text-brand-gold shrink-0" />
-                <a href={`mailto:${SITE.infoEmail}`} className="hover:text-brand-gold transition-colors">
-                  {SITE.infoEmail}
-                </a>
-              </p>
-              <p className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-brand-gold shrink-0" />
-                <a href="tel:+917780756009" className="hover:text-brand-gold transition-colors">
-                  +91 77807 56009
+                <a href={`tel:+${SITE.whatsappNumber}`} className="hover:text-brand-gold transition-colors">
+                  {SITE.phoneDisplay}
                 </a>
               </p>
             </div>
@@ -220,6 +214,11 @@ export const Footer: React.FC = () => {
               <li>
                 <Link href="/contact" className="hover:text-brand-gold transition-colors">
                   Contact
+                </Link>
+              </li>
+              <li>
+                <Link href="/account/support" className="hover:text-brand-gold transition-colors">
+                  Help &amp; Support
                 </Link>
               </li>
               <li>

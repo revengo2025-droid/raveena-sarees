@@ -458,3 +458,71 @@ body {
   }
 }
 
+
+/* ─── Admin dashboard theme (light by default, dark on request) ─── */
+.adm-root {
+  color-scheme: light;
+  --adm-bg: 246 244 239;
+  --adm-side: 255 255 255;
+  --adm-surface: 255 255 255;
+  --adm-raised: 243 240 234;
+  --adm-hover: 234 229 219;
+  --adm-line: 231 226 216;
+  --adm-line2: 214 207 192;
+  --adm-strong: 27 27 31;
+  --adm-text: 43 43 48;
+  --adm-muted: 88 88 98;
+  --adm-faint: 107 107 117;
+  --adm-gold: 154 116 16;
+  --adm-goldsoft: 138 101 8;
+  --adm-danger: 180 35 24;
+  --adm-warn: 181 71 8;
+  --adm-ok: 6 118 71;
+  --adm-info: 23 92 211;
+  --adm-violet: 105 65 198;
+}
+.adm-root[data-theme="dark"] {
+  color-scheme: dark;
+  --adm-bg: 6 6 6;
+  --adm-side: 13 13 13;
+  --adm-surface: 18 18 18;
+  --adm-raised: 26 26 26;
+  --adm-hover: 34 34 34;
+  --adm-line: 34 34 34;
+  --adm-line2: 51 51 51;
+  --adm-strong: 255 255 255;
+  --adm-text: 229 231 235;
+  --adm-muted: 156 163 175;
+  --adm-faint: 107 114 128;
+  --adm-gold: 212 175 55;
+  --adm-goldsoft: 245 222 136;
+  --adm-danger: 252 165 165;
+  --adm-warn: 252 211 77;
+  --adm-ok: 110 231 183;
+  --adm-info: 147 197 253;
+  --adm-violet: 196 181 253;
+}
+.adm-root { transition: background-color 0.25s ease, color 0.25s ease; }
+
+/* ─── Skeleton loading shimmer (CSS only: no JS cost) ─── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(0 0 0 / 0.07);
+  border-radius: 10px;
+}
+.adm-root[data-theme="dark"] .skeleton { background: rgb(255 255 255 / 0.07); }
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+.adm-root[data-theme="dark"] .skeleton::after { background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.08), transparent); }
+@keyframes skeleton-sweep { 100% { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
+}

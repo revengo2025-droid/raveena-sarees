@@ -44,7 +44,7 @@
 * **Luxury Bridal Gift Box:** Optional velvet packaging and custom calligraphy greeting note (+₹150).
 * **Multi-step Checkout:**
   * Contact & Saved Delivery Address selector / New Address form with Indian state validation
-  * Interactive Payment Gateway Simulator (Razorpay, UPI QR Scan, Credit/Debit Cards, NetBanking, COD)
+  * Interactive Payment Gateway Simulator (Razorpay: UPI, cards, net banking and wallets)
   * Order Confirmation Screen with celebration confetti, tracking timeline, and printable/downloadable official Tax Invoice.
 
 ### 👤 3. Patron Customer Portal
@@ -104,3 +104,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ---
 
 *Handcrafted for Raveena Sarees • Jubilee Hills, Hyderabad, India.*
+
+## 🛡️ Security, support & operations
+
+- **Operations and security guide:** see [SECURITY_AND_OPERATIONS.md](SECURITY_AND_OPERATIONS.md) for the architecture and trust boundaries, the required environment variables (names only), the migration order and the monitoring checklist.
+- **Customer support:** customers raise queries under *Account → Help & Support*; staff handle them under *Admin → Customer Queries*. Contact-form messages appear under *Admin → Contact Messages*. Both send a queued, retried email alert to `CONTACT_NOTIFY_EMAIL`.
+- **Account deletion:** *Account → Account Settings → Privacy & Security → Delete account* (type DELETE and confirm the password). Order and payment records are kept but unlinked from the person.
+- **Database migrations to run in Supabase after 006:** `007_support_tickets_and_contact_inbox.sql`, then `008_rate_limits_and_audit_hardening.sql`.
+- **Tests:** `npm test` (unit, integration and security tests), `npm run typecheck`, `npm run lint`.

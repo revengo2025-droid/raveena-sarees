@@ -28,11 +28,8 @@ export default function RefundPolicyPage() {
       <Section title="How your refund is paid">
         <ul>
           <li>
-            <strong>Prepaid orders (UPI, card, net banking, wallet):</strong> refunded to the original payment method.
-          </li>
-          <li>
-            <strong>Cash on delivery orders:</strong> refunded by bank transfer or UPI. We will ask you for the details; we never
-            ask for card numbers, PINs or OTPs.
+            <strong>Paid orders (UPI, card, net banking, wallet):</strong> refunded to the original payment method. We never
+            ask you for card numbers, PINs or OTPs.
           </li>
         </ul>
       </Section>

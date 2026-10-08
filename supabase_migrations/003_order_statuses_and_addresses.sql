@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 -- 1. ORDER STATUSES (database-backed lifecycle)
---    pending = awaiting payment, confirmed = paid / COD accepted
+--    pending = awaiting payment, confirmed = paid
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_order_status_check;
 ALTER TABLE orders ADD CONSTRAINT orders_order_status_check CHECK (order_status IN (
     'pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered',

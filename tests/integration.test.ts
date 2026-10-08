@@ -275,8 +275,8 @@ describe("Shiprocket webhooks", () => {
     expect(db.table("shipping_webhook_events").every((e) => e.status === "processed")).toBe(true);
   });
 
-  it("marks COD orders paid on delivery and ignores events for unknown orders", async () => {
-    seedOrder({ payment_method: "cod", payment_status: "pending", order_status: "out_for_delivery", shiprocket_awb: "AWB777" });
+  it("delivery never changes the payment status, and events for unknown orders are ignored", async () => {
+    seedOrder({ payment_method: "razorpay", payment_status: "paid", order_status: "out_for_delivery", shiprocket_awb: "AWB777" });
     await processShippingWebhookEvent(store(event("DELIVERED"))!);
     expect(order().order_status).toBe("delivered");
     expect(order().payment_status).toBe("paid");

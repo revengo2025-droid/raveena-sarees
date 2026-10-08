@@ -4,6 +4,9 @@ import { requireAdmin } from "@/lib/auth/admin";
 import { createServerClient, createAdminClient } from "@/lib/supabase";
 import { reviewSchema, type ReviewInput } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
+import { rateLimit, tooManyMessage } from "@/lib/security/rate-limit";
+import { audit } from "@/lib/security/audit";
+import { log } from "@/lib/security/logger";
 
 export async function getProductReviewsAction(productId: string) {
   try {
@@ -37,6 +40,9 @@ export async function submitReviewAction(values: ReviewInput) {
 
     if (!user) return { success: false, error: "Please sign in to write a review." };
 
+    const limit = await rateLimit("review", user.id);
+    if (!limit.ok) return { success: false, error: tooManyMessage(limit.retryAfter, "reviews") };
+
     const r = validated.data;
     const { data, error } = await supabase.from("reviews").insert({
       product_id: r.productId,
@@ -50,12 +56,16 @@ export async function submitReviewAction(values: ReviewInput) {
       status: "pending", // reviews are moderated before they appear
     });
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      log.warn("review.insert_failed", { error: error.message });
+      return { success: false, error: "We could not post your review. Please try again." };
+    }
 
     revalidatePath("/product/[slug]", "page");
     return { success: true, data };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    log.error("review.submit_error", { error: err?.message });
+    return { success: false, error: "We could not post your review. Please try again." };
   }
 }
 
@@ -64,12 +74,18 @@ export async function moderateReviewAction(reviewId: string, status: "approved" 
   if (!auth.ok) return { success: false, error: auth.error };
   try {
     const adminClient = createAdminClient();
+    if (!/^[0-9a-f-]{36}$/i.test(reviewId) || (status !== "approved" && status !== "rejected")) return { success: false, error: "Invalid request." };
     const { error } = await adminClient.from("reviews").update({ status }).eq("id", reviewId);
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      log.warn("review.moderate_failed", { error: error.message });
+      return { success: false, error: "Could not update the review." };
+    }
+    await audit({ action: "review.moderate", actorId: auth.userId, entityType: "review", entityId: reviewId, meta: { status } });
 
     revalidatePath("/admin/reviews");
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    log.error("review.moderate_error", { error: err?.message });
+    return { success: false, error: "Could not update the review." };
   }
 }

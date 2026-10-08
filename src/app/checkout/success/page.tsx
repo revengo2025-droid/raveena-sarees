@@ -45,7 +45,7 @@ function SuccessContent() {
 
   // Online payments are confirmed by the server / Razorpay webhook: keep checking briefly
   const awaitingPayment =
-    !!order && order.paymentMethod !== "cod" && order.paymentStatus === "pending" && order.orderStatus === "pending";
+    !!order && order.paymentStatus === "pending" && order.orderStatus === "pending";
   useEffect(() => {
     if (!awaitingPayment || polls.current >= MAX_POLLS) return;
     const t = setTimeout(() => {
@@ -91,8 +91,7 @@ function SuccessContent() {
   }
 
   const paymentLabel = PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus;
-  const isCod = order.paymentMethod === "cod";
-  const confirmed = isCod || order.paymentStatus === "paid";
+  const confirmed = order.paymentStatus === "paid";
   const returnRelated = ["return_requested", "returned", "refund_processing", "refunded"].includes(order.orderStatus);
   const a = order.shippingAddress;
 
@@ -152,7 +151,7 @@ function SuccessContent() {
         </div>
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
           <div className="flex justify-between sm:block"><dt className="text-neutral-500 text-xs">Order number</dt><dd className="font-mono font-semibold">{order.orderNumber}</dd></div>
-          <div className="flex justify-between sm:block"><dt className="text-neutral-500 text-xs">Payment</dt><dd className="font-semibold">{isCod ? "Cash on delivery" : paymentLabel}</dd></div>
+          <div className="flex justify-between sm:block"><dt className="text-neutral-500 text-xs">Payment</dt><dd className="font-semibold">{paymentLabel}</dd></div>
           <div className="flex justify-between sm:block"><dt className="text-neutral-500 text-xs">Order status</dt><dd className="font-semibold">{orderStatusLabel(order.orderStatus)}</dd></div>
           <div className="flex justify-between sm:block">
             <dt className="text-neutral-500 text-xs">Shipment</dt>
@@ -233,7 +232,7 @@ function SuccessContent() {
           {order.discountAmount > 0 && <div className="flex justify-between text-emerald-700"><span>Discount{order.appliedCoupon ? ` (${order.appliedCoupon})` : ""}</span><span>-{formatINR(order.discountAmount)}</span></div>}
           {order.giftWrapFee > 0 && <div className="flex justify-between text-neutral-600"><span>Gift packaging</span><span>+{formatINR(order.giftWrapFee)}</span></div>}
           <div className="flex justify-between text-neutral-600"><span>Shipping</span><span>{order.shippingFee === 0 ? "Free" : formatINR(order.shippingFee)}</span></div>
-          <div className="flex justify-between text-base font-bold pt-2 border-t border-brand-border"><span>{isCod ? "Total (pay on delivery)" : "Total"}</span><span className="font-serif text-brand-maroon">{formatINR(order.totalAmount)}</span></div>
+          <div className="flex justify-between text-base font-bold pt-2 border-t border-brand-border"><span>Total</span><span className="font-serif text-brand-maroon">{formatINR(order.totalAmount)}</span></div>
         </div>
 
         <p className="text-[11px] text-neutral-500 text-center">

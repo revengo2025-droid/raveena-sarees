@@ -30,8 +30,6 @@ export default function ContactPage() {
                 <span>
                   <strong className="block text-[11px] uppercase font-poppins">Email</strong>
                   <a href={`mailto:${SITE.email}`} className="text-neutral-700 hover:text-brand-maroon break-all">{SITE.email}</a>
-                  <br />
-                  <a href={`mailto:${SITE.infoEmail}`} className="text-neutral-700 hover:text-brand-maroon break-all">{SITE.infoEmail}</a>
                 </span>
               </li>
               <li className="flex items-start gap-3.5">

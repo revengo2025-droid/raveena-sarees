@@ -44,7 +44,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
     items: [
       {
         q: "What payment methods are supported?",
-        a: "You can pay online with UPI, cards, net banking and wallets through Razorpay, or choose cash on delivery where it is offered at checkout.",
+        a: "All payments are made online through Razorpay, using UPI, cards, net banking or wallets.",
       },
       {
         q: "Is online payment secure?",
@@ -102,7 +102,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
       },
       {
         q: "How is the refund processed?",
-        a: "Online payments are refunded to the original payment method. Cash on delivery orders are refunded by bank transfer or UPI; we will ask you for the details and never for card numbers, PINs or OTPs.",
+        a: "Refunds go back to the original payment method. We never ask for card numbers, PINs or OTPs.",
       },
       {
         q: "What if I haven't received my refund?",

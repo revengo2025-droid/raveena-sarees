@@ -310,7 +310,7 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
           addFiles(e.dataTransfer.files);
         }}
         className={`rounded-2xl border-2 border-dashed p-5 text-center transition-colors ${
-          dragOver ? "border-[#D4AF37] bg-[#D4AF37]/10" : "border-[#333] bg-[#141414] hover:border-[#555]"
+          dragOver ? "border-adm-gold bg-adm-gold/10" : "border-adm-line2 bg-adm-surface hover:border-[#555]"
         }`}
       >
         <input
@@ -331,20 +331,20 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
         >
           <UploadCloud className="w-4 h-4" /> {items.length ? "Add More Photos" : "Upload Photos"}
         </button>
-        <p className="text-[11px] text-gray-400 mt-2">
+        <p className="text-[11px] text-adm-muted mt-2">
           Drag &amp; drop photos here, or choose from your device. JPG, PNG or WebP · up to {MAX_IMAGES_PER_PRODUCT}{" "}
           photos · automatically optimised for fast loading.
         </p>
         {!productId && items.length > 0 && (
-          <p className="text-[11px] text-amber-300 mt-1">Photos upload when you save the saree.</p>
+          <p className="text-[11px] text-adm-warn mt-1">Photos upload when you save the saree.</p>
         )}
       </div>
 
       {notice && (
-        <div role="alert" className="flex items-start gap-2 text-[11px] text-red-300 bg-red-950/40 border border-red-900 rounded-xl px-3 py-2">
+        <div role="alert" className="flex items-start gap-2 text-[11px] text-adm-danger bg-adm-danger/15 border border-adm-danger/40 rounded-xl px-3 py-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
           <span className="flex-1">{notice}</span>
-          <button type="button" onClick={() => setNotice(null)} className="text-red-200 hover:text-white" aria-label="Dismiss message">
+          <button type="button" onClick={() => setNotice(null)} className="text-adm-danger hover:text-adm-strong" aria-label="Dismiss message">
             ✕
           </button>
         </div>
@@ -371,8 +371,8 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
                   reorder(dragIndex, index);
                   setDragIndex(null);
                 }}
-                className={`group relative rounded-xl overflow-hidden border bg-[#181818] ${
-                  item.isPrimary ? "border-[#D4AF37]" : "border-[#2E2E2E]"
+                className={`group relative rounded-xl overflow-hidden border bg-adm-raised ${
+                  item.isPrimary ? "border-adm-gold" : "border-adm-line"
                 } ${dragIndex === index ? "opacity-50" : ""}`}
               >
                 <div className="relative aspect-[3/4] bg-black/40">
@@ -390,14 +390,14 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
                     </span>
                   )}
                   {item.status === "queued" && (
-                    <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-gray-200 text-[9px] uppercase px-2 py-0.5 rounded-full">
+                    <span className="absolute bottom-1.5 left-1.5 bg-black/70 text-adm-text text-[9px] uppercase px-2 py-0.5 rounded-full">
                       Ready to upload
                     </span>
                   )}
 
                   {busy && (
                     <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 px-4">
-                      <Loader2 className="w-5 h-5 text-[#D4AF37] animate-spin" />
+                      <Loader2 className="w-5 h-5 text-adm-gold animate-spin" />
                       {item.status === "uploading" && (
                         <div
                           className="w-full h-1.5 bg-white/15 rounded-full overflow-hidden"
@@ -414,8 +414,8 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
 
                   {item.status === "error" && (
                     <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center gap-2 p-3 text-center">
-                      <AlertCircle className="w-5 h-5 text-red-400" />
-                      <p className="text-[10px] text-red-200 leading-snug">{item.error}</p>
+                      <AlertCircle className="w-5 h-5 text-adm-danger" />
+                      <p className="text-[10px] text-adm-danger leading-snug">{item.error}</p>
                       <button
                         type="button"
                         onClick={() => retry(item)}
@@ -428,14 +428,14 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center justify-between gap-0.5 p-1.5 bg-[#101010]">
+                <div className="flex items-center justify-between gap-0.5 p-1.5 bg-adm-surface">
                   <div className="flex items-center">
                     <button
                       type="button"
                       onClick={() => reorder(index, index - 1)}
                       disabled={index === 0 || busy}
                       aria-label="Move photo earlier"
-                      className="p-1.5 text-gray-400 hover:text-white disabled:opacity-30"
+                      className="p-1.5 text-adm-muted hover:text-adm-strong disabled:opacity-30"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
                     </button>
@@ -444,7 +444,7 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
                       onClick={() => reorder(index, index + 1)}
                       disabled={index === items.length - 1 || busy}
                       aria-label="Move photo later"
-                      className="p-1.5 text-gray-400 hover:text-white disabled:opacity-30"
+                      className="p-1.5 text-adm-muted hover:text-adm-strong disabled:opacity-30"
                     >
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
@@ -456,14 +456,14 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
                       disabled={busy || item.isPrimary || item.status === "error"}
                       aria-label="Set as primary photo"
                       title="Set as primary"
-                      className="p-1.5 text-gray-400 hover:text-[#D4AF37] disabled:opacity-30"
+                      className="p-1.5 text-adm-muted hover:text-adm-gold disabled:opacity-30"
                     >
-                      <Star className={`w-3.5 h-3.5 ${item.isPrimary ? "fill-[#D4AF37] text-[#D4AF37]" : ""}`} />
+                      <Star className={`w-3.5 h-3.5 ${item.isPrimary ? "fill-[#D4AF37] text-adm-gold" : ""}`} />
                     </button>
                     {item.id && (
                       <label
                         title="Replace photo"
-                        className={`p-1.5 cursor-pointer text-gray-400 hover:text-white ${busy ? "pointer-events-none opacity-30" : ""}`}
+                        className={`p-1.5 cursor-pointer text-adm-muted hover:text-adm-strong ${busy ? "pointer-events-none opacity-30" : ""}`}
                       >
                         <Repeat2 className="w-3.5 h-3.5" />
                         <span className="sr-only">Replace photo</span>
@@ -484,7 +484,7 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
                       disabled={busy}
                       aria-label="Delete photo"
                       title="Delete"
-                      className="p-1.5 text-gray-400 hover:text-red-400 disabled:opacity-30"
+                      className="p-1.5 text-adm-muted hover:text-adm-danger disabled:opacity-30"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -500,7 +500,7 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
                     placeholder="Alt text (describes the photo)"
                     aria-label="Photo alt text"
                     maxLength={200}
-                    className="w-full bg-[#0C0C0C] border-t border-[#222] px-2 py-1.5 text-[10px] text-gray-300 placeholder-gray-600 focus:outline-none focus:bg-[#141414]"
+                    className="w-full bg-[#0C0C0C] border-t border-adm-line px-2 py-1.5 text-[10px] text-adm-text placeholder-adm-faint focus:outline-none focus:bg-adm-surface"
                   />
                 )}
               </li>
@@ -508,7 +508,7 @@ export const ProductImageManager = forwardRef<ProductImageManagerHandle, Props>(
           })}
         </ul>
       ) : (
-        <div className="flex flex-col items-center gap-1 py-4 text-gray-500 text-[11px]">
+        <div className="flex flex-col items-center gap-1 py-4 text-adm-faint text-[11px]">
           <ImagePlus className="w-5 h-5" />
           No photos yet. At least one photo is required.
         </div>

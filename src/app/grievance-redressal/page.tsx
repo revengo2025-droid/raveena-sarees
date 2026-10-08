@@ -22,7 +22,7 @@ export default function GrievancePage() {
             {SITE.grievanceOfficer || <em className="text-neutral-500">To be published by the business</em>}
           </p>
           <p>
-            <strong>Email:</strong> <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+            <strong>Email:</strong> <a href={`mailto:${SITE.grievanceEmail}`}>{SITE.grievanceEmail}</a>
           </p>
           <p>
             <strong>Phone / WhatsApp:</strong> <a href={`https://wa.me/${SITE.whatsappNumber}`}>{SITE.phoneDisplay}</a>
@@ -38,7 +38,7 @@ export default function GrievancePage() {
       <Section title="How to raise a complaint">
         <ol>
           <li>
-            Email <a href={`mailto:${SITE.email}`}>{SITE.email}</a> or message us on WhatsApp with your <strong>order number</strong>,
+            Email <a href={`mailto:${SITE.grievanceEmail}`}>{SITE.grievanceEmail}</a> or message us on WhatsApp with your <strong>order number</strong>,
             a clear description of the problem, and any photos or videos.
           </li>
           <li>We acknowledge your complaint within <strong>48 hours</strong>.</li>

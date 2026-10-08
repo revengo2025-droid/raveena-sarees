@@ -2,6 +2,7 @@
 
 // Admin-only operations for shipping (Shiprocket) and transactional email.
 // Every action independently verifies the caller's admin role on the server.
+import { audit } from "@/lib/security/audit";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase";
@@ -103,7 +104,7 @@ export async function retryFulfillmentAction(orderId: string) {
   if (!auth.ok) return { success: false, error: auth.error };
   if (!UUID_RE.test(orderId)) return { success: false, error: "Invalid order." };
   const r = await runFulfillment(orderId, { force: true, trigger: `admin:${auth.userId}` });
-  console.info(`[fulfillment] manual retry ${orderId} by=${auth.userId}: ${r.status}`);
+  await audit({ action: "order.fulfillment_retry", actorId: auth.userId, entityType: "order", entityId: orderId, meta: { result: r.status } });
   revalidatePath("/admin/orders");
   return r.ok ? { success: true, message: r.message } : { success: false, error: r.message };
 }
@@ -113,6 +114,7 @@ export async function retryEmailAction(emailEventId: string) {
   if (!auth.ok) return { success: false, error: auth.error };
   if (!UUID_RE.test(emailEventId)) return { success: false, error: "Invalid email." };
   const r = await deliverEmailEvent(emailEventId, { force: true });
+  await audit({ action: "order.email_retry", actorId: auth.userId, entityType: "email_event", entityId: emailEventId, meta: { ok: r.ok } });
   return r.ok ? { success: true } : { success: false, error: r.error || "Email could not be sent." };
 }
 

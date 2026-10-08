@@ -1,5 +1,6 @@
 "use client";
 
+import { LOGIN_FOR_CHECKOUT } from "@/lib/auth/roles";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -175,8 +176,8 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     addToCart(product, 1, currentColor);
     if (!user) {
-      showToast("Please sign in or create an account to proceed to checkout.", "info");
-      router.push("/auth/login?redirect=/checkout");
+      showToast("Please sign in to continue to checkout. Your bag is saved.", "info");
+      router.push(LOGIN_FOR_CHECKOUT);
       return;
     }
     router.push("/checkout");
@@ -417,7 +418,7 @@ export default function ProductDetailPage() {
             {/* Pincode Delivery Estimator */}
             <div className="p-4 bg-white border border-brand-border rounded-2xl space-y-3 shadow-card">
               <div className="flex items-center gap-2 text-xs font-semibold text-brand-text font-poppins">
-                <Truck className="w-4 h-4 text-brand-gold" /> Check Delivery & COD Availability
+                <Truck className="w-4 h-4 text-brand-gold" /> Check Delivery Availability
               </div>
               <form onSubmit={handlePincodeCheck} className="flex gap-2">
                 <input

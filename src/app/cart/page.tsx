@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { formatINR } from "@/lib/utils";
+import { getCurrentUserAction } from "@/app/actions/auth";
+import { LOGIN_FOR_CHECKOUT } from "@/lib/auth/roles";
 
 export default function CartPage() {
   const router = useRouter();
@@ -46,13 +48,22 @@ export default function CartPage() {
   const [couponCode, setCouponCode] = useState("");
   const [couponError, setCouponError] = useState("");
 
-  const handleProceedToCheckout = () => {
-    if (!user) {
-      showToast("Please sign in or create an account to proceed to checkout.", "info");
-      router.push("/auth/login?redirect=/checkout");
-      return;
+  const [checkingOut, setCheckingOut] = useState(false);
+  const handleProceedToCheckout = async () => {
+    if (checkingOut) return;
+    setCheckingOut(true);
+    try {
+      // Ask the server whether this browser really has a signed-in customer (the in-memory state can be stale)
+      const session = await getCurrentUserAction().catch(() => null);
+      if (!user || (session && !session.success)) {
+        showToast("Please sign in to continue to checkout. Your bag is saved.", "info");
+        router.push(LOGIN_FOR_CHECKOUT);
+        return;
+      }
+      router.push("/checkout");
+    } finally {
+      setCheckingOut(false);
     }
-    router.push("/checkout");
   };
 
   const progressPercent = Math.min(

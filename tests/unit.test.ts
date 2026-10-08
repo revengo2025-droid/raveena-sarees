@@ -122,9 +122,12 @@ describe("email templates", () => {
     expect(r.html).not.toContain("javascript:alert");
     expect(r.html).toContain("&lt;img src=x onerror=1&gt;");
   });
-  it("COD confirmation asks to keep the amount ready", () => {
-    const r = renderEmail("order_confirmation", sampleEmailData({ paymentMethod: "cod", paymentStatus: "pending" }));
-    expect(r.html).toContain("Cash on Delivery");
+  it("order emails describe the Razorpay payment and never mention paying on delivery", () => {
+    const r = renderEmail("order_confirmation", sampleEmailData({ paymentMethod: "razorpay", paymentStatus: "paid" }));
+    expect(r.html).toContain("Paid online (Razorpay)");
+    expect(r.html).not.toMatch(/cash on delivery|pay when/i);
+    const out = renderEmail("out_for_delivery", sampleEmailData({ paymentMethod: "razorpay", paymentStatus: "paid" }));
+    expect(out.html).not.toMatch(/keep .* ready/i);
   });
 });
 
@@ -179,13 +182,13 @@ describe("Shiprocket order payload", () => {
     expect(p.order_items.map((i) => i.sku)).toEqual(["RAV-SLK-010", "RAV-SLK-010-2"]);
     expect(p.comment).toContain("Happy Diwali");
   });
-  it("marks COD orders as COD", () => {
-    expect(buildShiprocketOrderPayload(sampleOrder({ payment_method: "cod", payment_status: "pending" }), cfg).payment_method).toBe("COD");
+  it("always sends shipments as prepaid", () => {
+    expect(buildShiprocketOrderPayload(sampleOrder({ payment_method: "razorpay", payment_status: "paid" }), cfg).payment_method).toBe("Prepaid");
   });
-  it("only ships paid orders or confirmed COD orders", () => {
+  it("only ships orders whose Razorpay payment is captured", () => {
     expect(isOrderShippable(sampleOrder())).toBe(true);
     expect(isOrderShippable(sampleOrder({ payment_status: "pending", order_status: "pending" }))).toBe(false);
-    expect(isOrderShippable(sampleOrder({ payment_method: "cod", payment_status: "pending", order_status: "confirmed" }))).toBe(true);
+    expect(isOrderShippable(sampleOrder({ payment_status: "pending", order_status: "confirmed" }))).toBe(false);
     expect(isOrderShippable(sampleOrder({ order_status: "cancelled" }))).toBe(false);
   });
 });

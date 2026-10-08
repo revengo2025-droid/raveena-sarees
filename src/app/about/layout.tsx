@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "About Us",
-  description: `About ${SITE.name}: who we are and how we choose the sarees we sell.`,
+  title: "Our Story",
+  description: `The story of ${SITE.name}: a Telangana-based saree store for weddings, festivals and everyday elegance, and how we choose what we sell.`,
   alternates: { canonical: "/about" },
 };
 

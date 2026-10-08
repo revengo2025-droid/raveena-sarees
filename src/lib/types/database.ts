@@ -17,7 +17,7 @@ export type OrderStatus =
   | "cancelled"
   | "returned";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
-export type PaymentMethod = "razorpay" | "upi" | "card" | "netbanking" | "cod";
+export type PaymentMethod = "razorpay" | "upi" | "card" | "netbanking";
 export type DiscountType = "percentage" | "fixed";
 export type ReviewStatus = "pending" | "approved" | "rejected";
 export type ReturnStatus =

@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  Banknote,
   Check,
   ChevronDown,
   CreditCard,
@@ -25,6 +24,7 @@ import { SITE } from "@/lib/site";
 import { INDIAN_MOBILE_RE, normaliseIndianMobile } from "@/lib/geo/india";
 import { createOrderAction, verifyPaymentAction } from "@/app/actions/orders";
 import { saveAddressAction } from "@/app/actions/addresses";
+import { LOGIN_FOR_CHECKOUT } from "@/lib/auth/roles";
 import {
   AddressForm,
   EMPTY_ADDRESS,
@@ -73,7 +73,7 @@ export default function CheckoutPage() {
   const [addressNotice, setAddressNotice] = useState<string | null>(null);
 
   // Step 3: payment
-  const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "cod">("razorpay");
+  const paymentMethod = "razorpay" as const; // Razorpay is the only payment route
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
@@ -134,10 +134,10 @@ export default function CheckoutPage() {
             <div className="flex justify-between"><span className="text-neutral-500">Total</span><span className="font-bold text-brand-maroon font-serif">{formatINR(cartTotal)}</span></div>
           </div>
           <div className="space-y-3 font-poppins">
-            <Link href="/auth/login?redirect=/checkout" className="btn-primary w-full min-h-[48px] text-xs font-bold uppercase tracking-widest rounded-full shadow-md flex items-center justify-center gap-2">
+            <Link href={LOGIN_FOR_CHECKOUT} className="btn-primary w-full min-h-[48px] text-xs font-bold uppercase tracking-widest rounded-full shadow-md flex items-center justify-center gap-2">
               Sign In <ArrowRight className="w-4 h-4" />
             </Link>
-            <Link href="/auth/register?redirect=/checkout" className="w-full min-h-[48px] bg-brand-ivory border border-brand-border hover:border-brand-gold text-xs font-semibold rounded-full flex items-center justify-center">
+            <Link href="/auth/register?redirect=%2Fcart" className="w-full min-h-[48px] bg-brand-ivory border border-brand-border hover:border-brand-gold text-xs font-semibold rounded-full flex items-center justify-center">
               Create Account
             </Link>
           </div>
@@ -253,6 +253,13 @@ export default function CheckoutPage() {
         giftMessage: giftWrap ? giftMessage : undefined,
       });
 
+      // The sign-in step belongs to the bag: if the session ended, go back there instead of failing at payment
+      if (!result.success && "code" in result && result.code === "AUTH_REQUIRED") {
+        showToast("Your session has ended. Please sign in again to continue. Your bag is saved.", "info");
+        router.push(LOGIN_FOR_CHECKOUT);
+        return;
+      }
+
       if (!result.success || !result.data) {
         setPaymentError(result.error || "We could not place your order. Please try again.");
         setIsProcessing(false);
@@ -260,12 +267,6 @@ export default function CheckoutPage() {
       }
 
       const order = result.data;
-
-      // Cash on delivery: nothing to pay now
-      if (!order.isOnlinePayment) {
-        finishSuccess(order.orderNumber);
-        return;
-      }
 
       const razorpay = typeof window !== "undefined" ? (window as any).Razorpay : undefined;
       const isSimulated = !order.razorpayOrderId || order.razorpayOrderId.includes("mock");
@@ -280,7 +281,7 @@ export default function CheckoutPage() {
         });
         if (sim.success) finishSuccess(order.orderNumber);
         else {
-          setPaymentError("Online payment is not available right now. Please choose Cash on Delivery.");
+          setPaymentError("Online payment is not available right now. Please try again in a little while.");
           setIsProcessing(false);
         }
         return;
@@ -511,21 +512,11 @@ export default function CheckoutPage() {
                 </span>
               </div>
 
-              <div role="radiogroup" aria-label="Payment method" className="space-y-3">
-                <label className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${paymentMethod === "razorpay" ? "bg-brand-ivory border-brand-gold ring-1 ring-brand-gold/40" : "bg-white border-brand-border hover:border-brand-gold/40"}`}>
-                  <input type="radio" name="payment" className="mt-1 accent-brand-gold w-4 h-4" checked={paymentMethod === "razorpay"} onChange={() => setPaymentMethod("razorpay")} />
-                  <span className="flex-1 text-sm">
-                    <strong className="font-poppins inline-flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-brand-gold" /> Pay online</strong>
-                    <span className="block text-xs text-neutral-500 mt-1 leading-relaxed">UPI, cards, net banking and wallets through Razorpay. Your order is confirmed once the payment is verified.</span>
-                  </span>
-                </label>
-                <label className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${paymentMethod === "cod" ? "bg-brand-ivory border-brand-gold ring-1 ring-brand-gold/40" : "bg-white border-brand-border hover:border-brand-gold/40"}`}>
-                  <input type="radio" name="payment" className="mt-1 accent-brand-gold w-4 h-4" checked={paymentMethod === "cod"} onChange={() => setPaymentMethod("cod")} />
-                  <span className="flex-1 text-sm">
-                    <strong className="font-poppins inline-flex items-center gap-1.5"><Banknote className="w-4 h-4 text-brand-gold" /> Cash on delivery</strong>
-                    <span className="block text-xs text-neutral-500 mt-1 leading-relaxed">Pay when your order arrives.</span>
-                  </span>
-                </label>
+              <div className="p-4 rounded-2xl border bg-brand-ivory border-brand-gold ring-1 ring-brand-gold/40">
+                <p className="text-sm">
+                  <strong className="font-poppins inline-flex items-center gap-1.5"><CreditCard className="w-4 h-4 text-brand-gold" aria-hidden="true" /> Pay securely with Razorpay</strong>
+                  <span className="block text-xs text-neutral-500 mt-1 leading-relaxed">UPI, cards, net banking and wallets. Your order is confirmed once the payment is verified.</span>
+                </p>
               </div>
 
               {paymentError && (
@@ -539,7 +530,7 @@ export default function CheckoutPage() {
                   <ArrowLeft className="w-4 h-4" /> Back
                 </button>
                 <button type="button" onClick={handlePlaceOrder} disabled={isProcessing} className="btn-primary flex-1 sm:flex-none sm:px-10 min-h-[52px] text-xs font-bold uppercase tracking-widest rounded-full shadow-md inline-flex items-center justify-center gap-2 disabled:opacity-70">
-                  {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>) : paymentMethod === "cod" ? (<>Place Order • {formatINR(cartTotal)}</>) : (<>Pay {formatINR(cartTotal)} Securely</>)}
+                  {isProcessing ? (<><Loader2 className="w-4 h-4 animate-spin" /> Processing…</>) : (<>Pay {formatINR(cartTotal)} Securely</>)}
                 </button>
               </div>
 

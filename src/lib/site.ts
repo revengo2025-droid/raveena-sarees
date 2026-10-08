@@ -5,6 +5,10 @@
 // business has them; until then the legal pages show a clear "to be provided" note:
 //   NEXT_PUBLIC_BUSINESS_LEGAL_NAME, NEXT_PUBLIC_BUSINESS_ADDRESS, NEXT_PUBLIC_GSTIN,
 //   NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME
+// Public contact points (shown on the site, so they use the NEXT_PUBLIC_ prefix):
+//   NEXT_PUBLIC_BUSINESS_CONTACT_EMAIL, NEXT_PUBLIC_BUSINESS_SUPPORT_EMAIL,
+//   NEXT_PUBLIC_BUSINESS_GRIEVANCE_EMAIL, NEXT_PUBLIC_BUSINESS_PHONE
+// The private inbox that receives alerts (contact form, tickets) is server-only: see site.server.ts.
 const clean = (v: string | undefined) => (v && v.trim() ? v.trim() : "");
 
 /** Canonical production origin. Used whenever NEXT_PUBLIC_SITE_URL is missing or points at a dev/preview host in production. */
@@ -18,13 +22,25 @@ function resolveSiteUrl(): string {
   return configured;
 }
 
+/** The business mailbox that already existed in this project (store_info seed, Resend reply-to). Override with env. */
+const DEFAULT_CONTACT_EMAIL = "raveenasarees22@gmail.com";
+/** The concierge/WhatsApp number confirmed by the owner. Override with NEXT_PUBLIC_BUSINESS_PHONE. */
+const DEFAULT_PHONE = "+91 77807 56009";
+
+const contactEmail = clean(process.env.NEXT_PUBLIC_BUSINESS_CONTACT_EMAIL) || DEFAULT_CONTACT_EMAIL;
+const phoneDisplay = clean(process.env.NEXT_PUBLIC_BUSINESS_PHONE) || DEFAULT_PHONE;
+
 export const SITE = {
   name: "Raveena Sarees",
-  email: "raveenasarees22@gmail.com",
-  /** Secondary / business email for subscriptions, enquiries, etc. */
-  infoEmail: "info@raveenasarees.com",
-  whatsappNumber: "917780756009",
-  phoneDisplay: "+91 77807 56009",
+  /** Official public contact email. The single source for every page, email template and structured-data block. */
+  email: contactEmail,
+  /** Customer support address (defaults to the contact email). */
+  supportEmail: clean(process.env.NEXT_PUBLIC_BUSINESS_SUPPORT_EMAIL) || contactEmail,
+  /** Grievance Officer contact (defaults to the contact email). */
+  grievanceEmail: clean(process.env.NEXT_PUBLIC_BUSINESS_GRIEVANCE_EMAIL) || contactEmail,
+  /** Digits only, for wa.me and tel: links. */
+  whatsappNumber: phoneDisplay.replace(/\D/g, ""),
+  phoneDisplay,
   url: resolveSiteUrl(),
   logo: "/images/logo/raveena-logo.jpg",
   mark: "/images/logo/raveena-mark.png",

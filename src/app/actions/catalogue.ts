@@ -1,5 +1,6 @@
 "use server";
 
+import { audit } from "@/lib/security/audit";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase";
 import { INITIAL_PRODUCTS } from "@/lib/mockData";
@@ -60,6 +61,7 @@ export async function getAdminProductsAction(): Promise<
 export async function importStarterCatalogueAction() {
   const auth = await requireAdmin({ adminOnly: true });
   if (!auth.ok) return { success: false as const, error: auth.error };
+  await audit({ action: "catalogue.import", actorId: auth.userId, entityType: "catalogue" });
   if (!isConfigured()) return { success: false as const, error: "Supabase is not configured on the server." };
 
   try {

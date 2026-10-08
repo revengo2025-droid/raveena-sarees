@@ -1,5 +1,7 @@
 import { createServerClient, createAdminClient } from "@/lib/supabase";
 import { isStaffRole, type AppRole } from "@/lib/auth/roles";
+import { audit } from "@/lib/security/audit";
+import { log } from "@/lib/security/logger";
 
 export type AdminCheck =
   | { ok: true; userId: string; email: string; role: "admin" | "staff" }
@@ -14,10 +16,8 @@ export async function getSessionUser(): Promise<{ id: string; email: string; rol
   if (!user) return null;
 
   const { data: profile } = await createAdminClient().from("profiles").select("role").eq("id", user.id).maybeSingle();
-  let role: AppRole = profile?.role === "admin" || profile?.role === "staff" ? profile.role : "customer";
-  if (user.email && user.email.toLowerCase() === "revengo2025@gmail.com") {
-    role = "admin";
-  }
+  // The profiles table is the only source of truth: no email address is ever special-cased in code.
+  const role: AppRole = profile?.role === "admin" || profile?.role === "staff" ? profile.role : "customer";
   return { id: user.id, email: user.email || "", role };
 }
 
@@ -31,7 +31,8 @@ export async function requireAdmin(opts: { adminOnly?: boolean } = {}): Promise<
     if (!session) return { ok: false, status: 401, error: "Please sign in to continue." };
 
     if (!isStaffRole(session.role)) {
-      console.warn(`[security] Non-admin attempted admin access: ${session.id}`);
+      log.warn("security.admin_access_denied", { user: session.id });
+      await audit({ action: "security.access_denied", actorId: session.id, entityType: "admin", meta: { role: session.role } });
       return { ok: false, status: 403, error: "You do not have permission to perform this action." };
     }
     if (opts.adminOnly && session.role !== "admin") {

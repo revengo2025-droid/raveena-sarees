@@ -10,6 +10,8 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ToastContainer } from "@/components/ToastContainer";
 import { OfferPopup } from "@/components/OfferPopup";
+import { MotionProvider } from "@/components/motion/MotionProvider";
+import { RouteProgress } from "@/components/motion/RouteProgress";
 
 export function StoreLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -18,15 +20,16 @@ export function StoreLayoutWrapper({ children }: { children: React.ReactNode }) 
 
   if (isAdminRoute) {
     return (
-      <>
+      <MotionProvider>
         {children}
         <ToastContainer />
-      </>
+      </MotionProvider>
     );
   }
 
   return (
-    <>
+    <MotionProvider>
+      <RouteProgress />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-white focus:text-brand-maroon focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg"
@@ -46,6 +49,6 @@ export function StoreLayoutWrapper({ children }: { children: React.ReactNode }) 
       {!isCheckout && <MobileBottomNav />}
       <OfferPopup />
       <ToastContainer />
-    </>
+    </MotionProvider>
   );
 }

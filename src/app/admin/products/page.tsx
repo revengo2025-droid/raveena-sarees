@@ -15,8 +15,8 @@ import { getAdminProductsAction, importStarterCatalogueAction } from "@/app/acti
 import { ProductImageManager, type ProductImageManagerHandle } from "@/components/admin/ProductImageManager";
 
 const inputCls =
-  "w-full bg-[#181818] border border-[#333] rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-[#D4AF37]";
-const labelCls = "text-[10px] uppercase text-gray-400 block mb-1";
+  "w-full bg-adm-raised border border-adm-line2 rounded-xl px-3.5 py-2.5 text-adm-strong focus:outline-none focus:border-adm-gold";
+const labelCls = "text-[10px] uppercase text-adm-muted block mb-1";
 
 const slugify = (value: string) =>
   value
@@ -326,10 +326,10 @@ export default function AdminProductsPage() {
   return (
     <div className="space-y-6 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222] pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-adm-line pb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-white font-normal">Saree Catalog & Inventory</h1>
-          <p className="text-xs text-gray-400 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-serif text-adm-strong font-normal">Saree Catalog & Inventory</h1>
+          <p className="text-xs text-adm-muted mt-1">
             Add sarees, upload photos from your device, and manage stock. Changes appear on the website automatically.
           </p>
         </div>
@@ -344,17 +344,17 @@ export default function AdminProductsPage() {
 
       {/* States: loading / error / empty */}
       {products === null && (
-        <div className="flex items-center gap-2 text-sm text-gray-400 py-10 justify-center">
+        <div className="flex items-center gap-2 text-sm text-adm-muted py-10 justify-center">
           <Loader2 className="w-4 h-4 animate-spin" /> Loading catalogue…
         </div>
       )}
 
       {loadError && (
-        <div role="alert" className="flex items-start gap-3 bg-red-950/40 border border-red-900 rounded-2xl p-4 text-sm text-red-200">
+        <div role="alert" className="flex items-start gap-3 bg-adm-danger/15 border border-adm-danger/40 rounded-2xl p-4 text-sm text-adm-danger">
           <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold">The catalogue could not be loaded.</p>
-            <p className="text-xs mt-1 text-red-300">
+            <p className="text-xs mt-1 text-adm-danger">
               {loadError}
               {notConfigured && " Add your Supabase URL and keys to the server environment, then reload."}
             </p>
@@ -363,10 +363,10 @@ export default function AdminProductsPage() {
       )}
 
       {products !== null && !loadError && products.length === 0 && (
-        <div className="bg-[#121212] border border-[#2E2E2E] rounded-2xl p-6 sm:p-8 text-center space-y-3">
-          <DatabaseZap className="w-8 h-8 text-[#D4AF37] mx-auto" />
-          <h2 className="text-lg font-serif text-white">Your database catalogue is empty</h2>
-          <p className="text-xs text-gray-400 max-w-md mx-auto">
+        <div className="bg-adm-surface border border-adm-line rounded-2xl p-6 sm:p-8 text-center space-y-3">
+          <DatabaseZap className="w-8 h-8 text-adm-gold mx-auto" />
+          <h2 className="text-lg font-serif text-adm-strong">Your database catalogue is empty</h2>
+          <p className="text-xs text-adm-muted max-w-md mx-auto">
             Import the starter catalogue once to manage those sarees, photos and festive drops from this dashboard, or add
             your first saree manually. Starter ratings are not imported.
           </p>
@@ -383,27 +383,27 @@ export default function AdminProductsPage() {
       {products !== null && products.length > 0 && (
         <>
           {/* Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 bg-[#121212] p-4 rounded-2xl border border-[#222]">
+          <div className="flex flex-wrap items-center justify-between gap-4 bg-adm-surface p-4 rounded-2xl border border-adm-line">
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
+              <Search className="w-4 h-4 text-adm-muted absolute left-3.5 top-3" />
               <input
                 type="text"
                 placeholder="Search by name, SKU, or fabric..."
                 aria-label="Search sarees"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-[#1A1A1A] border border-[#333] rounded-xl py-2 pl-10 pr-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#D4AF37]"
+                className="w-full bg-adm-raised border border-adm-line2 rounded-xl py-2 pl-10 pr-3 text-xs text-adm-strong placeholder-adm-faint focus:outline-none focus:border-adm-gold"
               />
             </div>
             <div className="flex items-center gap-2">
-              <label htmlFor="cat-filter" className="text-xs text-gray-400">
+              <label htmlFor="cat-filter" className="text-xs text-adm-muted">
                 Category:
               </label>
               <select
                 id="cat-filter"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-[#1A1A1A] border border-[#333] text-xs text-white rounded-xl px-3 py-2 focus:outline-none focus:border-[#D4AF37]"
+                className="bg-adm-raised border border-adm-line2 text-xs text-adm-strong rounded-xl px-3 py-2 focus:outline-none focus:border-adm-gold"
               >
                 <option value="all">All Weaves ({products.length})</option>
                 {categoryOptions.map((c) => (
@@ -416,10 +416,10 @@ export default function AdminProductsPage() {
           </div>
 
           {/* Table */}
-          <div className="bg-[#121212] border border-[#222] rounded-2xl overflow-hidden shadow-2xl">
+          <div className="bg-adm-surface border border-adm-line rounded-2xl overflow-hidden shadow-2xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="text-[10px] uppercase font-bold text-gray-400 bg-[#161616] border-b border-[#262626]">
+                <thead className="text-[10px] uppercase font-bold text-adm-muted bg-adm-raised border-b border-adm-line">
                   <tr>
                     <th className="py-3 px-4">Saree</th>
                     <th className="py-3 px-4">SKU</th>
@@ -430,16 +430,16 @@ export default function AdminProductsPage() {
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1A1A1A]">
+                <tbody className="divide-y divide-adm-line">
                   {filteredProducts.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="py-10 text-center text-gray-500">
+                      <td colSpan={7} className="py-10 text-center text-adm-faint">
                         No sarees match your search.
                       </td>
                     </tr>
                   )}
                   {filteredProducts.map((p) => (
-                    <tr key={p.id} className="hover:bg-[#151515] transition-colors">
+                    <tr key={p.id} className="hover:bg-adm-surface transition-colors">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           {p.images[0] ? (
@@ -447,10 +447,10 @@ export default function AdminProductsPage() {
                             <img
                               src={p.images[0]}
                               alt={p.name}
-                              className="w-12 h-14 object-cover rounded-lg border border-[#2E2E2E]"
+                              className="w-12 h-14 object-cover rounded-lg border border-adm-line"
                             />
                           ) : (
-                            <div className="w-12 h-14 rounded-lg border border-[#2E2E2E] bg-[#1A1A1A] flex items-center justify-center text-gray-600">
+                            <div className="w-12 h-14 rounded-lg border border-adm-line bg-adm-raised flex items-center justify-center text-adm-faint">
                               <ImageOff className="w-4 h-4" />
                             </div>
                           )}
@@ -458,22 +458,22 @@ export default function AdminProductsPage() {
                             <Link
                               href={`/product/${p.slug}`}
                               target="_blank"
-                              className="font-medium text-white hover:text-[#D4AF37] line-clamp-1 block"
+                              className="font-medium text-adm-strong hover:text-adm-gold line-clamp-1 block"
                             >
                               {p.name}
                             </Link>
-                            <p className="text-[11px] text-gray-400 italic">
+                            <p className="text-[11px] text-adm-muted italic">
                               {p.fabric} · {p.imageRows.length} photo{p.imageRows.length === 1 ? "" : "s"}
                             </p>
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-mono text-gray-300 font-semibold">{p.sku}</td>
-                      <td className="py-3 px-4 text-gray-300">{p.categoryName}</td>
+                      <td className="py-3 px-4 font-mono text-adm-text font-semibold">{p.sku}</td>
+                      <td className="py-3 px-4 text-adm-text">{p.categoryName}</td>
                       <td className="py-3 px-4">
-                        <span className="font-bold text-[#F5DE88] block">{formatINR(p.discountPrice || p.price)}</span>
+                        <span className="font-bold text-adm-goldsoft block">{formatINR(p.discountPrice || p.price)}</span>
                         {p.discountPrice && (
-                          <span className="text-[10px] text-gray-500 line-through">{formatINR(p.price)}</span>
+                          <span className="text-[10px] text-adm-faint line-through">{formatINR(p.price)}</span>
                         )}
                       </td>
                       <td className="py-3 px-4">
@@ -481,17 +481,17 @@ export default function AdminProductsPage() {
                           <span
                             className={`px-2 py-0.5 rounded font-bold text-[11px] ${
                               p.stock <= 3
-                                ? "bg-red-950/80 text-red-300 border border-red-800"
+                                ? "bg-adm-danger/15 text-adm-danger border border-adm-danger/40"
                                 : p.stock <= 6
-                                ? "bg-amber-950/80 text-amber-300 border border-amber-800"
-                                : "bg-green-950/80 text-green-300 border border-green-800"
+                                ? "bg-adm-warn/15 text-adm-warn border border-adm-warn/40"
+                                : "bg-adm-ok/15 text-adm-ok border border-adm-ok/40"
                             }`}
                           >
                             {p.stock} units
                           </span>
                           <button
                             onClick={() => adjustStock(p, 5)}
-                            className="text-[10px] text-[#D4AF37] hover:underline"
+                            className="text-[10px] text-adm-gold hover:underline"
                             title="Add 5 to stock"
                           >
                             +5
@@ -501,17 +501,17 @@ export default function AdminProductsPage() {
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1">
                           {!p.isActive && (
-                            <span className="px-1.5 py-0.5 bg-gray-800 text-gray-300 rounded text-[9px] uppercase font-bold">
+                            <span className="px-1.5 py-0.5 bg-adm-hover text-adm-text rounded text-[9px] uppercase font-bold">
                               Hidden
                             </span>
                           )}
                           {p.isFeatured && (
-                            <span className="px-1.5 py-0.5 bg-[#D4AF37]/20 text-[#F5DE88] rounded text-[9px] uppercase font-bold">
+                            <span className="px-1.5 py-0.5 bg-adm-gold/20 text-adm-goldsoft rounded text-[9px] uppercase font-bold">
                               Featured
                             </span>
                           )}
                           {p.isBestseller && (
-                            <span className="px-1.5 py-0.5 bg-blue-950 text-blue-300 rounded text-[9px] uppercase font-bold">
+                            <span className="px-1.5 py-0.5 bg-adm-info/15 text-adm-info rounded text-[9px] uppercase font-bold">
                               Bestseller
                             </span>
                           )}
@@ -526,7 +526,7 @@ export default function AdminProductsPage() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => toggleVisibility(p)}
-                            className="p-1.5 text-gray-400 hover:text-[#D4AF37] hover:bg-[#222] rounded-lg transition-colors"
+                            className="p-1.5 text-adm-muted hover:text-adm-gold hover:bg-adm-hover rounded-lg transition-colors"
                             title={p.isActive ? "Hide from store" : "Show in store"}
                             aria-label={p.isActive ? "Hide from store" : "Show in store"}
                           >
@@ -534,7 +534,7 @@ export default function AdminProductsPage() {
                           </button>
                           <button
                             onClick={() => openEdit(p)}
-                            className="p-1.5 text-gray-400 hover:text-[#D4AF37] hover:bg-[#222] rounded-lg transition-colors"
+                            className="p-1.5 text-adm-muted hover:text-adm-gold hover:bg-adm-hover rounded-lg transition-colors"
                             title="Edit saree"
                             aria-label="Edit saree"
                           >
@@ -542,7 +542,7 @@ export default function AdminProductsPage() {
                           </button>
                           <button
                             onClick={() => handleDelete(p)}
-                            className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-[#222] rounded-lg transition-colors"
+                            className="p-1.5 text-adm-muted hover:text-adm-danger hover:bg-adm-hover rounded-lg transition-colors"
                             title="Delete saree"
                             aria-label="Delete saree"
                           >
@@ -564,12 +564,12 @@ export default function AdminProductsPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-3 sm:p-6 font-sans" role="dialog" aria-modal="true" aria-label={editingProduct ? "Edit saree" : "Add new saree"}>
           <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => !saving && closeModal()} />
 
-          <div className="relative bg-[#111111] border border-[#2E2E2E] rounded-2xl max-w-3xl w-full p-5 sm:p-8 text-white z-10 shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-[#222] pb-4">
-              <h2 className="text-xl font-serif text-white font-semibold">
+          <div className="relative bg-adm-surface border border-adm-line rounded-2xl max-w-3xl w-full p-5 sm:p-8 text-adm-strong z-10 shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-adm-line pb-4">
+              <h2 className="text-xl font-serif text-adm-strong font-semibold">
                 {editingProduct ? "Edit Saree" : "Add New Saree"}
               </h2>
-              <button onClick={() => !saving && closeModal()} className="text-gray-400 hover:text-white" aria-label="Close">
+              <button onClick={() => !saving && closeModal()} className="text-adm-muted hover:text-adm-strong" aria-label="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -577,7 +577,7 @@ export default function AdminProductsPage() {
             <form onSubmit={handleSubmit} className="space-y-6 text-xs">
               {/* Photos */}
               <section aria-labelledby="photos-heading" className="space-y-2">
-                <h3 id="photos-heading" className="text-[11px] uppercase tracking-wider text-[#D4AF37] font-bold">
+                <h3 id="photos-heading" className="text-[11px] uppercase tracking-wider text-adm-gold font-bold">
                   Photos *
                 </h3>
                 <ProductImageManager
@@ -680,14 +680,14 @@ export default function AdminProductsPage() {
               </div>
 
               {formError && (
-                <div role="alert" className="flex items-start gap-2 text-[12px] text-red-300 bg-red-950/40 border border-red-900 rounded-xl px-3 py-2.5">
+                <div role="alert" className="flex items-start gap-2 text-[12px] text-adm-danger bg-adm-danger/15 border border-adm-danger/40 rounded-xl px-3 py-2.5">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
                   <span>{formError}</span>
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#222]">
-                <button type="button" disabled={saving} onClick={closeModal} className="px-5 py-2.5 bg-[#1E1E1E] text-gray-300 hover:text-white rounded-xl disabled:opacity-50">
+              <div className="flex justify-end gap-3 pt-4 border-t border-adm-line">
+                <button type="button" disabled={saving} onClick={closeModal} className="px-5 py-2.5 bg-adm-raised text-adm-text hover:text-adm-strong rounded-xl disabled:opacity-50">
                   Cancel
                 </button>
                 <button type="submit" disabled={saving} className="px-6 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#AA820A] text-black font-bold rounded-xl inline-flex items-center gap-2 disabled:opacity-70">

@@ -1,59 +1,52 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase";
-import { sendInternalEmail } from "@/lib/services/email";
+import { cleanLine, isValidEmail } from "@/lib/support/validate";
+import { notifyBusiness } from "@/lib/support/service";
 import { SITE } from "@/lib/site";
 
+/** Above this many new subscribers per hour the per-signup alert email is skipped (flood protection). */
+const ALERTS_PER_HOUR = 20;
+
 /**
- * Server action: subscribe an email to the newsletter.
- * Stores in Supabase `newsletter_subscribers` table (created lazily if needed).
- * The subscription confirmation is sent to info@raveenasarees.com.
+ * Subscribes an email to the newsletter. The address is stored in `newsletter_subscribers`; the business inbox
+ * (CONTACT_NOTIFY_EMAIL) gets a queued, retried alert for each genuinely new subscriber.
  */
 export async function subscribeNewsletterAction(email: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed || !trimmed.includes("@") || trimmed.length < 5) {
-      return { success: false, error: "Please enter a valid email address." };
-    }
+    const address = cleanLine(email).toLowerCase();
+    if (!isValidEmail(address)) return { success: false, error: "Please enter a valid email address." };
 
     const admin = createAdminClient();
+    const { data: added, error } = await admin
+      .from("newsletter_subscribers")
+      .upsert({ email: address, subscribed_at: new Date().toISOString() }, { onConflict: "email", ignoreDuplicates: true })
+      .select("email");
 
-    // Try to insert into newsletter_subscribers table
-    // If the table doesn't exist, fall back gracefully
-    try {
-      const { error } = await admin
-        .from("newsletter_subscribers")
-        .upsert(
-          { email: trimmed, subscribed_at: new Date().toISOString() },
-          { onConflict: "email", ignoreDuplicates: true }
-        );
-
-      if (error) {
-        // Table may not exist yet — log but don't fail the user
-        console.warn("[newsletter] DB insert failed (table may not exist):", error.message);
-      }
-    } catch {
-      // Gracefully handle missing table
-      console.warn("[newsletter] Could not save to database, continuing anyway");
+    if (error) {
+      // Do not claim success when the address was not saved
+      console.error("[newsletter] save failed:", error.message);
+      return { success: false, error: "We could not subscribe you right now. Please try again in a moment." };
     }
 
-    // Send notification email to info@raveenasarees.com
-    await sendInternalEmail({
-      to: SITE.infoEmail,
-      subject: `New Newsletter Subscriber: ${trimmed}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2 style="color: #D4AF37;">New Newsletter Subscription</h2>
-          <p><strong>Email:</strong> ${trimmed}</p>
-          <p><strong>Subscribed at:</strong> ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
-          <hr style="border-color: #eee;" />
-          <p style="color: #888; font-size: 12px;">This notification was sent to ${SITE.infoEmail}</p>
-        </div>
-      `,
-    });
-
+    if (added && added.length > 0) {
+      const { count } = await admin
+        .from("newsletter_subscribers")
+        .select("email", { count: "exact", head: true })
+        .gte("subscribed_at", new Date(Date.now() - 3_600_000).toISOString());
+      if ((count ?? 0) <= ALERTS_PER_HOUR) {
+        await notifyBusiness(`newsletter:${address}`, {
+          title: "New newsletter subscriber",
+          facts: [
+            { label: "Email", value: address },
+            { label: "Subscribed", value: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) },
+          ],
+          url: `${SITE.url}/admin`,
+        }).catch(() => false);
+      }
+    }
     return { success: true };
-  } catch (err: any) {
+  } catch (err) {
     console.error("[newsletter] subscribe error:", err);
     return { success: false, error: "Something went wrong. Please try again." };
   }

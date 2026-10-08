@@ -1,17 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProductsAction } from "@/app/actions/products";
+import { requestIpHash } from "@/lib/support/context";
+import { rateLimit } from "@/lib/security/rate-limit";
+import { log } from "@/lib/security/logger";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/** Public catalogue search. Inputs are length-limited and sanitised inside getProductsAction. */
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const category = searchParams.get("category") || undefined;
-    const occasion = searchParams.get("occasion") || undefined;
-    const sort = searchParams.get("sort") || undefined;
-    const search = searchParams.get("search") || undefined;
+    const limit = await rateLimit("catalogueSearch", await requestIpHash());
+    if (!limit.ok) {
+      return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429, headers: { "Retry-After": String(limit.retryAfter) } });
+    }
 
-    const result = await getProductsAction({ category, occasion, sort, search });
-    return NextResponse.json(result);
+    const { searchParams } = new URL(req.url);
+    const result = await getProductsAction({
+      category: searchParams.get("category") || undefined,
+      occasion: searchParams.get("occasion") || undefined,
+      sort: searchParams.get("sort") || undefined,
+      search: searchParams.get("search") || undefined,
+    });
+    // Public, non-personal data: safe for the CDN to cache briefly
+    return NextResponse.json(result, { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to fetch products" }, { status: 500 });
+    log.error("api.products_failed", { error: err?.message });
+    return NextResponse.json({ error: "We could not load products right now." }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }

@@ -7,7 +7,7 @@ import { runFulfillment } from "@/lib/services/shipping/fulfillment";
 import { runInBackground } from "@/lib/server/background";
 
 /**
- * After an order is confirmed (online payment captured, or COD placed): confirmation email and
+ * After an order is confirmed (Razorpay payment captured): confirmation email and
  * Shiprocket fulfillment, after the response. Both are idempotent and persisted, so a crash is
  * picked up by the maintenance job.
  */

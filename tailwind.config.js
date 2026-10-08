@@ -8,6 +8,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Admin dashboard theme tokens (values come from CSS variables so one class works in light and dark)
+        adm: {
+          bg: "rgb(var(--adm-bg) / <alpha-value>)",
+          side: "rgb(var(--adm-side) / <alpha-value>)",
+          surface: "rgb(var(--adm-surface) / <alpha-value>)",
+          raised: "rgb(var(--adm-raised) / <alpha-value>)",
+          hover: "rgb(var(--adm-hover) / <alpha-value>)",
+          line: "rgb(var(--adm-line) / <alpha-value>)",
+          line2: "rgb(var(--adm-line2) / <alpha-value>)",
+          strong: "rgb(var(--adm-strong) / <alpha-value>)",
+          text: "rgb(var(--adm-text) / <alpha-value>)",
+          muted: "rgb(var(--adm-muted) / <alpha-value>)",
+          faint: "rgb(var(--adm-faint) / <alpha-value>)",
+          gold: "rgb(var(--adm-gold) / <alpha-value>)",
+          goldsoft: "rgb(var(--adm-goldsoft) / <alpha-value>)",
+          danger: "rgb(var(--adm-danger) / <alpha-value>)",
+          warn: "rgb(var(--adm-warn) / <alpha-value>)",
+          ok: "rgb(var(--adm-ok) / <alpha-value>)",
+          info: "rgb(var(--adm-info) / <alpha-value>)",
+          violet: "rgb(var(--adm-violet) / <alpha-value>)",
+        },
         brand: {
           white: "#FFFFFF",
           ivory: "#FAF9F6",

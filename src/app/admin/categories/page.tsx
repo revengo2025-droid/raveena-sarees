@@ -45,12 +45,12 @@ export default function AdminCategoriesPage() {
   return (
     <div className="space-y-6 font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222] pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-adm-line pb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-white font-normal">
+          <h1 className="text-2xl sm:text-3xl font-serif text-adm-strong font-normal">
             Saree Category & Weave Management
           </h1>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-adm-muted mt-1">
             Organize saree taxonomy, landing page banners, and weave heritage notes.
           </p>
         </div>
@@ -71,26 +71,26 @@ export default function AdminCategoriesPage() {
         {categories.map((cat) => (
           <div
             key={cat.id}
-            className="bg-[#121212] border border-[#262626] rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between"
+            className="bg-adm-surface border border-adm-line rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between"
           >
-            <div className="relative aspect-[16/9] bg-[#1A1A1A]">
+            <div className="relative aspect-[16/9] bg-adm-raised">
               <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-              <span className="absolute bottom-3 left-3 text-[10px] text-[#F5DE88] uppercase font-bold tracking-wider bg-black/60 px-2.5 py-0.5 rounded backdrop-blur-md">
+              <span className="absolute bottom-3 left-3 text-[10px] text-adm-goldsoft uppercase font-bold tracking-wider bg-black/60 px-2.5 py-0.5 rounded backdrop-blur-md">
                 Slug: {cat.slug}
               </span>
             </div>
 
             <div className="p-5 space-y-2 flex-1 flex flex-col justify-between">
               <div>
-                <h3 className="font-serif text-lg text-white font-medium">{cat.name}</h3>
-                <p className="text-xs text-gray-400 line-clamp-2 mt-1">{cat.description}</p>
+                <h3 className="font-serif text-lg text-adm-strong font-medium">{cat.name}</h3>
+                <p className="text-xs text-adm-muted line-clamp-2 mt-1">{cat.description}</p>
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-[#1F1F1F] text-xs">
-                <span className="text-gray-400">
+              <div className="flex items-center justify-between pt-4 border-t border-adm-line text-xs">
+                <span className="text-adm-muted">
                   Total Sarees:{" "}
-                  <strong className="text-white">
+                  <strong className="text-adm-strong">
                     {products.filter(
                       (p) =>
                         p.categoryId === cat.id ||
@@ -105,7 +105,7 @@ export default function AdminCategoriesPage() {
                       deleteCategory(cat.id);
                     }
                   }}
-                  className="text-gray-500 hover:text-red-400 p-1 transition-colors"
+                  className="text-adm-faint hover:text-adm-danger p-1 transition-colors"
                   title="Delete category"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -124,12 +124,12 @@ export default function AdminCategoriesPage() {
             onClick={() => setIsModalOpen(false)}
           />
 
-          <div className="relative bg-[#111111] border border-[#2E2E2E] rounded-2xl max-w-lg w-full p-6 text-white z-10 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#222] pb-3">
-              <h2 className="text-lg font-serif text-white font-semibold">Add Saree Category</h2>
+          <div className="relative bg-adm-surface border border-adm-line rounded-2xl max-w-lg w-full p-6 text-adm-strong z-10 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-adm-line pb-3">
+              <h2 className="text-lg font-serif text-adm-strong font-semibold">Add Saree Category</h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-adm-muted hover:text-adm-strong"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -137,44 +137,44 @@ export default function AdminCategoriesPage() {
 
             <form onSubmit={handleSubmit} className="space-y-3 text-xs">
               <div>
-                <label className="text-[10px] uppercase text-gray-400 block mb-1">Category Name *</label>
+                <label className="text-[10px] uppercase text-adm-muted block mb-1">Category Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Chanderi Pure Silk Sarees"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-[#181818] border border-[#333] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#D4AF37]"
+                  className="w-full bg-adm-raised border border-adm-line2 rounded-xl px-3.5 py-2 text-adm-strong focus:outline-none focus:border-adm-gold"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] uppercase text-gray-400 block mb-1">Hero Image URL</label>
+                <label className="text-[10px] uppercase text-adm-muted block mb-1">Hero Image URL</label>
                 <input
                   type="url"
                   placeholder="https://images.unsplash.com/..."
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full bg-[#181818] border border-[#333] rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#D4AF37]"
+                  className="w-full bg-adm-raised border border-adm-line2 rounded-xl px-3.5 py-2 text-adm-strong focus:outline-none focus:border-adm-gold"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] uppercase text-gray-400 block mb-1">Heritage Description</label>
+                <label className="text-[10px] uppercase text-adm-muted block mb-1">Heritage Description</label>
                 <textarea
                   rows={3}
                   placeholder="Short historical background of the weave..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-[#181818] border border-[#333] rounded-xl p-2.5 text-white focus:outline-none focus:border-[#D4AF37]"
+                  className="w-full bg-adm-raised border border-adm-line2 rounded-xl p-2.5 text-adm-strong focus:outline-none focus:border-adm-gold"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-[#222]">
+              <div className="flex justify-end gap-2 pt-3 border-t border-adm-line">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-[#1E1E1E] text-gray-300 rounded-xl"
+                  className="px-4 py-2 bg-adm-raised text-adm-text rounded-xl"
                 >
                   Cancel
                 </button>

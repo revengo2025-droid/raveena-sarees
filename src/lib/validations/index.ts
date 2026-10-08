@@ -5,19 +5,19 @@ import { INDIAN_MOBILE_RE, INDIAN_PINCODE_RE, isIndianState } from "@/lib/geo/in
 // AUTH SCHEMAS
 // =============================================================================
 export const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().trim().email("Please enter a valid email address").max(255),
+  password: z.string().min(6, "Password must be at least 6 characters").max(128),
 });
 
 export const registerSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
+  fullName: z.string().trim().min(2, "Full name must be at least 2 characters").max(100, "Full name is too long"),
+  email: z.string().trim().email("Please enter a valid email address").max(255),
   phone: z
     .string()
     .regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian mobile number")
     .optional()
     .or(z.literal("")),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password is too long"),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -25,8 +25,8 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password is too long"),
+  confirmPassword: z.string().min(8, "Password must be at least 8 characters").max(128),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -141,7 +141,7 @@ export const checkoutSchema = z.object({
   shippingAddress: addressSchema,
   billingAddress: addressSchema.optional(),
   items: z.array(orderItemInputSchema).min(1, "Cart must have at least one item").max(50),
-  paymentMethod: z.enum(["razorpay", "upi", "card", "netbanking", "cod"]),
+  paymentMethod: z.enum(["razorpay", "upi", "card", "netbanking"]),
   couponCode: z.string().max(50).optional(),
   giftWrap: z.boolean().optional().default(false),
   giftMessage: z.string().max(250).optional(),

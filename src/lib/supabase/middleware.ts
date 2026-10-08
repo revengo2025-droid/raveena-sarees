@@ -1,6 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_HOME, isStaffRole } from "@/lib/auth/roles";
+import { ADMIN_HOME, LOGIN_FOR_CHECKOUT, isStaffRole } from "@/lib/auth/roles";
 
 const isAdminPath = (p: string) => p === "/admin" || p.startsWith("/admin/");
 const isCustomerOnlyPath = (p: string) =>
@@ -70,6 +70,11 @@ export async function updateSession(request: NextRequest) {
   };
 
   if ((path.startsWith("/account") || isAdminPath(path)) && !user) return toLogin();
+
+  // Checkout needs a signed-in customer. Enforced here on the server so no URL, button or stale browser state can skip it.
+  if (!user && (path === "/checkout" || path.startsWith("/checkout/"))) {
+    return NextResponse.redirect(new URL(LOGIN_FOR_CHECKOUT, request.url));
+  }
 
   if (user && (isAdminPath(path) || isCustomerOnlyPath(path))) {
     // Role is read from the profiles table (never from user-editable metadata). RLS lets a user read only their own row.

@@ -54,21 +54,21 @@ export function OfferSettingsCard() {
     showToast(res.success ? (form.enabled ? "Offer popup is live" : "Offer popup saved (turned off)") : res.error, res.success ? "success" : "error");
   };
 
-  const input = "w-full bg-[#181818] border border-[#333] rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#D4AF37]";
-  const label = "text-[10px] uppercase text-gray-400 font-bold tracking-wider block mb-1.5";
+  const input = "w-full bg-adm-raised border border-adm-line2 rounded-xl px-3.5 py-2.5 text-adm-strong text-xs focus:outline-none focus:border-adm-gold";
+  const label = "text-[10px] uppercase text-adm-muted font-bold tracking-wider block mb-1.5";
 
   return (
-    <form onSubmit={save} className="bg-[#101010] border border-[#D4AF37]/30 rounded-2xl p-6 space-y-4 text-xs">
+    <form onSubmit={save} className="bg-adm-surface border border-adm-gold/30 rounded-2xl p-6 space-y-4 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xs font-serif font-bold uppercase tracking-wider text-white flex items-center gap-2">
-          <Gift className="w-4 h-4 text-[#D4AF37]" /> Offer popup
+        <h2 className="text-xs font-serif font-bold uppercase tracking-wider text-adm-strong flex items-center gap-2">
+          <Gift className="w-4 h-4 text-adm-gold" /> Offer popup
         </h2>
-        <label className="inline-flex items-center gap-2 text-gray-300 cursor-pointer">
+        <label className="inline-flex items-center gap-2 text-adm-text cursor-pointer">
           <input type="checkbox" checked={form.enabled} onChange={set("enabled")} className="w-4 h-4 accent-[#D4AF37]" disabled={loading} />
           Show on the website
         </label>
       </div>
-      <p className="text-[11px] text-gray-500">
+      <p className="text-[11px] text-adm-faint">
         Appears 10 seconds after a visitor arrives, at most once per visit, and never on checkout, cart, account or sign-in pages.
         Only advertise a real offer. If you add a coupon code it must exist and be active under Promo Coupons, otherwise the popup stays hidden.
       </p>

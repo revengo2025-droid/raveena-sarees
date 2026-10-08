@@ -1,5 +1,7 @@
 "use server";
 
+import { audit } from "@/lib/security/audit";
+import { rateLimit, tooManyMessage } from "@/lib/security/rate-limit";
 import { requireAdmin } from "@/lib/auth/admin";
 import { isStaffRole } from "@/lib/auth/roles";
 import { createServerClient, createAdminClient } from "@/lib/supabase";
@@ -44,6 +46,9 @@ export async function createOrderAction(values: CheckoutInput) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Please sign in to place your order.", code: "AUTH_REQUIRED" as const };
+    const orderLimit = await rateLimit("checkout", user.id);
+    if (!orderLimit.ok) return { success: false, error: tooManyMessage(orderLimit.retryAfter, "order attempts") };
 
     // 2. Server-side price recalculation (Never trust client prices)
     let calculatedSubtotal = 0;
@@ -57,50 +62,51 @@ export async function createOrderAction(values: CheckoutInput) {
       imageUrl?: string;
     }> = [];
 
+    // The browser's prices, names and ids are NEVER used for money. Each line is resolved on the server by its
+    // (unique) SKU; an item that cannot be resolved to exactly one purchasable product rejects the whole order.
+    const unavailable = { success: false as const, error: "One or more items in your cart are no longer available. Please review your cart and try again." };
     for (const item of items) {
-      // Find product in DB or fallback mock
-      let productPrice = item.price;
-      let productName = item.productName;
-      let sku = item.sku;
+      let productPrice: number | null = null;
+      let productName = "";
+      let sku = "";
       let image = item.imageUrl;
+      let dbProductId: string | null = null;
 
-      try {
-        const { data: dbProduct } = await supabase
-          .from("products")
-          .select("id, name, sku, price, discount_price, images")
-          .or(`id.eq.${item.productId},sku.eq.${item.sku}`)
-          .single();
+      const { data: dbProduct, error: lookupError } = await supabase
+        .from("products")
+        .select("id, name, sku, price, discount_price, images, stock, is_active")
+        .eq("sku", item.sku)
+        .maybeSingle();
 
-        if (dbProduct) {
-          productPrice = dbProduct.discount_price ? Number(dbProduct.discount_price) : Number(dbProduct.price);
-          productName = dbProduct.name;
-          sku = dbProduct.sku;
-          image = dbProduct.images?.[0] || image;
-        } else {
-          const mockMatch = INITIAL_PRODUCTS.find((p) => p.id === item.productId || p.sku === item.sku);
-          if (mockMatch) {
-            productPrice = mockMatch.discountPrice || mockMatch.price;
-            productName = mockMatch.name;
-            sku = mockMatch.sku;
-            image = mockMatch.images?.[0] || image;
-          }
+      if (dbProduct && !lookupError) {
+        if (!dbProduct.is_active) return unavailable;
+        if (typeof dbProduct.stock === "number" && dbProduct.stock < item.quantity) {
+          return { success: false as const, error: `Only ${Math.max(dbProduct.stock, 0)} of "${dbProduct.name}" left in stock. Please reduce the quantity.` };
         }
-      } catch {
-        const mockMatch = INITIAL_PRODUCTS.find((p) => p.id === item.productId || p.sku === item.sku);
-        if (mockMatch) {
-          productPrice = mockMatch.discountPrice || mockMatch.price;
-          productName = mockMatch.name;
-          sku = mockMatch.sku;
-        }
+        productPrice = dbProduct.discount_price ? Number(dbProduct.discount_price) : Number(dbProduct.price);
+        productName = dbProduct.name;
+        sku = dbProduct.sku;
+        image = dbProduct.images?.[0] || image;
+        dbProductId = dbProduct.id;
+      } else {
+        // Starter catalogue (only until the catalogue is imported into the database); matched by SKU alone
+        const mockMatch = INITIAL_PRODUCTS.find((p) => p.sku === item.sku);
+        if (!mockMatch) return unavailable;
+        productPrice = mockMatch.discountPrice || mockMatch.price;
+        productName = mockMatch.name;
+        sku = mockMatch.sku;
+        image = mockMatch.images?.[0] || image;
       }
 
-      calculatedSubtotal += productPrice * item.quantity;
+      if (!Number.isFinite(productPrice) || (productPrice as number) <= 0) return unavailable;
+
+      calculatedSubtotal += (productPrice as number) * item.quantity;
       verifiedItems.push({
-        productId: item.productId,
+        productId: dbProductId ?? "",
         productName,
         sku,
         selectedColor: item.selectedColor,
-        price: productPrice,
+        price: productPrice as number,
         quantity: item.quantity,
         imageUrl: image,
       });
@@ -121,7 +127,8 @@ export async function createOrderAction(values: CheckoutInput) {
         .single();
 
       if (dbCoupon) {
-        if (!dbCoupon.expires_at || new Date(dbCoupon.expires_at) > new Date()) {
+        const withinLimit = dbCoupon.usage_limit == null || Number(dbCoupon.times_used || 0) < Number(dbCoupon.usage_limit);
+        if (withinLimit && (!dbCoupon.expires_at || new Date(dbCoupon.expires_at) > new Date())) {
           if (calculatedSubtotal >= Number(dbCoupon.min_order_value || 0)) {
             if (dbCoupon.discount_type === "percentage") {
               discountAmount = Math.round((calculatedSubtotal * Number(dbCoupon.discount_value)) / 100);
@@ -160,7 +167,7 @@ export async function createOrderAction(values: CheckoutInput) {
 
     // 6. Signed-in customers only. Admin/staff accounts are not customer accounts.
     if (!user) {
-      return { success: false, error: "Please sign in to place your order." };
+      return { success: false, error: "Please sign in to place your order.", code: "AUTH_REQUIRED" as const };
     }
     const { data: profile } = await adminClient.from("profiles").select("role").eq("id", user.id).maybeSingle();
     if (isStaffRole(profile?.role)) {
@@ -182,17 +189,18 @@ export async function createOrderAction(values: CheckoutInput) {
     let razorpayOrderId: string | undefined;
     let razorpayKeyId: string | undefined;
 
-    const isOnlinePayment = ["razorpay", "card", "upi", "netbanking"].includes(paymentMethod);
+    // Razorpay is the only way to pay
+    const isOnlinePayment = true;
 
-    if (isOnlinePayment && !isRazorpayLive && process.env.NODE_ENV === "production") {
-      console.error("[order] online payment requested but Razorpay is not configured");
+    if (!isRazorpayLive && process.env.NODE_ENV === "production") {
+      console.error("[order] payment requested but Razorpay is not configured");
       return {
         success: false,
-        error: "Online payment is temporarily unavailable. Please choose Cash on Delivery or try again later.",
+        error: "Online payment is temporarily unavailable. Please try again in a little while.",
       };
     }
 
-    if (isOnlinePayment) {
+    {
       const razorpayOrder = await createRazorpayOrder({
         amountInRupees: finalTotal,
         orderNumber,
@@ -226,9 +234,9 @@ export async function createOrderAction(values: CheckoutInput) {
           total_amount: finalTotal,
           payment_method: paymentMethod,
           payment_status: "pending",
-          order_status: paymentMethod === "cod" ? "confirmed" : "pending",
-          // COD is confirmed now and ships right away; online orders become shippable once paid
-          fulfillment_status: paymentMethod === "cod" ? "pending" : null,
+          // The order is confirmed (and becomes shippable) only once Razorpay payment is verified
+          order_status: "pending",
+          fulfillment_status: null,
           gift_wrap: giftWrap || false,
           gift_message: giftMessage || null,
           applied_coupon: appliedCoupon,
@@ -251,7 +259,7 @@ export async function createOrderAction(values: CheckoutInput) {
         // Insert items
         const itemRows = verifiedItems.map((item) => ({
           order_id: createdOrderId,
-          product_id: item.productId.length > 20 ? item.productId : null,
+          product_id: item.productId || null,
           product_name: item.productName,
           sku: item.sku,
           selected_color: item.selectedColor || null,
@@ -274,8 +282,8 @@ export async function createOrderAction(values: CheckoutInput) {
         await adminClient.from("order_status_history").insert({
           order_id: createdOrderId,
           previous_status: null,
-          new_status: paymentMethod === "cod" ? "confirmed" : "pending",
-          notes: `Order created via ${paymentMethod.toUpperCase()}`,
+          new_status: "pending",
+          notes: "Order created, awaiting Razorpay payment",
         });
 
         // Record coupon usage if applied
@@ -308,9 +316,6 @@ export async function createOrderAction(values: CheckoutInput) {
         error: "We could not save your order. You have not been charged. Please try again.",
       };
     }
-
-    // 9. Cash on Delivery is confirmed immediately: confirmation email + Shiprocket, after the response
-    if (paymentMethod === "cod") startPostConfirmation(createdOrderId);
 
     revalidatePath("/admin/orders");
 
@@ -477,7 +482,7 @@ export async function updateOrderStatusAction(
       if (!moved) return { success: false, error: "The order was updated by someone else. Refresh and try again." };
     }
 
-    console.info(`[order-status] ${orderId} ${previousStatus} -> ${newStatus} by=${auth.userId}`);
+    await audit({ action: "order.status_change", actorId: auth.userId, entityType: "order", entityId: orderId, meta: { from: previousStatus, to: newStatus } });
     revalidatePath("/admin/orders");
     return { success: true };
   } catch (err: any) {

@@ -26,16 +26,16 @@ export default function AdminSettingsPage() {
     showToast("Website and Showroom Settings updated successfully!", "success");
   };
 
-  const inputClasses = "w-full bg-[#181818] border border-[#333] rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-[#D4AF37] transition-colors";
-  const labelClasses = "text-[10px] uppercase text-gray-400 font-bold tracking-wider block mb-1.5";
+  const inputClasses = "w-full bg-adm-raised border border-adm-line2 rounded-xl px-3.5 py-2.5 text-adm-strong text-xs focus:outline-none focus:border-adm-gold transition-colors";
+  const labelClasses = "text-[10px] uppercase text-adm-muted font-bold tracking-wider block mb-1.5";
 
   return (
     <div className="space-y-6 font-sans max-w-4xl">
-      <div className="border-b border-[#222] pb-6">
-        <h1 className="text-2xl sm:text-3xl font-serif text-white font-normal">
+      <div className="border-b border-adm-line pb-6">
+        <h1 className="text-2xl sm:text-3xl font-serif text-adm-strong font-normal">
           Boutique & Website Configuration
         </h1>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-adm-muted mt-1">
           Configure flagship atelier details in Telangana, shipping rules, tax settings, and Silk Mark licensing.
         </p>
       </div>
@@ -44,9 +44,9 @@ export default function AdminSettingsPage() {
 
       <form onSubmit={handleSave} className="space-y-6 text-xs">
         {/* Brand Information */}
-        <div className="bg-[#101010] border border-[#222] rounded-2xl p-6 space-y-4">
-          <h2 className="text-xs font-serif font-bold uppercase tracking-wider text-white flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#D4AF37]" /> Brand Identity
+        <div className="bg-adm-surface border border-adm-line rounded-2xl p-6 space-y-4">
+          <h2 className="text-xs font-serif font-bold uppercase tracking-wider text-adm-strong flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-adm-gold" /> Brand Identity
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -72,9 +72,9 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Flagship Showroom & Concierge */}
-        <div className="bg-[#101010] border border-[#222] rounded-2xl p-6 space-y-4">
-          <h2 className="text-xs font-serif font-bold uppercase tracking-wider text-white flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-[#D4AF37]" /> Flagship Atelier Location & Concierge
+        <div className="bg-adm-surface border border-adm-line rounded-2xl p-6 space-y-4">
+          <h2 className="text-xs font-serif font-bold uppercase tracking-wider text-adm-strong flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-adm-gold" /> Flagship Atelier Location & Concierge
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -133,9 +133,9 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Shipping & Taxes */}
-        <div className="bg-[#101010] border border-[#222] rounded-2xl p-6 space-y-4">
-          <h2 className="text-xs font-serif font-bold uppercase tracking-wider text-white flex items-center gap-2">
-            <Truck className="w-4 h-4 text-[#D4AF37]" /> Shipping & Tax Rules
+        <div className="bg-adm-surface border border-adm-line rounded-2xl p-6 space-y-4">
+          <h2 className="text-xs font-serif font-bold uppercase tracking-wider text-adm-strong flex items-center gap-2">
+            <Truck className="w-4 h-4 text-adm-gold" /> Shipping & Tax Rules
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -13,11 +13,20 @@ const UNIQUE: Record<string, string[]> = {
   shipment_tracking_events: ["dedupe_key"],
   payments: ["razorpay_payment_id"],
   store_settings: ["key"],
+  support_tickets: ["ticket_number", "submission_token"],
+  contact_messages: ["submission_token"],
 };
+
+let ticketSeq = 1000;
 
 const DEFAULTS: Record<string, () => Row> = {
   email_events: () => ({ status: "pending", attempts: 0, locked_until: null, next_retry_at: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
   shipping_webhook_events: () => ({ status: "received", attempts: 0, received_at: new Date().toISOString() }),
+  support_tickets: () => ({ ticket_number: `TKT-${String(++ticketSeq).padStart(6, "0")}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), last_message_at: new Date().toISOString() }),
+  support_ticket_messages: () => ({ created_at: new Date().toISOString() }),
+  support_ticket_events: () => ({ created_at: new Date().toISOString() }),
+  support_ticket_notes: () => ({ created_at: new Date().toISOString() }),
+  contact_messages: () => ({ status: "new", created_at: new Date().toISOString() }),
   orders: () => ({ fulfillment_attempts: 0, fulfillment_locked_until: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
 };
 
@@ -62,6 +71,7 @@ function condition(expr: string): Filter {
     case "is": return (r) => (val === null ? r[col] === null || r[col] === undefined : r[col] === val);
     case "lt": return (r) => r[col] !== null && r[col] !== undefined && cmp(r[col], val) < 0;
     case "lte": return (r) => r[col] !== null && r[col] !== undefined && cmp(r[col], val) <= 0;
+    case "ilike": return (r) => r[col] != null && String(r[col]).toLowerCase().includes(String(val).replace(/%/g, "").toLowerCase());
     default: throw new Error(`fake: unsupported or() op ${op}`);
   }
 }
@@ -73,6 +83,21 @@ export class FakeDb {
   }
   from(name: string) {
     return new Query(this, name);
+  }
+  /** Stand-in for the rate_limit_hit() SQL function (fixed window counters). */
+  rpcCalls = 0;
+  failRpc = false;
+  private windows = new Map<string, number>();
+  async rpc(name: string, args: any) {
+    this.rpcCalls++;
+    if (this.failRpc) return { data: null, error: { message: "rpc unavailable" } };
+    if (name === "rate_limit_hit") {
+      const key = `${args.p_key}:${Math.floor(Date.now() / (args.p_window_seconds * 1000))}`;
+      const count = (this.windows.get(key) || 0) + 1;
+      this.windows.set(key, count);
+      return { data: [{ allowed: count <= args.p_max, remaining: Math.max(args.p_max - count, 0), retry_after: 30 }], error: null };
+    }
+    return { data: null, error: { message: `unknown rpc ${name}` } };
   }
   // supabase.auth is not used by the code under test through the admin client
 }
@@ -87,7 +112,8 @@ class Query implements PromiseLike<any> {
   private head = false;
   private orderBy: { col: string; asc: boolean }[] = [];
   private lim: number | null = null;
-  private single: "maybe" | "one" | null = null;
+  private singleMode: "maybe" | "one" | null = null;
+  private rangeFrom = 0;
 
   constructor(private db: FakeDb, private name: string) {}
 
@@ -108,6 +134,8 @@ class Query implements PromiseLike<any> {
   is(c: string, v: any) { this.filters.push((r) => (v === null ? r[c] === null || r[c] === undefined : r[c] === v)); return this; }
   lt(c: string, v: any) { this.filters.push((r) => r[c] != null && cmp(r[c], v) < 0); return this; }
   lte(c: string, v: any) { this.filters.push((r) => r[c] != null && cmp(r[c], v) <= 0); return this; }
+  gt(c: string, v: any) { this.filters.push((r) => r[c] != null && cmp(r[c], v) > 0); return this; }
+  ilike(c: string, v: string) { const needle = String(v).replace(/%/g, "").toLowerCase(); this.filters.push((r) => r[c] != null && String(r[c]).toLowerCase().includes(needle)); return this; }
   gte(c: string, v: any) { this.filters.push((r) => r[c] != null && cmp(r[c], v) >= 0); return this; }
   not(c: string, op: string, v: any) {
     if (op === "is") this.filters.push((r) => !(r[c] === null || r[c] === undefined));
@@ -124,7 +152,9 @@ class Query implements PromiseLike<any> {
   }
   order(col: string, o: any = {}) { this.orderBy.push({ col, asc: o.ascending !== false }); return this; }
   limit(n: number) { this.lim = n; return this; }
-  maybeSingle() { this.single = "maybe"; return this; }
+  maybeSingle() { this.singleMode = "maybe"; return this; }
+  single() { this.singleMode = "one"; return this; }
+  range(from: number, to: number) { this.rangeFrom = from; this.lim = to - from + 1; return this; }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   then<T1 = any, T2 = never>(res?: ((v: any) => T1 | PromiseLike<T1>) | null, rej?: ((e: any) => T2 | PromiseLike<T2>) | null) {
     return Promise.resolve().then(() => this.run()).then(res, rej);
@@ -138,6 +168,7 @@ class Query implements PromiseLike<any> {
     const out = { ...row };
     const cols = this.selectCols || "*";
     if (/order_items\s*\(\*\)/.test(cols)) out.order_items = this.db.table("order_items").filter((i) => i.order_id === row.id).map((i) => ({ ...i }));
+    if (/order_items\s*\(id\)/.test(cols)) out.order_items = this.db.table("order_items").filter((i) => i.order_id === row.id).map((i) => ({ id: i.id }));
     if (/orders\s*\(order_number\)/.test(cols)) {
       const o = this.db.table("orders").find((x) => x.id === row.order_id);
       out.orders = o ? { order_number: o.order_number } : null;
@@ -156,9 +187,9 @@ class Query implements PromiseLike<any> {
   private finish(rows: Row[]) {
     let out = rows.map((r) => this.embed(r));
     for (const o of this.orderBy) out.sort((a, b) => (o.asc ? 1 : -1) * cmp(a[o.col] ?? "", b[o.col] ?? ""));
-    if (this.lim !== null) out = out.slice(0, this.lim);
-    if (this.single) {
-      if (out.length > 1 && this.single === "maybe") return { data: null, error: { message: "multiple rows" } };
+    if (this.lim !== null) out = out.slice(this.rangeFrom, this.rangeFrom + this.lim);
+    if (this.singleMode) {
+      if (out.length > 1 && this.singleMode === "maybe") return { data: null, error: { message: "multiple rows" } };
       return { data: out[0] ?? null, error: null };
     }
     if (this.head) return { data: null, error: null, count: rows.length };

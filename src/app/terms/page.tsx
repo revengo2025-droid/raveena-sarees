@@ -57,7 +57,7 @@ export default function TermsPage() {
       <Section title="Payments">
         <p>
           Online payments are processed securely by Razorpay. Your order is marked paid only after the payment has been
-          verified on our servers. Cash on delivery is available where shown at checkout.
+          verified on our servers. Razorpay is the only payment method we accept.
         </p>
       </Section>
 

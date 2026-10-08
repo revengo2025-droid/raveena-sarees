@@ -1,5 +1,6 @@
 "use server";
 
+import { audit } from "@/lib/security/audit";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase";
@@ -72,6 +73,6 @@ export async function saveOfferSettingsAction(values: unknown) {
     .upsert({ key: OFFER_SETTINGS_KEY, value: offer, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) return { success: false as const, error: "Could not save the offer." };
   revalidateTag(OFFER_CACHE_TAG);
-  console.info(`[offer-popup] updated by=${auth.userId} enabled=${offer.enabled}`);
+  await audit({ action: "settings.offer_popup", actorId: auth.userId, entityType: "store_settings", entityId: OFFER_SETTINGS_KEY, meta: { enabled: offer.enabled } });
   return { success: true as const };
 }

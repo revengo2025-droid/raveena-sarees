@@ -8,9 +8,17 @@ import { INITIAL_COUPONS as STARTER_COUPONS } from "@/lib/mockData";
 const INITIAL_COUPONS = process.env.NODE_ENV === "production" ? [] : STARTER_COUPONS;
 import { couponSchema, type CouponInput } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
+import { rateLimit, tooManyMessage } from "@/lib/security/rate-limit";
+import { requestIpHash } from "@/lib/support/context";
+import { audit } from "@/lib/security/audit";
 
 export async function validateCouponAction(code: string, subtotal: number) {
   try {
+    if (typeof code !== "string" || code.length > 40 || typeof subtotal !== "number" || !Number.isFinite(subtotal) || subtotal < 0) {
+      return { success: false, error: "Invalid coupon code" };
+    }
+    const limit = await rateLimit("coupon", await requestIpHash());
+    if (!limit.ok) return { success: false, error: tooManyMessage(limit.retryAfter, "coupon attempts") };
     const codeUpper = code.trim().toUpperCase();
     const supabase = createAdminClient(); // coupons are not publicly readable; validated server-side
 
@@ -144,26 +152,33 @@ export async function createCouponAction(values: CouponInput) {
       .select()
       .single();
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      return { success: false, error: /duplicate|unique/i.test(error.message) ? "A coupon with this code already exists." : "Could not create the coupon." };
+    }
+    await audit({ action: "coupon.create", actorId: auth.userId, entityType: "coupon", entityId: (data as any)?.id, meta: { code: c.code } });
 
     revalidatePath("/admin/coupons");
     return { success: true, data };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    console.error("[coupons] create error:", err?.message);
+    return { success: false, error: "Could not create the coupon." };
   }
 }
 
 export async function deleteCouponAction(id: string) {
   const auth = await requireAdmin();
   if (!auth.ok) return { success: false, error: auth.error };
+  if (!/^[0-9a-f-]{36}$/i.test(String(id))) return { success: false, error: "Invalid coupon." };
   try {
     const adminClient = createAdminClient();
     const { error } = await adminClient.from("coupons").delete().eq("id", id);
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: "Could not delete the coupon." };
+    await audit({ action: "coupon.delete", actorId: auth.userId, entityType: "coupon", entityId: id });
 
     revalidatePath("/admin/coupons");
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    console.error("[coupons] delete error:", err?.message);
+    return { success: false, error: "Could not delete the coupon." };
   }
 }

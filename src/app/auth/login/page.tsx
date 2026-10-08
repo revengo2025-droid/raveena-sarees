@@ -13,6 +13,8 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const redirectParam = safeRedirectPath(searchParams.get("redirect"), "/account");
   const { login, showToast } = useApp();
+  const linkProblem = searchParams.get("error") === "link";
+  const fromCheckout = searchParams.get("reason") === "checkout";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,6 +26,7 @@ function LoginContent() {
       showToast("Please enter your email address", "error");
       return;
     }
+    if (isLoading) return;
     setIsLoading(true);
 
     try {
@@ -41,7 +44,7 @@ function LoginContent() {
       }
     } catch (err: any) {
       setIsLoading(false);
-      showToast(err?.message || "Failed to sign in. Please verify your credentials.", "error");
+      showToast("Could not sign in. Please check your connection and try again.", "error");
     }
   };
 
@@ -68,18 +71,31 @@ function LoginContent() {
           </p>
         </div>
 
+        {fromCheckout && (
+          <p role="status" className="text-xs text-brand-maroon bg-brand-ivory border border-brand-gold/40 rounded-xl px-3 py-2.5">
+            Please sign in to continue to checkout. Your bag is saved and will be waiting for you.
+          </p>
+        )}
+        {linkProblem && (
+          <p role="alert" className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+            That link has expired or was already used. Please sign in, or request a new link.
+          </p>
+        )}
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
+            <label htmlFor="login-email" className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
               Email Address
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
               <input
+                id="login-email"
                 type="email"
+                autoComplete="email"
                 required
-                placeholder="patron@gmail.com"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-brand-ivory border border-brand-border rounded-xl py-2.5 pl-10 pr-3 text-brand-text placeholder-neutral-400 focus:outline-none focus:border-brand-gold"
@@ -89,7 +105,7 @@ function LoginContent() {
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] uppercase text-neutral-500 font-poppins">Password</label>
+              <label htmlFor="login-password" className="text-[10px] uppercase text-neutral-500 font-poppins">Password</label>
               <Link href="/auth/forgot-password" className="text-[11px] text-brand-maroon hover:underline font-poppins">
                 Forgot Password?
               </Link>
@@ -97,7 +113,10 @@ function LoginContent() {
             <div className="relative">
               <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
               <input
+                id="login-password"
                 type="password"
+                autoComplete="current-password"
+                maxLength={128}
                 required
                 placeholder="••••••••"
                 value={password}

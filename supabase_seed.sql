@@ -315,7 +315,7 @@ SET discount_type = EXCLUDED.discount_type,
 -- 4. SEED STORE SETTINGS
 INSERT INTO store_settings (key, value)
 VALUES
-  ('store_info', '{"name": "Raveena Sarees", "tagline": "Royal Handlooms of India", "phone": "+91 77807 56009", "email": "raveenasarees22@gmail.com", "info_email": "info@raveenasarees.com", "address": "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana - 504299"}'::jsonb),
+  ('store_info', '{"name": "Raveena Sarees", "tagline": "Royal Handlooms of India", "phone": "+91 77807 56009", "email": "raveenasarees22@gmail.com", "address": "Marthadi, Bejjur, Komaram Bheem Asifabad, Telangana - 504299"}'::jsonb),
   ('shipping_config', '{"free_shipping_threshold": 1000, "default_shipping_fee": 150, "gift_wrap_fee": 250, "courier_partner": "BlueDart Express"}'::jsonb),
   ('payment_config', '{"razorpay_enabled": true, "cod_enabled": true, "upi_enabled": true, "currency": "INR"}'::jsonb)
 ON CONFLICT (key) DO UPDATE

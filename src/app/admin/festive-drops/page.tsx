@@ -86,12 +86,12 @@ export default function AdminFestiveDropsPage() {
       <section
         key={slot}
         aria-label={`Product ${slot + 1}`}
-        className="bg-[#121212] border border-[#2A2A2A] rounded-2xl overflow-hidden flex flex-col"
+        className="bg-adm-surface border border-adm-line rounded-2xl overflow-hidden flex flex-col"
       >
-        <div className="px-5 py-3 border-b border-[#222] flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Product {slot + 1}</h2>
+        <div className="px-5 py-3 border-b border-adm-line flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-adm-strong">Product {slot + 1}</h2>
           {product && !product.isActive && (
-            <span className="text-[10px] uppercase font-bold text-amber-300 bg-amber-950/60 border border-amber-800 rounded px-2 py-0.5">
+            <span className="text-[10px] uppercase font-bold text-adm-warn bg-adm-warn/15 border border-adm-warn/40 rounded px-2 py-0.5">
               Hidden in store
             </span>
           )}
@@ -99,27 +99,27 @@ export default function AdminFestiveDropsPage() {
 
         {product ? (
           <div className="p-5 flex gap-4">
-            <div className="w-28 sm:w-32 aspect-[3/4] shrink-0 rounded-xl overflow-hidden bg-[#1A1A1A] border border-[#2E2E2E]">
+            <div className="w-28 sm:w-32 aspect-[3/4] shrink-0 rounded-xl overflow-hidden bg-adm-raised border border-adm-line">
               {product.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-600">
+                <div className="w-full h-full flex items-center justify-center text-adm-faint">
                   <ImageOff className="w-5 h-5" />
                 </div>
               )}
             </div>
             <div className="min-w-0 flex flex-col justify-between">
               <div>
-                <p className="text-white font-medium leading-snug line-clamp-3">{product.name}</p>
-                <p className="text-[11px] text-gray-500 font-mono mt-1">{product.sku}</p>
-                <p className="text-[#F5DE88] font-bold mt-2">
+                <p className="text-adm-strong font-medium leading-snug line-clamp-3">{product.name}</p>
+                <p className="text-[11px] text-adm-faint font-mono mt-1">{product.sku}</p>
+                <p className="text-adm-goldsoft font-bold mt-2">
                   {formatINR(product.discountPrice || product.price)}
                   {product.discountPrice && (
-                    <span className="ml-2 text-[11px] text-gray-500 line-through font-normal">{formatINR(product.price)}</span>
+                    <span className="ml-2 text-[11px] text-adm-faint line-through font-normal">{formatINR(product.price)}</span>
                   )}
                 </p>
-                <p className={`text-[11px] mt-1 ${product.stock > 0 ? "text-green-400" : "text-red-400"}`}>
+                <p className={`text-[11px] mt-1 ${product.stock > 0 ? "text-adm-ok" : "text-adm-danger"}`}>
                   {product.stock > 0 ? `${product.stock} in stock` : "Out of stock (shown as sold out)"}
                 </p>
               </div>
@@ -127,14 +127,14 @@ export default function AdminFestiveDropsPage() {
                 <button
                   type="button"
                   onClick={() => setPickerSlot(slot)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1E1E1E] hover:bg-[#2A2A2A] text-xs text-gray-200"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-adm-raised hover:bg-[#2A2A2A] text-xs text-adm-text"
                 >
                   <Repeat2 className="w-3.5 h-3.5" /> Replace
                 </button>
                 <button
                   type="button"
                   onClick={() => choose(slot, null)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1E1E1E] hover:bg-red-950 text-xs text-red-300"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-adm-raised hover:bg-adm-danger/15 text-xs text-adm-danger"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Remove
                 </button>
@@ -143,8 +143,8 @@ export default function AdminFestiveDropsPage() {
           </div>
         ) : (
           <div className="p-8 flex flex-col items-center justify-center text-center gap-3 flex-1">
-            <Sparkles className="w-6 h-6 text-[#D4AF37]/70" />
-            <p className="text-xs text-gray-400">No product selected for this slot.</p>
+            <Sparkles className="w-6 h-6 text-adm-gold/70" />
+            <p className="text-xs text-adm-muted">No product selected for this slot.</p>
             <button
               type="button"
               onClick={() => setPickerSlot(slot)}
@@ -160,10 +160,10 @@ export default function AdminFestiveDropsPage() {
 
   return (
     <div className="space-y-6 font-sans">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222] pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-adm-line pb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-white font-normal">Featured Festive Drops</h1>
-          <p className="text-xs text-gray-400 mt-1 max-w-xl">
+          <h1 className="text-2xl sm:text-3xl font-serif text-adm-strong font-normal">Featured Festive Drops</h1>
+          <p className="text-xs text-adm-muted mt-1 max-w-xl">
             Choose exactly two sarees to feature on the homepage. Select from your existing catalogue; nothing is
             duplicated. Changes go live as soon as you save.
           </p>
@@ -171,20 +171,20 @@ export default function AdminFestiveDropsPage() {
         <Link
           href="/"
           target="_blank"
-          className="inline-flex items-center gap-1.5 text-xs text-[#D4AF37] hover:underline self-start sm:self-auto"
+          className="inline-flex items-center gap-1.5 text-xs text-adm-gold hover:underline self-start sm:self-auto"
         >
           View homepage <ExternalLink className="w-3.5 h-3.5" />
         </Link>
       </div>
 
       {products === null && (
-        <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400">
+        <div className="flex items-center justify-center gap-2 py-12 text-sm text-adm-muted">
           <Loader2 className="w-4 h-4 animate-spin" /> Loading…
         </div>
       )}
 
       {error && (
-        <div role="alert" className="flex items-start gap-3 bg-red-950/40 border border-red-900 rounded-2xl p-4 text-sm text-red-200">
+        <div role="alert" className="flex items-start gap-3 bg-adm-danger/15 border border-adm-danger/40 rounded-2xl p-4 text-sm text-adm-danger">
           <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
           <p>{error}</p>
         </div>
@@ -193,9 +193,9 @@ export default function AdminFestiveDropsPage() {
       {products !== null && !error && (
         <>
           {products.length === 0 && (
-            <div className="bg-[#121212] border border-[#2E2E2E] rounded-2xl p-6 text-center text-sm text-gray-400">
+            <div className="bg-adm-surface border border-adm-line rounded-2xl p-6 text-center text-sm text-adm-muted">
               Your catalogue is empty.{" "}
-              <Link href="/admin/products" className="text-[#D4AF37] underline">
+              <Link href="/admin/products" className="text-adm-gold underline">
                 Add or import sarees first
               </Link>
               .
@@ -208,12 +208,12 @@ export default function AdminFestiveDropsPage() {
           </div>
 
           <div className="flex items-center justify-end gap-3">
-            {dirty && <span className="text-[11px] text-amber-300 mr-auto">You have unsaved changes.</span>}
+            {dirty && <span className="text-[11px] text-adm-warn mr-auto">You have unsaved changes.</span>}
             <button
               type="button"
               disabled={!dirty || saving}
               onClick={() => setDraft(saved)}
-              className="px-5 py-2.5 rounded-xl bg-[#1E1E1E] text-gray-300 hover:text-white text-xs disabled:opacity-40"
+              className="px-5 py-2.5 rounded-xl bg-adm-raised text-adm-text hover:text-adm-strong text-xs disabled:opacity-40"
             >
               Discard
             </button>
@@ -233,15 +233,15 @@ export default function AdminFestiveDropsPage() {
       {pickerSlot !== null && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6" role="dialog" aria-modal="true" aria-label={`Select product ${pickerSlot + 1}`}>
           <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setPickerSlot(null)} />
-          <div className="relative z-10 bg-[#111] border border-[#2E2E2E] w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#222]">
-              <h2 className="text-white font-semibold text-sm">Select Product {pickerSlot + 1}</h2>
-              <button type="button" onClick={() => setPickerSlot(null)} className="text-gray-400 hover:text-white" aria-label="Close">
+          <div className="relative z-10 bg-[#111] border border-adm-line w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-adm-line">
+              <h2 className="text-adm-strong font-semibold text-sm">Select Product {pickerSlot + 1}</h2>
+              <button type="button" onClick={() => setPickerSlot(null)} className="text-adm-muted hover:text-adm-strong" aria-label="Close">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 border-b border-[#222] relative">
-              <Search className="w-4 h-4 text-gray-500 absolute left-7 top-7" />
+            <div className="p-4 border-b border-adm-line relative">
+              <Search className="w-4 h-4 text-adm-faint absolute left-7 top-7" />
               <input
                 ref={searchRef}
                 type="search"
@@ -249,11 +249,11 @@ export default function AdminFestiveDropsPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name or SKU"
                 aria-label="Search products"
-                className="w-full bg-[#1A1A1A] border border-[#333] rounded-xl py-2.5 pl-10 pr-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#D4AF37]"
+                className="w-full bg-adm-raised border border-adm-line2 rounded-xl py-2.5 pl-10 pr-3 text-sm text-adm-strong placeholder-adm-faint focus:outline-none focus:border-adm-gold"
               />
             </div>
-            <ul className="overflow-y-auto divide-y divide-[#1A1A1A]">
-              {filtered.length === 0 && <li className="p-6 text-center text-xs text-gray-500">No products found.</li>}
+            <ul className="overflow-y-auto divide-y divide-adm-line">
+              {filtered.length === 0 && <li className="p-6 text-center text-xs text-adm-faint">No products found.</li>}
               {filtered.map((p) => {
                 const other = draft[pickerSlot === 0 ? 1 : 0];
                 const taken = other === p.id;
@@ -264,23 +264,23 @@ export default function AdminFestiveDropsPage() {
                       type="button"
                       disabled={disabled}
                       onClick={() => choose(pickerSlot, p.id)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#181818] disabled:opacity-40 disabled:hover:bg-transparent"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-adm-raised disabled:opacity-40 disabled:hover:bg-transparent"
                     >
-                      <div className="w-10 h-12 rounded-md overflow-hidden bg-[#1A1A1A] shrink-0">
+                      <div className="w-10 h-12 rounded-md overflow-hidden bg-adm-raised shrink-0">
                         {p.image && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={p.image} alt="" className="w-full h-full object-cover" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-white line-clamp-1">{p.name}</p>
-                        <p className="text-[11px] text-gray-500 font-mono">
+                        <p className="text-sm text-adm-strong line-clamp-1">{p.name}</p>
+                        <p className="text-[11px] text-adm-faint font-mono">
                           {p.sku} · {formatINR(p.discountPrice || p.price)}
                         </p>
                       </div>
-                      {taken && <span className="text-[10px] text-amber-300">In Product {pickerSlot === 0 ? 2 : 1}</span>}
-                      {!taken && !p.isActive && <span className="text-[10px] text-gray-400">Hidden</span>}
-                      {draft[pickerSlot] === p.id && <span className="text-[10px] text-[#D4AF37]">Selected</span>}
+                      {taken && <span className="text-[10px] text-adm-warn">In Product {pickerSlot === 0 ? 2 : 1}</span>}
+                      {!taken && !p.isActive && <span className="text-[10px] text-adm-muted">Hidden</span>}
+                      {draft[pickerSlot] === p.id && <span className="text-[10px] text-adm-gold">Selected</span>}
                     </button>
                   </li>
                 );

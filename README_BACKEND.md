@@ -89,7 +89,7 @@ Database: run `supabase_migrations/001` → `005` in order in the Supabase SQL e
 
 - Credentials: an **API user** (Shiprocket → Settings → API → Create API User) in `SHIPROCKET_EMAIL` / `SHIPROCKET_PASSWORD`.
 - A pickup address must exist in Shiprocket; put its nickname in `SHIPROCKET_PICKUP_LOCATION`.
-- Flow per confirmed order (paid online, or COD): create order (merchant order id = Raveena order number, e.g. `RVN-2026-123456`)
+- Flow per confirmed order (Razorpay payment verified): create order (merchant order id = Raveena order number, e.g. `RVN-2026-123456`)
   → assign AWB → schedule pickup (`SHIPROCKET_AUTO_ASSIGN_AWB`, `SHIPROCKET_AUTO_PICKUP`).
 - Idempotency: lease lock on the order row, reconciliation (search Shiprocket by reference) before any re-create,
   unique indexes on Shiprocket ids. Failures are stored on the order and shown in the dashboard with a safe Retry.
@@ -135,7 +135,7 @@ the password from Supabase Auth if it has been shared outside the intended admin
 ### Newsletter subscribers
 
 Run `supabase_migrations/006_newsletter_subscribers.sql` to create the `newsletter_subscribers` table.
-Newsletter subscription notifications are sent to `info@raveenasarees.com`.
+Newsletter subscription notifications are sent to the inbox configured in `CONTACT_NOTIFY_EMAIL` (see below).
 
 - **Catalogue source of truth:** once products exist in Supabase, every visitor sees the database catalogue (cached 60 s and refreshed instantly after an admin save). Until then the bundled starter catalogue is used. In **Admin → Products**, press *Import Starter Catalogue* once to copy it into the database (ratings are not imported).
 - **Photos:** Admin → Products → Add/Edit → *Upload Photos*. Files are compressed in the browser, re-validated and re-encoded to WebP on the server (`/api/admin/product-images`), stored at `product-images/{product-id}/{uuid}.webp`, and recorded in `product_images`. `products.images` is a denormalised, ordered copy for the storefront.

@@ -7,16 +7,55 @@ import { productSchema, type ProductInput } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
 import { mapProductRow } from "@/lib/products/mapper";
 import { removeStorageObjects, revalidateCatalogue } from "@/lib/products/images";
+import { safeFilterTerm, oneOf } from "@/lib/security/sanitize";
+import { audit } from "@/lib/security/audit";
+import { rateLimit, tooManyMessage } from "@/lib/security/rate-limit";
+import { log } from "@/lib/security/logger";
 
-export async function getProductsAction(options?: {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const text = (v: unknown, min: number, max: number) => typeof v === "string" && v.trim().length >= min && v.trim().length <= max;
+const money = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v > 0 && v <= 10_000_000;
+
+/** Runtime check for partial product updates (TypeScript types alone do not protect a server action). */
+function validateProductPatch(v: Partial<ProductInput>): string | null {
+  if (!v || typeof v !== "object") return "Invalid product details.";
+  if (v.name !== undefined && !text(v.name, 3, 255)) return "Product name must be 3-255 characters.";
+  if (v.sku !== undefined && !(typeof v.sku === "string" && /^[A-Za-z0-9._-]{3,50}$/.test(v.sku))) return "SKU may only contain letters, numbers, dots, dashes and underscores (3-50).";
+  if (v.slug !== undefined && !(typeof v.slug === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(v.slug) && v.slug.length <= 255)) return "Slug may only contain lowercase letters, numbers and dashes.";
+  if (v.price !== undefined && !money(v.price)) return "Price must be a positive amount.";
+  if (v.discountPrice !== undefined && v.discountPrice !== null && v.discountPrice !== 0 && !money(v.discountPrice)) return "Discount price must be a positive amount.";
+  if (typeof v.price === "number" && typeof v.discountPrice === "number" && v.discountPrice > v.price) return "Discount price cannot be higher than the price.";
+  if (v.stock !== undefined && !(Number.isInteger(v.stock) && v.stock >= 0 && v.stock <= 100_000)) return "Stock must be a whole number between 0 and 100000.";
+  for (const k of ["fabric", "zariType", "weaveType", "sareeLength", "blouseLength", "occasion", "primaryColor", "categoryName"] as const) {
+    if (v[k] !== undefined && !text(v[k], 1, 150)) return `Invalid value for ${k}.`;
+  }
+  if (v.description !== undefined && !text(v.description, 10, 10_000)) return "Description must be 10-10000 characters.";
+  if (v.careInstructions !== undefined && !text(v.careInstructions, 0, 2000)) return "Care instructions are too long.";
+  if (v.availableColors !== undefined && !(Array.isArray(v.availableColors) && v.availableColors.length <= 30 && v.availableColors.every((c) => text(c, 1, 50)))) return "Invalid colour list.";
+  if (v.categoryId && !UUID.test(String(v.categoryId))) return "Invalid category.";
+  for (const k of ["isFeatured", "isBestseller", "isNewArrival", "isActive", "blouseIncluded"] as const) {
+    if (v[k] !== undefined && typeof v[k] !== "boolean") return `Invalid value for ${k}.`;
+  }
+  return null;
+}
+
+export async function getProductsAction(input?: {
   category?: string;
   occasion?: string;
   sort?: string;
   search?: string;
 }) {
   try {
+    // Untrusted: reduce every filter to a plain, short term before it goes anywhere near a query
+    const options = {
+      category: safeFilterTerm(input?.category, 60),
+      occasion: safeFilterTerm(input?.occasion, 60),
+      search: safeFilterTerm(input?.search, 60),
+      sort: oneOf(input?.sort, ["price-low", "price-high", "newest"] as const),
+    };
+
     const supabase = await createServerClient();
-    let query = supabase.from("products").select("*").eq("is_active", true);
+    let query = supabase.from("products").select("*").eq("is_active", true).limit(500);
 
     if (options?.category && options.category !== "all") {
       query = query.ilike("category_name", `%${options.category}%`);
@@ -171,17 +210,24 @@ export async function createProductAction(values: ProductInput) {
       }
     }
 
+    await audit({ action: "product.create", actorId: auth.userId, entityType: "product", entityId: (data as any)?.id, meta: { sku: p.sku } });
     revalidateCatalogue();
     revalidatePath("/admin/products");
     return { success: true, data };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    log.error("product.create_error", { error: err?.message });
+    return { success: false, error: "Could not create the product. Check the details and try again." };
   }
 }
 
 export async function updateProductAction(id: string, values: Partial<ProductInput>) {
   const auth = await requireAdmin();
   if (!auth.ok) return { success: false, error: auth.error };
+  if (!UUID.test(String(id))) return { success: false, error: "Invalid product." };
+  const problem = validateProductPatch(values);
+  if (problem) return { success: false, error: problem };
+  const limit = await rateLimit("adminWrite", auth.userId);
+  if (!limit.ok) return { success: false, error: tooManyMessage(limit.retryAfter, "changes") };
   try {
     const adminClient = createAdminClient();
     const { error } = await adminClient
@@ -213,31 +259,44 @@ export async function updateProductAction(id: string, values: Partial<ProductInp
       })
       .eq("id", id);
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      log.warn("product.update_failed", { error: error.message });
+      return { success: false, error: "Could not save the product. Check the details and try again." };
+    }
 
+    await audit({ action: "product.update", actorId: auth.userId, entityType: "product", entityId: id, meta: { fields: Object.keys(values).slice(0, 20) } });
     revalidateCatalogue();
     revalidatePath("/admin/products");
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    log.error("product.update_error", { error: err?.message });
+    return { success: false, error: "Could not save the product. Please try again." };
   }
 }
 
 export async function deleteProductAction(id: string) {
   const auth = await requireAdmin();
   if (!auth.ok) return { success: false, error: auth.error };
+  if (!UUID.test(String(id))) return { success: false, error: "Invalid product." };
+  const limit = await rateLimit("adminSensitive", auth.userId);
+  if (!limit.ok) return { success: false, error: tooManyMessage(limit.retryAfter, "deletions") };
   try {
     const adminClient = createAdminClient();
     const { data: imgs } = await adminClient.from("product_images").select("storage_path").eq("product_id", id);
     const { error } = await adminClient.from("products").delete().eq("id", id);
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      log.warn("product.delete_failed", { error: error.message });
+      return { success: false, error: "Could not delete the product. It may be part of existing orders; deactivate it instead." };
+    }
     await removeStorageObjects(adminClient, (imgs || []).map((i) => i.storage_path));
+    await audit({ action: "product.delete", actorId: auth.userId, entityType: "product", entityId: id, meta: { photos: (imgs || []).length } });
 
     revalidateCatalogue();
     revalidatePath("/admin/products");
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message };
+    log.error("product.delete_error", { error: err?.message });
+    return { success: false, error: "Could not delete the product. Please try again." };
   }
 }
 

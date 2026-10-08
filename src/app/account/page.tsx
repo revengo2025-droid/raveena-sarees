@@ -8,6 +8,8 @@ import {
   Heart,
   MapPin,
   LogOut,
+  LifeBuoy,
+  Settings,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { formatINR, formatDate } from "@/lib/utils";
@@ -76,7 +78,19 @@ export default function AccountPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/account/support"
+            className="px-4 py-2 min-h-[44px] inline-flex items-center gap-1.5 bg-white hover:bg-brand-ivory text-brand-text border border-brand-border hover:border-brand-gold text-xs font-semibold rounded-full transition-colors font-poppins shadow-sm"
+          >
+            <LifeBuoy className="w-3.5 h-3.5" aria-hidden="true" /> Help &amp; Support
+          </Link>
+          <Link
+            href="/account/settings"
+            className="px-4 py-2 min-h-[44px] inline-flex items-center gap-1.5 bg-white hover:bg-brand-ivory text-brand-text border border-brand-border hover:border-brand-gold text-xs font-semibold rounded-full transition-colors font-poppins shadow-sm"
+          >
+            <Settings className="w-3.5 h-3.5" aria-hidden="true" /> Account Settings
+          </Link>
           <button
             onClick={logout}
             className="px-4 py-2 bg-white hover:bg-red-50 text-neutral-600 hover:text-red-600 border border-brand-border text-xs font-semibold rounded-full flex items-center gap-1.5 transition-colors font-poppins shadow-sm"

@@ -52,20 +52,20 @@ const EMAIL_LABELS: Record<string, string> = {
 
 function Tile({ label, value, icon: Icon, tone = "default", sub }: { label: string; value: React.ReactNode; icon: React.ElementType; tone?: "default" | "gold" | "good" | "warn" | "bad"; sub?: string }) {
   const tones = {
-    default: "text-white",
-    gold: "text-[#F5DE88]",
-    good: "text-emerald-300",
-    warn: "text-amber-300",
-    bad: "text-red-300",
+    default: "text-adm-strong",
+    gold: "text-adm-goldsoft",
+    good: "text-adm-ok",
+    warn: "text-adm-warn",
+    bad: "text-adm-danger",
   } as const;
   return (
-    <div className="bg-[#101010] border border-[#222] rounded-2xl p-4 flex flex-col gap-1.5 min-w-0">
-      <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-gray-400">
+    <div className="bg-adm-surface border border-adm-line rounded-2xl p-4 flex flex-col gap-1.5 min-w-0">
+      <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-adm-muted">
         <span className="truncate">{label}</span>
         <Icon className={`w-3.5 h-3.5 shrink-0 ${tones[tone]}`} aria-hidden="true" />
       </div>
       <span className={`text-xl font-bold ${tones[tone]}`}>{value}</span>
-      {sub && <span className="text-[10px] text-gray-500 truncate">{sub}</span>}
+      {sub && <span className="text-[10px] text-adm-faint truncate">{sub}</span>}
     </div>
   );
 }
@@ -75,7 +75,7 @@ function HealthPill({ ok, label, hint }: { ok: boolean; label: string; hint?: st
     <span
       title={hint}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border ${
-        ok ? "bg-emerald-950/50 text-emerald-300 border-emerald-800" : "bg-red-950/50 text-red-300 border-red-800"
+        ok ? "bg-adm-ok/15 text-adm-ok border-adm-ok/40" : "bg-adm-danger/15 text-adm-danger border-adm-danger/40"
       }`}
     >
       {ok ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />} {label}
@@ -105,9 +105,8 @@ export function OperationsPanel({ orders }: { orders: Order[] }) {
   const count = (...statuses: string[]) => orders.filter((o) => statuses.includes(o.orderStatus)).length;
   const paid = orders.filter((o) => o.paymentStatus === "paid");
   const revenue = paid.reduce((s, o) => s + o.totalAmount, 0);
-  const paymentPending = orders.filter((o) => o.paymentStatus === "pending" && o.paymentMethod !== "cod").length;
+  const paymentPending = orders.filter((o) => o.paymentStatus === "pending").length;
   const paymentFailed = orders.filter((o) => o.paymentStatus === "failed").length;
-  const codDue = orders.filter((o) => o.paymentMethod === "cod" && o.paymentStatus !== "paid" && o.orderStatus !== "cancelled").length;
 
   const retryFulfillment = async (orderId: string, orderNumber: string) => {
     setBusy(`f:${orderId}`);
@@ -138,20 +137,19 @@ export function OperationsPanel({ orders }: { orders: Order[] }) {
         <Tile label="Delivered" value={count("delivered")} icon={PackageCheck} tone="good" />
         <Tile label="Cancelled" value={count("cancelled")} icon={PackageX} tone={count("cancelled") ? "bad" : "default"} />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
         <Tile label="Revenue (paid)" value={formatINR(revenue)} icon={Wallet} tone="gold" sub={`${paid.length} paid order${paid.length === 1 ? "" : "s"}`} />
         <Tile label="Payment pending" value={paymentPending} icon={CreditCard} tone={paymentPending ? "warn" : "default"} sub="Online, not yet paid" />
         <Tile label="Payment failed" value={paymentFailed} icon={CreditCard} tone={paymentFailed ? "bad" : "default"} />
-        <Tile label="COD to collect" value={codDue} icon={Wallet} sub="Cash on delivery" />
         <Tile label="Returns" value={count("return_requested", "returned")} icon={Undo2} tone={count("return_requested") ? "warn" : "default"} />
         <Tile label="Refunds" value={count("refund_processing", "refunded")} icon={RotateCcw} tone={count("refund_processing") ? "warn" : "default"} />
       </div>
 
       {/* Integrations + sync health */}
-      <div className="bg-[#101010] border border-[#222] rounded-2xl p-5 space-y-4">
+      <div className="bg-adm-surface border border-adm-line rounded-2xl p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-serif font-bold uppercase tracking-wider text-white flex items-center gap-2">
-            <Plug className="w-4 h-4 text-[#D4AF37]" /> Fulfillment & notifications
+          <h2 className="text-sm font-serif font-bold uppercase tracking-wider text-adm-strong flex items-center gap-2">
+            <Plug className="w-4 h-4 text-adm-gold" /> Fulfillment & notifications
           </h2>
           <div className="flex flex-wrap items-center gap-2">
             {ops ? (
@@ -162,19 +160,19 @@ export function OperationsPanel({ orders }: { orders: Order[] }) {
                 <HealthPill ok={ops.integrations.cronSecret} label="Retry scheduler" hint="CRON_SECRET" />
               </>
             ) : (
-              <span className="text-[11px] text-gray-500">{loadError || "Checking integrations…"}</span>
+              <span className="text-[11px] text-adm-faint">{loadError || "Checking integrations…"}</span>
             )}
-            <button type="button" onClick={load} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-[#1C1C1C]" title="Refresh" aria-label="Refresh operations data">
+            <button type="button" onClick={load} className="p-1.5 text-adm-muted hover:text-adm-strong rounded-lg hover:bg-adm-raised" title="Refresh" aria-label="Refresh operations data">
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
         {ops && !ops.integrations.shiprocket.configured && (
-          <p className="text-[11px] text-red-300 bg-red-950/30 border border-red-900 rounded-xl px-3 py-2">Shiprocket: {ops.integrations.shiprocket.reason}</p>
+          <p className="text-[11px] text-adm-danger bg-adm-danger/15 border border-adm-danger/40 rounded-xl px-3 py-2">Shiprocket: {ops.integrations.shiprocket.reason}</p>
         )}
         {ops && !ops.integrations.email.configured && (
-          <p className="text-[11px] text-red-300 bg-red-950/30 border border-red-900 rounded-xl px-3 py-2">Email: {ops.integrations.email.reason}</p>
+          <p className="text-[11px] text-adm-danger bg-adm-danger/15 border border-adm-danger/40 rounded-xl px-3 py-2">Email: {ops.integrations.email.reason}</p>
         )}
 
         {ops && (
@@ -188,19 +186,19 @@ export function OperationsPanel({ orders }: { orders: Order[] }) {
 
         {ops && ops.failedFulfillments.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-[11px] uppercase tracking-wider font-bold text-red-300">Shiprocket sync failures</h3>
-            <ul className="divide-y divide-[#1F1F1F] border border-red-900/50 rounded-xl overflow-hidden">
+            <h3 className="text-[11px] uppercase tracking-wider font-bold text-adm-danger">Shiprocket sync failures</h3>
+            <ul className="divide-y divide-adm-line border border-adm-danger/40 rounded-xl overflow-hidden">
               {ops.failedFulfillments.map((f) => (
-                <li key={f.id} className="p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 bg-red-950/10">
+                <li key={f.id} className="p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 bg-adm-danger/15">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-white font-mono font-bold">
-                      {f.orderNumber} <span className="font-sans font-normal text-gray-400">· {f.customerName}</span>
+                    <p className="text-xs text-adm-strong font-mono font-bold">
+                      {f.orderNumber} <span className="font-sans font-normal text-adm-muted">· {f.customerName}</span>
                     </p>
-                    <p className="text-[11px] text-red-300 break-words">
+                    <p className="text-[11px] text-adm-danger break-words">
                       {f.operation ? `${f.operation.replace(/_/g, " ")}: ` : ""}
                       {f.error}
                     </p>
-                    <p className="text-[10px] text-gray-500">
+                    <p className="text-[10px] text-adm-faint">
                       {f.attempts} attempt{f.attempts === 1 ? "" : "s"}
                       {f.errorAt ? ` · last ${formatDate(f.errorAt)}` : ""}
                       {f.nextRetryAt ? ` · auto-retry ${new Date(f.nextRetryAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}` : " · needs manual retry"}
@@ -217,30 +215,30 @@ export function OperationsPanel({ orders }: { orders: Order[] }) {
                 </li>
               ))}
             </ul>
-            <p className="text-[10px] text-gray-500">Retry resumes from the failed step and checks Shiprocket first, so it never creates a duplicate shipment.</p>
+            <p className="text-[10px] text-adm-faint">Retry resumes from the failed step and checks Shiprocket first, so it never creates a duplicate shipment.</p>
           </div>
         )}
 
         {ops && ops.failedEmails.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-[11px] uppercase tracking-wider font-bold text-red-300">Email delivery failures</h3>
-            <ul className="divide-y divide-[#1F1F1F] border border-red-900/50 rounded-xl overflow-hidden">
+            <h3 className="text-[11px] uppercase tracking-wider font-bold text-adm-danger">Email delivery failures</h3>
+            <ul className="divide-y divide-adm-line border border-adm-danger/40 rounded-xl overflow-hidden">
               {ops.failedEmails.map((e) => (
                 <li key={e.id} className="p-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-white">
+                    <p className="text-xs text-adm-strong">
                       {EMAIL_LABELS[e.template] || e.template}
-                      {e.orderNumber && <span className="font-mono text-gray-400"> · {e.orderNumber}</span>}
-                      <span className="text-gray-500"> · {e.recipient}</span>
+                      {e.orderNumber && <span className="font-mono text-adm-muted"> · {e.orderNumber}</span>}
+                      <span className="text-adm-faint"> · {e.recipient}</span>
                     </p>
-                    <p className="text-[11px] text-red-300 break-words">{e.error}</p>
-                    <p className="text-[10px] text-gray-500">{e.attempts} attempt{e.attempts === 1 ? "" : "s"}</p>
+                    <p className="text-[11px] text-adm-danger break-words">{e.error}</p>
+                    <p className="text-[10px] text-adm-faint">{e.attempts} attempt{e.attempts === 1 ? "" : "s"}</p>
                   </div>
                   <button
                     type="button"
                     disabled={busy === `e:${e.id}`}
                     onClick={() => retryEmail(e.id)}
-                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C1C1C] border border-[#333] text-white text-[11px] font-bold disabled:opacity-60"
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-adm-raised border border-adm-line2 text-adm-strong text-[11px] font-bold disabled:opacity-60"
                   >
                     {busy === `e:${e.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />} Resend
                   </button>
@@ -252,11 +250,11 @@ export function OperationsPanel({ orders }: { orders: Order[] }) {
 
         {ops && ops.shipmentAlerts.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-[11px] uppercase tracking-wider font-bold text-amber-300">Delivery alerts</h3>
+            <h3 className="text-[11px] uppercase tracking-wider font-bold text-adm-warn">Delivery alerts</h3>
             <ul className="flex flex-wrap gap-2">
               {ops.shipmentAlerts.map((a) => (
                 <li key={a.id}>
-                  <Link href={`/admin/orders?q=${encodeURIComponent(a.orderNumber)}`} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-800 bg-amber-950/30 text-[11px] text-amber-200 hover:bg-amber-950/60">
+                  <Link href={`/admin/orders?q=${encodeURIComponent(a.orderNumber)}`} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-adm-warn/40 bg-adm-warn/15 text-[11px] text-adm-warn hover:bg-adm-warn/15">
                     <span className="font-mono font-bold">{a.orderNumber}</span>
                     {SHIPMENT_STATUS_LABELS[a.shipmentStatus as ShipmentStatus] || a.shiprocketStatus}
                   </Link>
@@ -267,7 +265,7 @@ export function OperationsPanel({ orders }: { orders: Order[] }) {
         )}
 
         {ops && !ops.failedFulfillments.length && !ops.failedEmails.length && !ops.shipmentAlerts.length && (
-          <p className="text-[11px] text-emerald-300 flex items-center gap-1.5">
+          <p className="text-[11px] text-adm-ok flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5" /> No failed syncs, emails or delivery alerts.
           </p>
         )}

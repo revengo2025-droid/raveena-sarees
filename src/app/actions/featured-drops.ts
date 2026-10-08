@@ -1,5 +1,6 @@
 "use server";
 
+import { audit } from "@/lib/security/audit";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase";
 import { revalidateCatalogue } from "@/lib/products/images";
@@ -101,7 +102,7 @@ export async function saveFestiveDropsAction(slot1: string | null, slot2: string
     }
 
     revalidateCatalogue();
-    console.info(`[festive-drops] saved by=${auth.userId} slot1=${slot1} slot2=${slot2}`);
+    await audit({ action: "settings.festive_drops", actorId: auth.userId, entityType: "featured_drops", meta: { slot1, slot2 } });
     return { success: true as const };
   } catch (err) {
     console.error("[festive-drops] save error:", err);

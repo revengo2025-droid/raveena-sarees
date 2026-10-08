@@ -19,8 +19,7 @@ export default function CancellationPolicyPage() {
           number. If the order has not shipped, we will cancel it and confirm by email.
         </p>
         <ul>
-          <li><strong>Prepaid orders</strong> are refunded as described in the <Link href="/refund-policy">Refund Policy</Link>.</li>
-          <li><strong>Cash on delivery orders</strong> have nothing to refund because no payment has been made.</li>
+          <li><strong>Paid orders</strong> are refunded as described in the <Link href="/refund-policy">Refund Policy</Link>.</li>
         </ul>
       </Section>
 

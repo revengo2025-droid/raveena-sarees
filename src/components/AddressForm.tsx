@@ -131,9 +131,8 @@ export function AddressForm({ value, onChange, errors = {}, showContact = false,
     if (!res.success) return;
     setDistricts(res.data.districts);
     setPlaces(res.data.places);
-    // Suggestions only fill EMPTY fields; the customer remains in control
+    // The state is never filled in for the customer: they pick it themselves. Only an empty city is suggested.
     onChange({
-      ...(res.data.state && !isIndianState(value.state) && { state: res.data.state }),
       ...(!value.city.trim() && res.data.districts[0] && { city: res.data.districts[0] }),
     });
   };
@@ -219,8 +218,8 @@ export function AddressForm({ value, onChange, errors = {}, showContact = false,
         </div>
         <div className="sm:col-span-2">
           <label className={label} htmlFor={`${idPrefix}-state`}>State *</label>
-          <select id={`${idPrefix}-state`} autoComplete="address-level1" className={cls("state")} value={value.state} onChange={(e) => onChange({ state: e.target.value })} {...aria("state")}>
-            <option value="">Select State</option>
+          <select id={`${idPrefix}-state`} autoComplete="off" className={cls("state")} value={value.state} onChange={(e) => onChange({ state: e.target.value })} {...aria("state")}>
+            <option value="" disabled>Select your state</option>
             {INDIAN_STATES.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}

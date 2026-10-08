@@ -38,11 +38,10 @@ export type FulfillmentOutcome =
 
 const retryDelayMs = (attempt: number) => Math.min(6 * 60 * 60_000, 2 * 60_000 * 3 ** Math.max(0, attempt - 1)); // 2m, 6m, 18m, 54m...
 
-/** True when the order may be shipped: online payment captured, or a confirmed COD order. */
+/** True when the order may be shipped: Razorpay payment captured. */
 export function isOrderShippable(order: any): boolean {
   if (["cancelled", "returned", "refunded", "refund_processing", "return_requested"].includes(order.order_status)) return false;
-  if (order.payment_status === "paid") return true;
-  return order.payment_method === "cod" && order.order_status !== "pending";
+  return order.payment_status === "paid";
 }
 
 const digits10 = (phone: string) => String(phone || "").replace(/\D/g, "").slice(-10);
@@ -100,7 +99,7 @@ export function buildShiprocketOrderPayload(order: any, cfg: ShiprocketConfig): 
     billing_phone: digits10(a.phone || order.customer_phone),
     shipping_is_billing: true,
     order_items: orderItems,
-    payment_method: order.payment_method === "cod" ? "COD" : "Prepaid",
+    payment_method: "Prepaid",
     shipping_charges: shipping,
     giftwrap_charges: giftwrap,
     transaction_charges: 0,

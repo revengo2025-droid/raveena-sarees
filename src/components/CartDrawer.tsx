@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, m } from "framer-motion";
 import {
   X,
   ShoppingBag,
@@ -18,6 +19,8 @@ import {
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { formatINR } from "@/lib/utils";
+import { getCurrentUserAction } from "@/app/actions/auth";
+import { LOGIN_FOR_CHECKOUT } from "@/lib/auth/roles";
 
 export const CartDrawer: React.FC = () => {
   const router = useRouter();
@@ -46,7 +49,6 @@ export const CartDrawer: React.FC = () => {
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
 
-  if (!isCartDrawerOpen) return null;
 
   // Calculate free shipping progress
   const progressPercent = Math.min(100, Math.round((cartSubtotal / freeShippingThreshold) * 100));
@@ -63,25 +65,46 @@ export const CartDrawer: React.FC = () => {
     }
   };
 
-  const handleProceedToCheckout = () => {
-    setIsCartDrawerOpen(false);
-    if (!user) {
-      showToast("Please sign in or create an account to proceed to checkout.", "info");
-      router.push("/auth/login?redirect=/checkout");
-      return;
+  const [checkingOut, setCheckingOut] = useState(false);
+  const handleProceedToCheckout = async () => {
+    if (checkingOut) return;
+    setCheckingOut(true);
+    try {
+      // Ask the server whether this browser really has a signed-in customer (the in-memory state can be stale)
+      const session = await getCurrentUserAction().catch(() => null);
+      setIsCartDrawerOpen(false);
+      if (!user || (session && !session.success)) {
+        showToast("Please sign in to continue to checkout. Your bag is saved.", "info");
+        router.push(LOGIN_FOR_CHECKOUT);
+        return;
+      }
+      router.push("/checkout");
+    } finally {
+      setCheckingOut(false);
     }
-    router.push("/checkout");
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden font-sans">
+    <AnimatePresence>
+      {isCartDrawerOpen && (
+    <div className="fixed inset-0 z-50 overflow-hidden font-sans" role="dialog" aria-modal="true" aria-label="Your bag">
       {/* Semi-transparent Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+      <m.div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
         onClick={() => setIsCartDrawerOpen(false)}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <m.div
+        className="fixed inset-y-0 right-0 max-w-full flex pl-10"
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", stiffness: 340, damping: 36 }}
+      >
         <div className="w-screen max-w-md bg-white border-l border-brand-border shadow-luxury flex flex-col text-brand-text">
           {/* 1. Header */}
           <div className="px-6 py-5 border-b border-brand-border flex items-center justify-between bg-brand-ivory">
@@ -347,7 +370,9 @@ export const CartDrawer: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
+      </m.div>
     </div>
+      )}
+    </AnimatePresence>
   );
 };

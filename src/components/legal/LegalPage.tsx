@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 
-export const LEGAL_UPDATED = "7 October 2026";
+export const LEGAL_UPDATED = "8 October 2026";
 
 const POLICY_LINKS = [
   { href: "/privacy-policy", label: "Privacy Policy" },

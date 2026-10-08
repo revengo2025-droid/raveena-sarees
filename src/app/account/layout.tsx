@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 // Private / transactional pages should not appear in search results
 export const metadata: Metadata = {
+  title: "My Account",
   robots: { index: false, follow: false },
 };
 

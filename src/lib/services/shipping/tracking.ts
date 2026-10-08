@@ -188,8 +188,6 @@ export async function applyTrackingSnapshot(
   const target = orderStatusForShipment(shipment, order.order_status as OrderStatus);
   if (target) {
     const extra: Record<string, unknown> = {};
-    // Cash on delivery is collected by the courier on delivery
-    if (target === "delivered" && order.payment_method === "cod" && order.payment_status !== "paid") extra.payment_status = "paid";
     await transitionOrderStatus(order.id, order.order_status, target, {
       notes: `Shiprocket: ${snap.statusLabel}${snap.courierName ? ` (${snap.courierName})` : ""}`,
       extraUpdate: extra,

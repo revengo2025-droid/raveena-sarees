@@ -16,6 +16,9 @@ import {
 } from "@/lib/images/constants";
 import { mapImageRow } from "@/lib/products/mapper";
 import { removeStorageObjects, syncProductImages } from "@/lib/products/images";
+import { rateLimit } from "@/lib/security/rate-limit";
+import { audit } from "@/lib/security/audit";
+import { log } from "@/lib/security/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,12 +36,27 @@ function fail(error: string, status: number) {
 export async function POST(req: NextRequest) {
   // CSRF defence in depth: same-origin requests only
   const origin = req.headers.get("origin");
-  if (origin && new URL(origin).host !== req.headers.get("host")) {
-    return fail("Cross-origin requests are not allowed.", 403);
+  if (origin) {
+    let originHost = "";
+    try {
+      originHost = new URL(origin).host;
+    } catch {
+      /* malformed origin is treated as foreign */
+    }
+    if (originHost !== req.headers.get("host")) return fail("Cross-origin requests are not allowed.", 403);
   }
 
   const auth = await requireAdmin();
   if (!auth.ok) return fail(auth.error, auth.error.startsWith("Please sign in") ? 401 : 403);
+
+  const limit = await rateLimit("adminWrite", auth.userId);
+  if (!limit.ok) {
+    return NextResponse.json({ success: false, error: "Too many uploads. Please wait a moment." }, { status: 429, headers: { "Retry-After": String(limit.retryAfter) } });
+  }
+
+  // Refuse oversized bodies before they are buffered into memory (multipart overhead allowance: 1 MB)
+  const declared = Number(req.headers.get("content-length") || 0);
+  if (declared > MAX_SERVER_UPLOAD_BYTES + 1024 * 1024) return fail("That upload is too large.", 413);
 
   let form: FormData;
   try {
@@ -173,6 +191,7 @@ export async function POST(req: NextRequest) {
   }
 
   await syncProductImages(admin, productId);
-  console.info(`[image-upload] ok product=${productId} image=${saved.id} bytes=${output.info.size} by=${auth.userId}`);
+  log.info("image_upload.ok", { product: productId, image: saved.id, bytes: output.info.size });
+  await audit({ action: "product.images_changed", actorId: auth.userId, entityType: "product", entityId: productId, meta: { image: saved.id, replaced: Boolean(target) } });
   return NextResponse.json({ success: true, image: mapImageRow(saved) });
 }

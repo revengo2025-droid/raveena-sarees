@@ -192,7 +192,7 @@ export interface AdhocOrderPayload {
   billing_phone: string;
   shipping_is_billing: boolean;
   order_items: { name: string; sku: string; units: number; selling_price: number; discount?: number; tax?: number; hsn?: string }[];
-  payment_method: "Prepaid" | "COD";
+  payment_method: "Prepaid";
   shipping_charges: number;
   giftwrap_charges: number;
   transaction_charges: number;

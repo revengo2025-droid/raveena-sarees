@@ -22,7 +22,8 @@ export default function PrivacyPolicyPage() {
           <li><strong>Order information:</strong> items bought, amounts, order and payment status, delivery tracking details, and any returns, refunds or support requests.</li>
           <li><strong>Payment:</strong> online payments are handled by Razorpay. We do not see or store your card, UPI PIN or bank login details. We receive a payment reference and the payment status.</li>
           <li><strong>Location (only if you choose):</strong> if you tap &ldquo;Use My Current Location&rdquo; at checkout, your browser asks permission. We use the coordinates once to suggest an address that you can edit, and we do not store them.</li>
-          <li><strong>Messages:</strong> anything you send us through the contact form, email or WhatsApp.</li>
+          <li><strong>Messages and support queries:</strong> what you write in the contact form or in a support query (with your name, email, optional mobile number and optional order number), our replies, and the time and status of each request. We also email these to our team inbox so we can respond.</li>
+          <li><strong>Security information:</strong> to stop spam and password guessing we keep a one-way scrambled fingerprint of your network address and of the email used in a form or sign-in attempt, together with a short record of sign-ins and sensitive account events. We do not store your raw network address for this purpose.</li>
           <li><strong>Device storage:</strong> your bag, wishlist and recently viewed items are kept in your browser (see our <Link href="/cookie-policy">Cookie Policy</Link>).</li>
         </ul>
       </Section>
@@ -32,7 +33,7 @@ export default function PrivacyPolicyPage() {
           <li>To create your account, process and deliver your orders, and take payment.</li>
           <li>To send order confirmations, shipping updates and responses to your queries.</li>
           <li>To handle returns, refunds, cancellations and complaints.</li>
-          <li>To keep the website secure and prevent fraud or misuse.</li>
+          <li>To keep the website secure and prevent fraud, spam or misuse (for example, limiting repeated sign-in or form attempts).</li>
           <li>To meet legal, tax and accounting obligations.</li>
         </ul>
         <p>We do not sell your personal information.</p>
@@ -53,8 +54,16 @@ export default function PrivacyPolicyPage() {
       <Section title="How long we keep it">
         <p>
           We keep account and order records for as long as your account is active and as long as needed for returns, disputes,
-          accounting and legal requirements. You can ask us to delete your account; we may need to retain some order records
-          where the law requires.
+          accounting and legal requirements.
+        </p>
+        <p>
+          <strong>Deleting your account.</strong> You can delete your account yourself under{" "}
+          <Link href="/account/settings">Account Settings &rarr; Privacy &amp; Security</Link>. You will be asked to type DELETE and confirm your password.
+          Deletion is not possible while an order is still being processed, shipped or refunded. When you delete your account we remove your profile,
+          saved addresses, wishlist, cart, reviews, newsletter subscription, stored email copies, and contact messages and support queries that are not
+          connected to an order, and we sign you out everywhere. Records of past orders and payments, and support queries connected to an order, may be
+          kept where required by law or for legitimate business purposes such as accounting, tax and dispute handling. They are no longer linked to your
+          login, and support queries kept this way have your name and email removed.
         </p>
       </Section>
 
@@ -68,6 +77,7 @@ export default function PrivacyPolicyPage() {
       <Section title="Your choices and rights">
         <ul>
           <li>View and update your name, mobile number and saved addresses from your <Link href="/account">account</Link>.</li>
+          <li>Follow your requests and our replies under <Link href="/account/support">Help &amp; Support</Link>, and delete your account yourself from <Link href="/account/settings">Account Settings</Link>.</li>
           <li>Ask us to access, correct or delete your personal information by emailing <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.</li>
           <li>Withdraw consent for location or marketing messages at any time.</li>
           <li>Clear your browser storage to remove your bag and wishlist from your device.</li>

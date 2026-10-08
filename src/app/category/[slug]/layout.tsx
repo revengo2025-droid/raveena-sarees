@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { SITE } from "@/lib/site";
 import { getSeoCategoryBySlug } from "@/lib/seo/catalogue";
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const category = getSeoCategoryBySlug(params.slug);
-  if (!category) return { title: "Sarees", alternates: { canonical: `/category/${params.slug}` } };
+// `params` is a Promise in Next 15 (awaiting a plain object also works on Next 14)
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const category = getSeoCategoryBySlug(slug);
+  if (!category) return { title: "Sarees", alternates: { canonical: `/category/${slug}` } };
   const description = category.description?.slice(0, 160) || `Browse ${category.name} at ${SITE.name}.`;
   return {
     title: category.name,

@@ -8,6 +8,8 @@ export const isStaffRole = (role: unknown): role is "admin" | "staff" => role ==
 
 export const ADMIN_HOME = "/admin";
 export const CUSTOMER_HOME = "/account";
+/** Signed-out shoppers who try to check out are sent here; after signing in they land back on their bag. */
+export const LOGIN_FOR_CHECKOUT = "/auth/login?redirect=%2Fcart&reason=checkout";
 
 /**
  * Returns a same-origin relative path, or the fallback. Blocks open redirects such as

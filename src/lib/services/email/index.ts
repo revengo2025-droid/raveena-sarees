@@ -15,7 +15,8 @@ import { renderEmail, type EmailData, type EmailTemplate } from "./templates";
 
 export type { EmailTemplate } from "./templates";
 
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
+// RESEND_API_URL lets a proxy or a local test double stand in for Resend; leave it unset in production.
+const RESEND_ENDPOINT = (process.env.RESEND_API_URL || "https://api.resend.com").replace(/\/+$/, "") + "/emails";
 export const EMAIL_MAX_ATTEMPTS = 6;
 const LEASE_MS = 60_000;
 
@@ -36,7 +37,7 @@ export function getEmailConfig(): { config: EmailConfig | null; reason?: string 
   if (!fromEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(fromEmail)) return { config: null, reason: "RESEND_FROM_EMAIL is not set" };
   // A sender must be on a domain verified in Resend; free mailbox domains cannot be verified.
   if (/@(gmail|yahoo|outlook|hotmail)\./i.test(fromEmail)) {
-    return { config: null, reason: "RESEND_FROM_EMAIL must use your verified domain (e.g. orders@raveenasarees.com), not a Gmail address" };
+    return { config: null, reason: "RESEND_FROM_EMAIL must be an address on a domain verified in Resend, not a Gmail address" };
   }
   return { config: { apiKey, from: `${fromName} <${fromEmail}>`, replyTo } };
 }
@@ -48,14 +49,43 @@ export interface SendResult {
   retryable?: boolean;
 }
 
-/** Low-level Resend call. Prefer `queueEmail()` for anything customer-facing. */
-export async function sendViaResend(msg: {
+export interface OutgoingEmail {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
   idempotencyKey?: string;
-}): Promise<SendResult> {
+  /** Overrides the default reply-to for this message only. */
+  replyTo?: string | null;
+}
+
+/**
+ * A mail provider only needs to turn an OutgoingEmail into a SendResult. To switch provider later, add an
+ * implementation here and select it with EMAIL_PROVIDER; queueing, retries and templates do not change.
+ */
+export interface EmailProvider {
+  name: string;
+  send(msg: OutgoingEmail): Promise<SendResult>;
+}
+
+const resendProvider: EmailProvider = { name: "resend", send: (msg) => sendViaResend(msg) };
+
+const PROVIDERS: Record<string, EmailProvider> = { resend: resendProvider };
+
+export function getEmailProvider(): EmailProvider | null {
+  const wanted = (process.env.EMAIL_PROVIDER || "resend").trim().toLowerCase();
+  return PROVIDERS[wanted] ?? null;
+}
+
+/** Sends through the configured provider. Prefer `queueEmail()` for anything that must not be lost. */
+export async function sendEmail(msg: OutgoingEmail): Promise<SendResult> {
+  const provider = getEmailProvider();
+  if (!provider) return { ok: false, error: `Unknown EMAIL_PROVIDER "${process.env.EMAIL_PROVIDER}"`, retryable: false };
+  return provider.send(msg);
+}
+
+/** Resend implementation. Prefer `queueEmail()` for anything customer-facing. */
+export async function sendViaResend(msg: OutgoingEmail): Promise<SendResult> {
   const { config, reason } = getEmailConfig();
   if (!config) {
     if (process.env.NODE_ENV !== "production") {
@@ -75,7 +105,7 @@ export async function sendViaResend(msg: {
       body: JSON.stringify({
         from: config.from,
         to: Array.isArray(msg.to) ? msg.to : [msg.to],
-        reply_to: config.replyTo,
+        reply_to: msg.replyTo || config.replyTo,
         subject: msg.subject,
         html: msg.html,
         text: msg.text,
@@ -144,11 +174,12 @@ export async function deliverEmailEvent(id: string, opts: { force?: boolean } = 
   let result: SendResult;
   try {
     const rendered = renderEmail(claimed.template as EmailTemplate, claimed.payload as EmailData);
-    result = await sendViaResend({
+    result = await sendEmail({
       to: claimed.recipient,
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
+      replyTo: rendered.replyTo,
       idempotencyKey: `rvn-${claimed.event_key}`,
     });
   } catch (err: any) {
@@ -285,7 +316,7 @@ export async function retryDueEmails(limit = 20): Promise<{ attempted: number; s
  * Logs failures; never throws.
  */
 export async function sendInternalEmail(msg: { to: string | string[]; subject: string; html: string; text?: string }) {
-  const r = await sendViaResend(msg);
+  const r = await sendEmail(msg);
   if (!r.ok) console.error(`[email] internal notification failed: ${r.error}`);
   return r;
 }

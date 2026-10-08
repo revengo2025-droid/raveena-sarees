@@ -1,6 +1,8 @@
 "use server";
 
 import { matchIndianState, INDIAN_PINCODE_RE } from "@/lib/geo/india";
+import { rateLimit } from "@/lib/security/rate-limit";
+import { requestIpHash } from "@/lib/support/context";
 import { SITE } from "@/lib/site";
 
 export interface AddressSuggestion {
@@ -20,6 +22,8 @@ const USER_AGENT = `${SITE.name} checkout (${SITE.email})`;
  * Nominatim usage policy: identify the app (User-Agent), max ~1 request/second.
  */
 export async function reverseGeocodeAction(lat: number, lon: number) {
+  const limit = await rateLimit("geo", await requestIpHash());
+  if (!limit.ok) return { success: false as const, error: "Too many lookups. Please enter your address manually." };
   if (
     typeof lat !== "number" || typeof lon !== "number" ||
     !Number.isFinite(lat) || !Number.isFinite(lon) ||
@@ -69,6 +73,8 @@ export async function reverseGeocodeAction(lat: number, lon: number) {
 
 /** Suggests city / state for a PIN code (India Post data). Suggestions only; the customer confirms. */
 export async function lookupPincodeAction(pincode: string) {
+  const limit = await rateLimit("geo", await requestIpHash());
+  if (!limit.ok) return { success: false as const, error: "Too many lookups. Please try again shortly." };
   if (!INDIAN_PINCODE_RE.test(pincode)) return { success: false as const, error: "Enter a valid 6-digit PIN code." };
   try {
     const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {

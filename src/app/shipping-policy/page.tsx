@@ -35,8 +35,7 @@ export default function ShippingPolicyPage() {
 
       <Section title="Order processing and dispatch">
         <p>
-          We start preparing your order once it is confirmed: after payment is verified for online orders, or after we accept a
-          cash-on-delivery order. Each saree is checked and packed before it is handed to the courier. We will email you when
+          We start preparing your order once it is confirmed: after your Razorpay payment is verified. Each saree is checked and packed before it is handed to the courier. We will email you when
           your order ships.
         </p>
       </Section>
@@ -60,7 +59,6 @@ export default function ShippingPolicyPage() {
         <ul>
           <li>Please give a complete address and a mobile number on which you can be reached.</li>
           <li>If delivery fails because the address is wrong or the parcel is refused, the order may be returned to us. We will contact you; re-shipping or refund charges may apply.</li>
-          <li>For cash on delivery orders, please keep the exact amount ready.</li>
         </ul>
       </Section>
 

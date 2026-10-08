@@ -138,7 +138,7 @@ export default function OrdersPage() {
                   {order.estimatedDelivery ? (
                     <>Expected delivery: <strong className="text-brand-text font-medium">{formatDate(order.estimatedDelivery)}</strong></>
                   ) : (
-                    <>Payment: <strong className="text-brand-text font-medium">{order.paymentMethod === "cod" ? "Cash on delivery" : order.paymentStatus}</strong></>
+                    <>Payment: <strong className="text-brand-text font-medium">{order.paymentStatus}</strong></>
                   )}
                 </div>
 

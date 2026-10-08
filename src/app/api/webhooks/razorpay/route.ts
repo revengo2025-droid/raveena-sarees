@@ -42,8 +42,8 @@ export async function POST(req: NextRequest) {
       const { data: order } = await db.from("orders").select("total_amount").eq("order_number", orderNumber).maybeSingle();
       if (!order) {
         console.warn(`[razorpay-webhook] unknown order ${orderNumber}`);
-      } else if (Number(payment.amount) !== Math.round(Number(order.total_amount) * 100)) {
-        console.warn(`[security] Razorpay webhook amount mismatch for ${orderNumber}`);
+      } else if (Number(payment.amount) !== Math.round(Number(order.total_amount) * 100) || (payment.currency && payment.currency !== "INR")) {
+        console.warn(`[security] Razorpay webhook amount/currency mismatch for ${orderNumber}`);
       } else {
         await confirmOnlinePayment({
           orderNumber: orderNumber!,

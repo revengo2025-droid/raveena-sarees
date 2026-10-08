@@ -19,7 +19,7 @@ function RegisterContent() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [agreed, setAgreed] = useState(true);
+  const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,6 +28,11 @@ function RegisterContent() {
       showToast("Please fill in all mandatory registration fields.", "error");
       return;
     }
+    if (!agreed) {
+      showToast("Please accept the Terms and Privacy Policy to create your account.", "error");
+      return;
+    }
+    if (isLoading) return;
     setIsLoading(true);
 
     try {
@@ -38,7 +43,11 @@ function RegisterContent() {
         password,
       });
 
-      if (res.success) {
+      if (res.success && res.data?.signedIn === false) {
+        // The account exists but must be confirmed first: do not pretend the customer is signed in
+        showToast("Account created. Please check your email and confirm your address, then sign in.", "success");
+        router.push("/auth/login");
+      } else if (res.success) {
         login(email, "customer", fullName, phone);
         showToast("Account created successfully! Welcome to Raveena Sarees.", "success");
         router.push(redirectParam);
@@ -78,15 +87,18 @@ function RegisterContent() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
+            <label htmlFor="reg-name" className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
               Full Name *
             </label>
             <div className="relative">
               <User className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
               <input
+                id="reg-name"
                 type="text"
+                autoComplete="name"
+                maxLength={100}
                 required
-                placeholder="Ananya Reddy"
+                placeholder="Your full name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full bg-brand-ivory border border-brand-border rounded-xl py-2.5 pl-10 pr-3 text-brand-text focus:outline-none focus:border-brand-gold"
@@ -95,15 +107,17 @@ function RegisterContent() {
           </div>
 
           <div>
-            <label className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
+            <label htmlFor="reg-email" className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
               Email Address *
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
               <input
+                id="reg-email"
                 type="email"
+                autoComplete="email"
                 required
-                placeholder="ananya.reddy@gmail.com"
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-brand-ivory border border-brand-border rounded-xl py-2.5 pl-10 pr-3 text-brand-text focus:outline-none focus:border-brand-gold"
@@ -112,15 +126,18 @@ function RegisterContent() {
           </div>
 
           <div>
-            <label className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
+            <label htmlFor="reg-phone" className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
               Mobile Number (For Courier Updates) *
             </label>
             <div className="relative">
               <Phone className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
               <input
+                id="reg-phone"
                 type="tel"
+                autoComplete="tel-national"
+                inputMode="numeric"
                 required
-                placeholder="+91 77807 56009"
+                placeholder="98765 43210"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full bg-brand-ivory border border-brand-border rounded-xl py-2.5 pl-10 pr-3 text-brand-text focus:outline-none focus:border-brand-gold"
@@ -129,13 +146,17 @@ function RegisterContent() {
           </div>
 
           <div>
-            <label className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
-              Password *
+            <label htmlFor="reg-password" className="text-[10px] uppercase text-neutral-500 font-poppins block mb-1">
+              Password * <span className="normal-case text-neutral-400">(at least 8 characters)</span>
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />
               <input
+                id="reg-password"
                 type="password"
+                autoComplete="new-password"
+                minLength={8}
+                maxLength={128}
                 required
                 placeholder="Create a strong password"
                 value={password}
@@ -150,10 +171,12 @@ function RegisterContent() {
               type="checkbox"
               checked={agreed}
               onChange={(e) => setAgreed(e.target.checked)}
-              className="mt-0.5 accent-brand-gold"
+              required
+              className="mt-0.5 w-4 h-4 accent-brand-gold"
             />
             <span className="text-[11px] text-neutral-500 font-light leading-tight">
               I agree to the <Link href="/terms" className="text-brand-maroon underline font-medium">Terms of Service</Link> and <Link href="/privacy-policy" className="text-brand-maroon underline font-medium">Privacy Policy</Link>.
+              We use your name, email and mobile number to create your account, deliver orders and send order updates.
             </span>
           </label>
 

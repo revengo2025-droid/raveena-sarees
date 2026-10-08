@@ -116,7 +116,7 @@ export default function OrderTrackingPage() {
             <h1 className="text-2xl font-serif font-normal">Order {order.orderNumber}</h1>
             <p className="text-xs text-neutral-500 mt-1">Placed {formatDate(order.createdAt)} · {formatINR(order.totalAmount)}</p>
             <p className="text-xs text-neutral-600 mt-1">
-              Payment: <strong>{order.paymentMethod === "cod" ? "Cash on delivery" : PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}</strong>
+              Payment: <strong>{PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}</strong>
             </p>
           </div>
           <div className="sm:text-right space-y-1.5">

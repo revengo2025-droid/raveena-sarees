@@ -24,7 +24,8 @@ export type EmailTemplate =
   | "refund_initiated"
   | "refund_completed"
   | "support_ticket_created"
-  | "support_ticket_update";
+  | "support_ticket_update"
+  | "admin_notice";
 
 export interface EmailLineItem {
   name: string;
@@ -45,7 +46,7 @@ export interface OrderEmailData {
   discount: number;
   giftWrapFee: number;
   total: number;
-  paymentMethod: string; // 'cod' | 'razorpay' | ...
+  paymentMethod: string; // always Razorpay for new orders
   paymentStatus: string; // 'paid' | 'pending' | 'failed' | 'refunded'
   addressLines: string[];
   courierName?: string | null;
@@ -62,14 +63,31 @@ export interface SupportEmailData {
   ticketRef: string;
   subject: string;
   message: string;
+  /** Page the customer can open to see the conversation (https only). */
+  url?: string | null;
 }
 
-export type EmailData = OrderEmailData | SupportEmailData;
+/** Internal alert to the business inbox (new contact message, new ticket, customer reply, subscriber). */
+export interface AdminNoticeData {
+  title: string;
+  /** Short key/value facts shown in a box. */
+  facts: { label: string; value: string }[];
+  /** Customer-written text, rendered escaped. */
+  body?: string;
+  /** Admin page to open. */
+  url?: string | null;
+  /** Replying to the alert goes straight to the customer. */
+  replyTo?: string | null;
+}
+
+export type EmailData = OrderEmailData | SupportEmailData | AdminNoticeData;
 
 export interface RenderedEmail {
   subject: string;
   html: string;
   text: string;
+  /** Overrides the default reply-to (used so replying to an alert reaches the customer). */
+  replyTo?: string | null;
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -115,7 +133,6 @@ const dateIN = (iso?: string | null) => {
 };
 
 const paymentLabel = (d: OrderEmailData) => {
-  if (d.paymentMethod === "cod") return d.paymentStatus === "paid" ? "Paid (Cash on Delivery)" : "Cash on Delivery - pay when it arrives";
   return (
     { paid: "Paid online (Razorpay)", pending: "Awaiting payment", failed: "Payment failed", refunded: "Refunded" }[
       d.paymentStatus
@@ -257,14 +274,11 @@ type OrderTemplateDef = {
 
 const trackCta = (d: OrderEmailData) => ({ href: orderUrl(d.orderNumber), label: "Track your order" });
 
-const ORDER_TEMPLATES: Record<Exclude<EmailTemplate, "support_ticket_created" | "support_ticket_update">, OrderTemplateDef> = {
+const ORDER_TEMPLATES: Record<Exclude<EmailTemplate, "support_ticket_created" | "support_ticket_update" | "admin_notice">, OrderTemplateDef> = {
   order_confirmation: {
     subject: (d) => `Order confirmed: ${d.orderNumber} | ${SITE.name}`,
     heading: () => "Thank you, your order is confirmed",
-    intro: (d) =>
-      d.paymentMethod === "cod"
-        ? `We have received your order ${d.orderNumber}. Please keep ${inr(d.total)} ready to pay when it is delivered. We will email you as soon as it ships.`
-        : `We have received your payment and confirmed your order ${d.orderNumber}. We will email you as soon as it ships.`,
+    intro: (d) => `We have received your payment and confirmed your order ${d.orderNumber}. We will email you as soon as it ships.`,
     showItems: true,
     showAddress: true,
     showTracking: true,
@@ -317,10 +331,7 @@ const ORDER_TEMPLATES: Record<Exclude<EmailTemplate, "support_ticket_created" | 
   out_for_delivery: {
     subject: (d) => `Out for delivery today: ${d.orderNumber}`,
     heading: () => "Your order is out for delivery",
-    intro: (d) =>
-      d.paymentMethod === "cod" && d.paymentStatus !== "paid"
-        ? `Order ${d.orderNumber} is out for delivery. Please keep ${inr(d.total)} ready for the delivery partner.`
-        : `Order ${d.orderNumber} is out for delivery and should reach you soon.`,
+    intro: (d) => `Order ${d.orderNumber} is out for delivery and should reach you soon.`,
     showTracking: true,
     cta: trackCta,
   },
@@ -402,6 +413,23 @@ function renderOrderEmail(name: keyof typeof ORDER_TEMPLATES, d: OrderEmailData)
   };
 }
 
+function renderAdminNotice(d: AdminNoticeData): RenderedEmail {
+  const url = safeUrl(d.url);
+  const body = [
+    infoBox(d.facts.map((f) => infoRow(f.label, escapeHtml(f.value))).join("")),
+    d.body
+      ? `<div style="margin:0 0 20px;padding:14px 18px;border-left:3px solid ${COLORS.gold};background:${COLORS.ivory};font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:${COLORS.text}">${escapeHtml(d.body).replace(/\n/g, "<br>")}</div>`
+      : "",
+    url ? button(url, "Open in admin") : "",
+  ].join("\n");
+  return {
+    subject: d.title.slice(0, 200),
+    html: layout({ preheader: d.title, heading: d.title, body }),
+    text: [d.title, "", ...d.facts.map((f) => `${f.label}: ${f.value}`), ...(d.body ? ["", d.body] : []), ...(url ? ["", url] : [])].join("\n"),
+    replyTo: d.replyTo || null,
+  };
+}
+
 function renderSupportEmail(name: "support_ticket_created" | "support_ticket_update", d: SupportEmailData): RenderedEmail {
   const created = name === "support_ticket_created";
   const heading = created ? "We have received your message" : "There is an update on your request";
@@ -413,6 +441,7 @@ function renderSupportEmail(name: "support_ticket_created" | "support_ticket_upd
     para(escapeHtml(intro)),
     infoBox(infoRow("Reference", escapeHtml(d.ticketRef)) + infoRow("Subject", escapeHtml(d.subject))),
     `<div style="margin:0 0 20px;padding:14px 18px;border-left:3px solid ${COLORS.gold};background:${COLORS.ivory};font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:${COLORS.text}">${escapeHtml(d.message).replace(/\n/g, "<br>")}</div>`,
+    safeUrl(d.url) ? button(safeUrl(d.url) as string, "View conversation") : "",
   ].join("\n");
   return {
     subject: created ? `We received your message [${d.ticketRef}] | ${SITE.name}` : `Re: ${d.subject} [${d.ticketRef}]`,
@@ -422,6 +451,7 @@ function renderSupportEmail(name: "support_ticket_created" | "support_ticket_upd
 }
 
 export function renderEmail(template: EmailTemplate, data: EmailData): RenderedEmail {
+  if (template === "admin_notice") return renderAdminNotice(data as AdminNoticeData);
   if (template === "support_ticket_created" || template === "support_ticket_update") {
     return renderSupportEmail(template, data as SupportEmailData);
   }

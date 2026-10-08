@@ -3,12 +3,13 @@ import { notFound } from "next/navigation";
 import { SITE } from "@/lib/site";
 import { absoluteUrl, getSeoCategoryBySlug, getSeoProductBySlug } from "@/lib/seo/catalogue";
 
-type Props = { params: { slug: string }; children: React.ReactNode };
+type Props = { params: Promise<{ slug: string }>; children: React.ReactNode };
 
 const clip = (text: string, n: number) => (text.length > n ? `${text.slice(0, n - 1).trimEnd()}…` : text);
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const product = await getSeoProductBySlug(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getSeoProductBySlug(slug);
   if (!product) return { title: "Saree not found", robots: { index: false } };
 
   const image = product.images[0] ? absoluteUrl(SITE.url, product.images[0]) : undefined;
@@ -31,7 +32,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function ProductLayout({ params, children }: Props) {
-  const product = await getSeoProductBySlug(params.slug);
+  const { slug } = await params;
+  const product = await getSeoProductBySlug(slug);
   if (!product) notFound();
 
   const url = `${SITE.url}/product/${product.slug}`;

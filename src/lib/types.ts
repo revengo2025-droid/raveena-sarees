@@ -87,7 +87,8 @@ export type OrderStatus =
   | "refund_processing"
   | "refunded";
 
-export type PaymentMethod = "razorpay" | "upi" | "card" | "netbanking" | "cod";
+/** Every payment goes through Razorpay (UPI, cards, net banking and wallets are chosen inside its window). */
+export type PaymentMethod = "razorpay" | "upi" | "card" | "netbanking";
 
 export interface Order {
   id: string;
