@@ -123,8 +123,26 @@ export async function deleteAddressAction(id: string) {
     if (!UUID_RE.test(id)) return { success: false as const, error: "Invalid address." };
     const { supabase, user } = await session();
     if (!user) return { success: false as const, error: "Please sign in." };
-    const { error } = await supabase.from("user_addresses").delete().eq("id", id).eq("user_id", user.id);
+    const { data: removed, error } = await supabase
+      .from("user_addresses")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .select("is_default")
+      .maybeSingle();
     if (error) return { success: false as const, error: GENERIC_ERROR };
+
+    // Removing the default address promotes the most recent remaining one, so checkout always has a default
+    if (removed?.is_default) {
+      const { data: next } = await supabase
+        .from("user_addresses")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (next) await supabase.from("user_addresses").update({ is_default: true }).eq("id", next.id).eq("user_id", user.id);
+    }
     return { success: true as const };
   } catch {
     return { success: false as const, error: GENERIC_ERROR };

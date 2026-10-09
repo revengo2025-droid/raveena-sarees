@@ -12,6 +12,13 @@ export async function GET(request: NextRequest) {
   const next = safeRedirectPath(searchParams.get("next"), "/account");
   const base = SITE.url;
 
+  // Email templates that send a token hash belong to /auth/confirm (works across devices); forward them there
+  if (searchParams.get("token_hash")) {
+    const target = new URL(`${base}/auth/confirm`);
+    searchParams.forEach((v, k) => target.searchParams.set(k, v));
+    return NextResponse.redirect(target);
+  }
+
   if (code && code.length < 512) {
     try {
       const supabase = await createServerClient();
@@ -22,5 +29,7 @@ export async function GET(request: NextRequest) {
       log.error("auth.callback_error", { error: err?.message });
     }
   }
+  // A failed password-reset link goes back to the reset request page, where a fresh link is one click away
+  if (next === "/auth/reset-password") return NextResponse.redirect(`${base}/auth/forgot-password?error=link`);
   return NextResponse.redirect(`${base}/auth/login?error=link`);
 }

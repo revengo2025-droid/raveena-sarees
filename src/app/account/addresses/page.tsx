@@ -1,27 +1,246 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { Plus, Edit3, Trash2, Home, Briefcase, MapPin, ChevronRight, Loader2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Plus, Pencil, Trash2, Home, Briefcase, MapPin, Loader2, Star, Phone, X } from "lucide-react";
 import { useApp } from "@/lib/store";
-import { SavedAddress } from "@/lib/types";
+import type { SavedAddress } from "@/lib/types";
 import { normaliseIndianMobile } from "@/lib/geo/india";
-import {
-  AddressForm,
-  EMPTY_ADDRESS,
-  validateAddress,
-  type AddressErrors,
-  type AddressFormValue,
-} from "@/components/AddressForm";
+import { AddressForm, EMPTY_ADDRESS, validateAddress, type AddressErrors, type AddressFormValue } from "@/components/AddressForm";
+import { AccountShell } from "@/components/account/AccountShell";
+import { ConfirmDialog } from "@/components/account/ConfirmDialog";
+import { Sk } from "@/components/ui/Skeletons";
 
 export default function AddressesPage() {
-  const { savedAddresses, addAddress, updateAddress, deleteAddress, user } = useApp();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<SavedAddress | null>(null);
 
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<AddressFormValue>(EMPTY_ADDRESS);
+  // /account/addresses?new=1 (from the dashboard checklist) opens the form straight away
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("new") === "1") setFormOpen(true);
+  }, []);
+
+  const openNew = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+
+  return (
+    <AccountShell
+      title="Saved addresses"
+      description="Save delivery addresses once and choose them at checkout."
+      signInRedirect="/account/addresses"
+      actions={
+        !formOpen && (
+          <button type="button" onClick={openNew} className="btn-primary px-5 min-h-[48px] text-xs rounded-full inline-flex items-center gap-1.5 shadow-md font-poppins font-semibold">
+            <Plus className="w-4 h-4" aria-hidden="true" /> Add new address
+          </button>
+        )
+      }
+    >
+      <AddressesContent
+        formOpen={formOpen}
+        editing={editing}
+        onEdit={(a) => {
+          setEditing(a);
+          setFormOpen(true);
+        }}
+        onAdd={openNew}
+        onCloseForm={() => {
+          setFormOpen(false);
+          setEditing(null);
+        }}
+      />
+    </AccountShell>
+  );
+}
+
+interface ContentProps {
+  formOpen: boolean;
+  editing: SavedAddress | null;
+  onEdit: (a: SavedAddress) => void;
+  onAdd: () => void;
+  onCloseForm: () => void;
+}
+
+function AddressesContent({ formOpen, editing, onEdit, onAdd, onCloseForm }: ContentProps) {
+  const { savedAddresses, addressesLoaded, updateAddress, deleteAddress } = useApp();
+  const listHeadingRef = useRef<HTMLHeadingElement>(null);
+
+  const [toDelete, setToDelete] = useState<SavedAddress | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [defaultBusyId, setDefaultBusyId] = useState<string | null>(null);
+
+  const confirmDelete = async () => {
+    if (!toDelete || deleting) return;
+    setDeleting(true);
+    const ok = await deleteAddress(toDelete.id);
+    setDeleting(false);
+    if (ok) {
+      setToDelete(null);
+      // The card (and its button) is gone: put focus somewhere sensible instead of losing it
+      setTimeout(() => listHeadingRef.current?.focus(), 60);
+    }
+  };
+
+  const makeDefault = async (a: SavedAddress) => {
+    if (defaultBusyId) return;
+    setDefaultBusyId(a.id);
+    await updateAddress(a.id, { isDefault: true });
+    setDefaultBusyId(null);
+  };
+
+  return (
+    <>
+      {formOpen && <AddressEditor key={editing?.id || "new"} editing={editing} isFirst={savedAddresses.length === 0} onDone={onCloseForm} />}
+
+      <section aria-labelledby="addr-list-h">
+        <h2 id="addr-list-h" ref={listHeadingRef} tabIndex={-1} className="text-lg font-serif mb-3 outline-none">
+          Your addresses {addressesLoaded && <span className="text-sm text-neutral-500 font-sans">({savedAddresses.length})</span>}
+        </h2>
+
+        {!addressesLoaded ? (
+          <div className="grid sm:grid-cols-2 gap-4" aria-busy="true" aria-label="Loading addresses">
+            <Sk className="h-48 rounded-3xl" />
+            <Sk className="h-48 rounded-3xl" />
+          </div>
+        ) : savedAddresses.length === 0 ? (
+          !formOpen && (
+            <div className="bg-white border-2 border-dashed border-brand-border rounded-3xl p-10 text-center">
+              <div className="w-14 h-14 rounded-full bg-brand-goldPale flex items-center justify-center mx-auto mb-3">
+                <MapPin className="w-6 h-6 text-brand-maroon" aria-hidden="true" />
+              </div>
+              <p className="text-base font-serif">No saved addresses yet</p>
+              <p className="text-sm text-neutral-600 mt-1">Add one now and checkout takes seconds next time.</p>
+              <button type="button" onClick={onAdd} className="btn-primary mt-5 px-6 min-h-[48px] text-xs rounded-full inline-flex items-center gap-1.5 shadow-md font-poppins font-semibold">
+                <Plus className="w-4 h-4" aria-hidden="true" /> Add your first address
+              </button>
+            </div>
+          )
+        ) : (
+          <ul className="grid sm:grid-cols-2 gap-4">
+            {savedAddresses.map((a) => {
+              const TypeIcon = a.type === "Office" ? Briefcase : a.type === "Other" ? MapPin : Home;
+              const label = `${a.type || "Home"} address for ${a.name}`;
+              return (
+                <li
+                  key={a.id}
+                  className={`relative bg-white rounded-3xl p-5 flex flex-col shadow-card transition-all border ${
+                    a.isDefault ? "border-brand-gold ring-2 ring-brand-gold/25" : "border-brand-border hover:border-brand-gold/50"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-9 h-9 shrink-0 rounded-full bg-brand-goldPale flex items-center justify-center text-brand-maroon">
+                        <TypeIcon className="w-4 h-4" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold truncate">{a.name}</h3>
+                        <p className="text-[11px] uppercase tracking-wider text-neutral-500">{a.type || "Home"}</p>
+                      </div>
+                    </div>
+                    {a.isDefault && (
+                      <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-brand-maroon text-white rounded-full">
+                        <Star className="w-3 h-3 fill-current" aria-hidden="true" /> Default
+                      </span>
+                    )}
+                  </div>
+
+                  <address className="not-italic text-sm text-neutral-700 mt-3 space-y-0.5 flex-1">
+                    <p>{[a.houseNumber, a.street, a.locality].filter(Boolean).join(", ")}</p>
+                    {a.landmark && <p className="text-neutral-500">Near {a.landmark}</p>}
+                    <p>
+                      {a.city}, {a.state} – <strong className="text-brand-text">{a.pincode}</strong>
+                    </p>
+                    <p className="flex items-center gap-1.5 text-neutral-600 pt-1">
+                      <Phone className="w-3.5 h-3.5" aria-hidden="true" /> <span className="sr-only">Phone:</span> {a.phone}
+                    </p>
+                  </address>
+
+                  <div className="flex flex-wrap items-center gap-1 pt-3 mt-4 border-t border-brand-border">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(a)}
+                      className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-full text-sm font-medium text-neutral-700 hover:text-brand-maroon hover:bg-brand-ivory"
+                    >
+                      <Pencil className="w-4 h-4" aria-hidden="true" /> Edit<span className="sr-only"> {label}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setToDelete(a)}
+                      className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-full text-sm font-medium text-neutral-700 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" aria-hidden="true" /> Remove<span className="sr-only"> {label}</span>
+                    </button>
+                    {!a.isDefault && (
+                      <button
+                        type="button"
+                        onClick={() => makeDefault(a)}
+                        disabled={Boolean(defaultBusyId)}
+                        className="ml-auto inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-full text-sm font-semibold text-brand-maroon hover:bg-brand-goldPale disabled:opacity-60"
+                      >
+                        {defaultBusyId === a.id && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />} Set as default<span className="sr-only"> for {label}</span>
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <ConfirmDialog
+        open={Boolean(toDelete)}
+        title="Remove this address?"
+        confirmLabel={deleting ? "Removing…" : "Remove address"}
+        cancelLabel="Keep it"
+        danger
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => !deleting && setToDelete(null)}
+      >
+        {toDelete && (
+          <>
+            <strong className="text-brand-text">{toDelete.name}</strong>, {[toDelete.houseNumber, toDelete.street].filter(Boolean).join(", ")}, {toDelete.city} – {toDelete.pincode}
+            {toDelete.isDefault && <span className="block mt-1">This is your default address. You can choose a new default afterwards.</span>}
+            <span className="block mt-1">Past orders sent here are not affected.</span>
+          </>
+        )}
+      </ConfirmDialog>
+    </>
+  );
+}
+
+function AddressEditor({ editing, isFirst, onDone }: { editing: SavedAddress | null; isFirst: boolean; onDone: () => void }) {
+  const { user, addAddress, updateAddress } = useApp();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const [form, setForm] = useState<AddressFormValue>(() =>
+    editing
+      ? {
+          name: editing.name,
+          phone: editing.phone,
+          houseNumber: editing.houseNumber || "",
+          street: editing.street,
+          locality: editing.locality || "",
+          landmark: editing.landmark || "",
+          city: editing.city,
+          state: editing.state,
+          pincode: editing.pincode,
+          type: editing.type || "Home",
+          isDefault: Boolean(editing.isDefault),
+        }
+      : { ...EMPTY_ADDRESS, name: user?.fullName || "", phone: user?.phone || "", isDefault: isFirst }
+  );
   const [errors, setErrors] = useState<AddressErrors>({});
   const [saving, setSaving] = useState(false);
+
+  // Move focus to the form heading when it opens, so keyboard and screen-reader users land in the right place
+  useEffect(() => {
+    headingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    headingRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const patch = (p: Partial<AddressFormValue>) => {
     setForm((f) => ({ ...f, ...p }));
@@ -32,167 +251,60 @@ export default function AddressesPage() {
     });
   };
 
-  const resetForm = () => {
-    setForm({ ...EMPTY_ADDRESS, name: user?.fullName || "", phone: user?.phone || "" });
-    setErrors({});
-    setEditingId(null);
-    setIsAdding(false);
-  };
-
-  const handleEdit = (a: SavedAddress) => {
-    setEditingId(a.id);
-    setForm({
-      name: a.name,
-      phone: a.phone,
-      houseNumber: a.houseNumber || "",
-      street: a.street,
-      locality: a.locality || "",
-      landmark: a.landmark || "",
-      city: a.city,
-      state: a.state,
-      pincode: a.pincode,
-      type: a.type || "Home",
-      isDefault: Boolean(a.isDefault),
-    });
-    setErrors({});
-    setIsAdding(true);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     const found = validateAddress(form);
     setErrors(found);
-    if (Object.keys(found).length > 0) return;
+    if (Object.keys(found).length > 0) {
+      // Take the person straight to the first field that needs fixing
+      setTimeout(() => formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(), 0);
+      return;
+    }
 
     setSaving(true);
     const payload = { ...form, phone: normaliseIndianMobile(form.phone) };
-    if (editingId) await updateAddress(editingId, payload);
-    else await addAddress(payload);
+    // Only close the form when the save worked, so nothing typed is ever lost
+    const ok = editing ? await updateAddress(editing.id, payload) : Boolean(await addAddress(payload));
     setSaving(false);
-    resetForm();
+    if (ok) onDone();
   };
 
-  const input =
-    "w-full bg-white border rounded-xl px-3.5 py-3 text-base sm:text-sm text-brand-text focus:outline-none focus:border-brand-gold min-h-[44px]";
-
   return (
-    <div className="min-h-screen bg-brand-white text-brand-text py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto font-sans">
-      <div className="mb-8 border-b border-brand-border pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <section aria-labelledby="addr-form-h" className="bg-white border border-brand-gold/50 rounded-3xl p-5 sm:p-7 shadow-cardHover">
+      <div className="flex items-start justify-between gap-3 mb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs text-neutral-500 mb-1 font-poppins">
-            <Link href="/account" className="hover:text-brand-gold">Dashboard</Link>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-brand-gold font-semibold">Address Book</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-brand-text font-normal">Saved Delivery Addresses</h1>
+          <h2 id="addr-form-h" ref={headingRef} tabIndex={-1} className="text-lg font-serif outline-none scroll-mt-24">
+            {editing ? "Edit address" : "Add a new address"}
+          </h2>
+          <p className="text-sm text-neutral-600 mt-0.5">Fields marked * are required.</p>
         </div>
-
         <button
-          onClick={() => {
-            resetForm();
-            setIsAdding(true);
-          }}
-          className="btn-primary px-5 min-h-[44px] text-xs rounded-full flex items-center gap-1.5 shadow-md font-poppins self-start sm:self-auto"
+          type="button"
+          onClick={onDone}
+          disabled={saving}
+          aria-label="Close the address form"
+          className="w-11 h-11 shrink-0 rounded-full flex items-center justify-center text-neutral-500 hover:text-brand-text hover:bg-brand-ivory disabled:opacity-40"
         >
-          <Plus className="w-4 h-4" /> Add New Address
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
       </div>
 
-      {isAdding && (
-        <div className="bg-brand-ivory border border-brand-border rounded-3xl p-5 sm:p-8 mb-8 space-y-5 shadow-luxury">
-          <h2 className="text-base font-serif font-bold uppercase tracking-wider text-brand-text">
-            {editingId ? "Edit Address" : "Add New Delivery Address"}
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="acc-name" className="text-[11px] uppercase text-neutral-600 font-poppins block mb-1">Full Name *</label>
-                <input id="acc-name" className={`${input} ${errors.name ? "border-red-400" : "border-brand-border"}`} value={form.name} onChange={(e) => patch({ name: e.target.value })} />
-                {errors.name && <p role="alert" className="text-[11px] text-red-600 mt-1">{errors.name}</p>}
-              </div>
-              <div>
-                <label htmlFor="acc-phone" className="text-[11px] uppercase text-neutral-600 font-poppins block mb-1">Mobile Number *</label>
-                <input id="acc-phone" type="tel" inputMode="numeric" className={`${input} ${errors.phone ? "border-red-400" : "border-brand-border"}`} value={form.phone} onChange={(e) => patch({ phone: e.target.value })} />
-                {errors.phone && <p role="alert" className="text-[11px] text-red-600 mt-1">{errors.phone}</p>}
-              </div>
-            </div>
-
-            <AddressForm value={form} onChange={patch} errors={errors} idPrefix="acc" />
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={resetForm} className="px-5 min-h-[44px] bg-white border border-brand-border text-neutral-600 hover:text-brand-text rounded-full text-xs shadow-sm">
-                Cancel
-              </button>
-              <button type="submit" disabled={saving} className="btn-primary px-6 min-h-[44px] text-xs rounded-full font-semibold shadow-md inline-flex items-center gap-2 disabled:opacity-70">
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save Address
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {savedAddresses.length === 0 && !isAdding && (
-        <div className="bg-brand-ivory border border-brand-border rounded-3xl p-10 text-center">
-          <MapPin className="w-8 h-8 text-brand-gold/70 mx-auto mb-3" />
-          <h2 className="text-lg font-serif mb-1">No saved addresses yet</h2>
-          <p className="text-xs text-neutral-500">Add an address now to check out faster next time.</p>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-        {savedAddresses.map((addr) => (
-          <div
-            key={addr.id}
-            className={`bg-white border rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4 transition-all shadow-card ${
-              addr.isDefault ? "border-brand-gold/80 ring-1 ring-brand-gold/30" : "border-brand-border hover:border-brand-gold/40"
-            }`}
+      <form ref={formRef} onSubmit={handleSubmit} noValidate aria-busy={saving} className="space-y-5">
+        <AddressForm value={form} onChange={patch} errors={errors} showContact idPrefix="acc" />
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 border-t border-brand-border">
+          <button type="button" onClick={onDone} disabled={saving} className="min-h-[48px] px-6 rounded-full border border-brand-border text-sm font-semibold hover:border-brand-gold disabled:opacity-50 mt-3 sm:mt-4">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-primary min-h-[48px] px-8 text-xs font-bold uppercase tracking-widest rounded-full shadow-md inline-flex items-center justify-center gap-2 disabled:opacity-70 mt-3 sm:mt-4"
           >
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  {addr.type === "Office" ? <Briefcase className="w-4 h-4 text-brand-gold shrink-0" /> : addr.type === "Other" ? <MapPin className="w-4 h-4 text-brand-gold shrink-0" /> : <Home className="w-4 h-4 text-brand-gold shrink-0" />}
-                  <h3 className="font-bold text-brand-text text-sm font-poppins truncate">{addr.name}</h3>
-                  <span className="text-[10px] uppercase text-neutral-400">{addr.type || "Home"}</span>
-                </div>
-                {addr.isDefault && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 bg-brand-ivory text-brand-maroon border border-brand-border rounded-full font-poppins shrink-0">
-                    Default
-                  </span>
-                )}
-              </div>
-
-              <p className="text-neutral-600 leading-relaxed">
-                {[addr.houseNumber, addr.street, addr.locality].filter(Boolean).join(", ")}
-              </p>
-              {addr.landmark && <p className="text-neutral-500 text-[11px]">Landmark: {addr.landmark}</p>}
-              <p className="text-neutral-600">
-                {addr.city}, {addr.state} - <strong className="text-brand-text">{addr.pincode}</strong>
-              </p>
-              <p className="text-neutral-500">Phone: {addr.phone}</p>
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-brand-border text-xs font-poppins">
-              <div className="flex gap-1">
-                <button onClick={() => handleEdit(addr)} className="min-h-[44px] px-2 text-neutral-500 hover:text-brand-maroon flex items-center gap-1 font-medium">
-                  <Edit3 className="w-3.5 h-3.5" /> Edit
-                </button>
-                <button
-                  onClick={() => confirm("Delete this address?") && deleteAddress(addr.id)}
-                  className="min-h-[44px] px-2 text-neutral-400 hover:text-red-500 flex items-center gap-1 font-medium"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
-              </div>
-              {!addr.isDefault && (
-                <button onClick={() => updateAddress(addr.id, { isDefault: true })} className="min-h-[44px] px-2 text-xs text-brand-maroon hover:text-brand-gold font-medium">
-                  Set as Default
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+            {saving && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />} {saving ? "Saving…" : editing ? "Save changes" : "Save address"}
+          </button>
+        </div>
+      </form>
+    </section>
   );
 }

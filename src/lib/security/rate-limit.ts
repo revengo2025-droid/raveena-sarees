@@ -22,6 +22,7 @@ export const POLICIES = {
   registerIp: { max: 10, windowSeconds: 3600 },
   passwordResetIp: { max: 10, windowSeconds: 3600 },
   passwordResetAccount: { max: 3, windowSeconds: 3600 },
+  confirmResendAccount: { max: 3, windowSeconds: 3600 },
   reauth: { max: 5, windowSeconds: 900 },
   // Customer writes
   contactIp: { max: 10, windowSeconds: 3600 },

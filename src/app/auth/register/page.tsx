@@ -46,7 +46,9 @@ function RegisterContent() {
       if (res.success && res.data?.signedIn === false) {
         // The account exists but must be confirmed first: do not pretend the customer is signed in
         showToast("Account created. Please check your email and confirm your address, then sign in.", "success");
-        router.push("/auth/login");
+        const params = new URLSearchParams({ confirm: "1" });
+        if (redirectParam !== "/account") params.set("redirect", redirectParam);
+        router.push(`/auth/login?${params.toString()}`);
       } else if (res.success) {
         login(email, "customer", fullName, phone);
         showToast("Account created successfully! Welcome to Raveena Sarees.", "success");

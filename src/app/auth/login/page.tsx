@@ -19,6 +19,11 @@ function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [notice, setNotice] = useState<string | null>(
+    searchParams.get("confirm") === "1"
+      ? "Your account is created. We have emailed you a confirmation link: open it, then sign in here. If it is not in your inbox, check the Spam and Promotions folders."
+      : null
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +33,7 @@ function LoginContent() {
     }
     if (isLoading) return;
     setIsLoading(true);
+    setNotice(null);
 
     try {
       const res = await loginAction({ email, password }, redirectParam);
@@ -38,6 +44,9 @@ function LoginContent() {
         // The destination is decided by the server from the database role (admin -> /admin, customer -> account)
         router.replace(res.data.redirectTo || "/account");
         router.refresh();
+      } else if (res.code === "EMAIL_NOT_CONFIRMED") {
+        setIsLoading(false);
+        setNotice(res.error || "Please confirm your email address first, then sign in.");
       } else {
         setIsLoading(false);
         showToast(res.error || "Invalid email or password", "error");
@@ -79,6 +88,12 @@ function LoginContent() {
         {linkProblem && (
           <p role="alert" className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
             That link has expired or was already used. Please sign in, or request a new link.
+          </p>
+        )}
+
+        {notice && (
+          <p role="status" className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+            {notice}
           </p>
         )}
 

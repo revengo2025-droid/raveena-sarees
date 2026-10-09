@@ -14,6 +14,7 @@ export interface AuthActionResult<T = any> {
   success: boolean;
   data?: T;
   error?: string;
+  code?: string;
 }
 
 /**
@@ -90,6 +91,25 @@ export async function loginAction(values: unknown, requestedRedirect?: string): 
     if (error && (error.name === "AuthRetryableFetchError" || error.status === 0 || (typeof error.status === "number" && error.status >= 500))) {
       log.error("auth.login_service_error", { status: error.status });
       return { success: false, error: "We could not reach our sign-in service. Please try again in a moment." };
+    }
+
+    // Supabase only says "email not confirmed" after the password has been checked, so this reveals nothing to a
+    // guesser. Send a fresh confirmation link (throttled) instead of the misleading "wrong password" message.
+    if (error?.code === "email_not_confirmed") {
+      const resend = await rateLimit("confirmResendAccount", fingerprint(email));
+      if (resend.ok) {
+        const { error: resendError } = await supabase.auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo: `${SITE.url}/auth/callback?next=/account` },
+        });
+        if (resendError) log.warn("auth.confirm_resend_failed", { status: resendError.status });
+      }
+      return {
+        success: false,
+        code: "EMAIL_NOT_CONFIRMED",
+        error: "Please confirm your email address first. We have sent you a new confirmation link: open it, then sign in. If it is not in your inbox, check the Spam and Promotions folders.",
+      };
     }
 
     if (error || !data.user) {
@@ -284,6 +304,7 @@ export async function getCurrentUserAction(): Promise<AuthActionResult> {
           role: profile.role,
           phone: profile.phone,
           avatarUrl: profile.avatarUrl,
+          joinedAt: user.created_at,
         },
       },
     };
@@ -309,21 +330,29 @@ export async function updateProfileAction(values: unknown): Promise<AuthActionRe
       return { success: false, error: "Authentication required" };
     }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        full_name: validated.data.fullName,
-        phone: validated.data.phone || null,
-        avatar_url: validated.data.avatarUrl || null,
-      })
-      .eq("id", user.id);
+    const limit = await rateLimit("profileUpdate", user.id);
+    if (!limit.ok) return { success: false, error: tooManyMessage(limit.retryAfter, "changes") };
 
-    if (error) {
-      log.warn("auth.profile_update_failed", { error: error.message });
+    const changes: { full_name: string; phone: string | null; avatar_url?: string | null } = {
+      full_name: validated.data.fullName,
+      phone: validated.data.phone || null,
+    };
+    // Only touch the photo when the form actually sends one, so saving the name never wipes it
+    if (validated.data.avatarUrl !== undefined) changes.avatar_url = validated.data.avatarUrl || null;
+
+    const { data: saved, error } = await supabase
+      .from("profiles")
+      .update(changes)
+      .eq("id", user.id)
+      .select("full_name, phone")
+      .maybeSingle();
+
+    if (error || !saved) {
+      log.warn("auth.profile_update_failed", { error: error?.message || "no row updated" });
       return { success: false, error: "We could not save your profile. Please try again." };
     }
 
-    return { success: true };
+    return { success: true, data: { fullName: saved.full_name || validated.data.fullName, phone: saved.phone || "" } };
   } catch (err: any) {
     log.error("auth.profile_update_error", { error: err?.message });
     return { success: false, error: "We could not save your profile. Please try again." };

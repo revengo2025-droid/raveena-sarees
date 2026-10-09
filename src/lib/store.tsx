@@ -94,11 +94,19 @@ interface AppContextType {
   authReady: boolean;
   login: (email: string, role?: "customer" | "admin", fullName?: string, phone?: string) => void;
   logout: () => void;
+  /** Re-reads the signed-in user from the server session (real id, role, profile details, member-since date). */
+  refreshUser: () => Promise<void>;
+  /** Applies details the server has just saved, so every page shows them without a reload. */
+  applyUserDetails: (details: Partial<Pick<UserProfile, "fullName" | "phone">>) => void;
   savedAddresses: SavedAddress[];
+  /** True once the signed-in customer's saved addresses have been loaded from the database. */
+  addressesLoaded: boolean;
   /** Saves to the database (one default per customer). Resolves to the saved address, or null on failure. */
   addAddress: (address: Omit<SavedAddress, "id">) => Promise<SavedAddress | null>;
-  updateAddress: (id: string, updates: Partial<SavedAddress>) => Promise<void>;
-  deleteAddress: (id: string) => Promise<void>;
+  /** Resolves to true when the change was saved. */
+  updateAddress: (id: string, updates: Partial<SavedAddress>) => Promise<boolean>;
+  /** Resolves to true when the address was removed. */
+  deleteAddress: (id: string) => Promise<boolean>;
 
   // Orders
   orders: Order[];
@@ -144,6 +152,7 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
   // Default User (starts signed out)
   const [user, setUser] = useState<UserProfile | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [addressesLoaded, setAddressesLoaded] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [authReady, setAuthReady] = useState(false);
 
@@ -196,30 +205,43 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
     } catch {}
   }, []);
 
+  const toUserProfile = (u: any): UserProfile => ({
+    id: u.id,
+    email: u.email,
+    fullName: u.fullName || u.email.split("@")[0],
+    phone: u.phone || "",
+    role: u.role === "admin" || u.role === "staff" ? "admin" : "customer",
+    avatarUrl: u.avatarUrl || undefined,
+    joinedDate: u.joinedAt ? new Date(u.joinedAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "",
+  });
+
+  const refreshUser = async () => {
+    try {
+      const res = await getCurrentUserAction();
+      if (res.success && res.data?.user) setUser(toUserProfile(res.data.user));
+    } catch {
+      /* keep what is shown; the next page load retries */
+    }
+  };
+
+  const applyUserDetails = (details: Partial<Pick<UserProfile, "fullName" | "phone">>) => {
+    setUser((prev) => (prev ? { ...prev, ...details } : prev));
+  };
+
   // Restore the real server session on every page load (the cookie survives refresh, React state does not)
   useEffect(() => {
     let cancelled = false;
     getCurrentUserAction()
       .then((res) => {
         if (cancelled) return;
-        if (res.success && res.data?.user) {
-          const u = res.data.user;
-          setUser({
-            id: u.id,
-            email: u.email,
-            fullName: u.fullName || u.email.split("@")[0],
-            phone: u.phone || "",
-            role: u.role === "admin" || u.role === "staff" ? "admin" : "customer",
-            avatarUrl: u.avatarUrl || undefined,
-            joinedDate: "",
-          });
-        }
+        if (res.success && res.data?.user) setUser(toUserProfile(res.data.user));
       })
       .catch(() => {})
       .finally(() => !cancelled && setAuthReady(true));
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const refreshOrders = async () => {
@@ -241,12 +263,15 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
     if (!user) {
       setOrders([]);
       setSavedAddresses([]);
+      setAddressesLoaded(false);
       return;
     }
     refreshOrders();
-    getMyAddressesAction().then((res) => {
-      if (res.success) setSavedAddresses(res.data);
-    });
+    getMyAddressesAction()
+      .then((res) => {
+        if (res.success) setSavedAddresses(res.data);
+      })
+      .finally(() => setAddressesLoaded(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -543,32 +568,34 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
     return res.data;
   };
 
-  const updateAddress = async (id: string, updates: Partial<SavedAddress>) => {
+  const updateAddress = async (id: string, updates: Partial<SavedAddress>): Promise<boolean> => {
     if (Object.keys(updates).length === 1 && updates.isDefault) {
       const res = await setDefaultAddressAction(id);
       if (!res.success) showToast(res.error, "error");
       else showToast("Default address updated", "success");
       await reloadAddresses();
-      return;
+      return res.success;
     }
     const current = savedAddresses.find((a) => a.id === id);
     const res = await saveAddressAction(toPayload({ ...current, ...updates }), id);
     if (!res.success) {
       showToast(res.error, "error");
-      return;
+      return false;
     }
     await reloadAddresses();
     showToast("Address updated", "success");
+    return true;
   };
 
-  const deleteAddress = async (id: string) => {
+  const deleteAddress = async (id: string): Promise<boolean> => {
     const res = await deleteAddressAction(id);
     if (!res.success) {
       showToast(res.error, "error");
-      return;
+      return false;
     }
     await reloadAddresses();
     showToast("Address removed", "info");
+    return true;
   };
 
   const getOrderById = (orderId: string) => orders.find((o) => o.id === orderId || o.orderNumber === orderId);
@@ -643,9 +670,11 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
       fullName: formattedName,
       phone: phone || "",
       role: isAdm ? "admin" : "customer",
-      joinedDate: new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
+      joinedDate: "",
     });
     showToast(`Welcome back, ${formattedName}!`, "success");
+    // Swap the display-only placeholder for the real account from the session cookie the server just set
+    refreshUser();
   };
 
   const logout = () => {
@@ -700,8 +729,11 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
         user,
         login,
         logout,
+        refreshUser,
+        applyUserDetails,
         authReady,
         savedAddresses,
+        addressesLoaded,
         addAddress,
         updateAddress,
         deleteAddress,

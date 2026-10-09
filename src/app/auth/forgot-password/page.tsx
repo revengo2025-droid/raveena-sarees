@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Mail, Send, CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import { forgotPasswordAction } from "@/app/actions/auth";
@@ -10,6 +10,12 @@ export default function ForgotPasswordPage() {
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [linkExpired, setLinkExpired] = useState(false);
+
+  // Arriving from a reset link that was already used or is too old
+  useEffect(() => {
+    setLinkExpired(new URLSearchParams(window.location.search).get("error") === "link");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +42,13 @@ export default function ForgotPasswordPage() {
             Enter the email you registered with and we will send you a link to choose a new password.
           </p>
         </div>
+
+        {linkExpired && !sent && (
+          <p role="alert" className="flex items-start gap-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+            That reset link has expired or was already used. Each link works once, and only the newest link works. Enter your email to get a fresh one.
+          </p>
+        )}
 
         {sent ? (
           <div role="status" className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl text-center space-y-3">

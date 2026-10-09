@@ -48,8 +48,8 @@ export default function TermsPage() {
 
       <Section title="Placing an order">
         <p>
-          Your order is an offer to buy. It is confirmed when payment is verified (online orders) or when we accept a cash on
-          delivery order. We may decline or cancel an order for reasons such as stock, payment problems, an address we cannot
+          Your order is an offer to buy. It is confirmed when your online payment is verified. We do not offer cash on
+          delivery: every order is paid online at checkout. We may decline or cancel an order for reasons such as stock, payment problems, an address we cannot
           serve, or suspected fraud, in which case you receive a full refund of anything paid.
         </p>
       </Section>
