@@ -133,14 +133,19 @@ describe("authentication", () => {
 
   it("does not reveal whether an email is already registered", async () => {
     signUpResult = { error: { message: "User already registered", status: 422 } };
-    const r = await registerAction({ fullName: "Alice Rao", email: "alice@example.com", password: "a-long-password" });
+    const r = await registerAction({ fullName: "Alice Rao", email: "alice@example.com", phone: "9876543210", password: "a-long-password" });
     expect(r.success).toBe(false);
     expect(r.error).not.toMatch(/already registered|exists/i);
   });
 
+  it("requires a valid mobile number to register", async () => {
+    expect((await registerAction({ fullName: "Alice Rao", email: "a@example.com", password: "long-enough-pw" })).success).toBe(false);
+    expect((await registerAction({ fullName: "Alice Rao", email: "a@example.com", phone: "12345", password: "long-enough-pw" })).success).toBe(false);
+  });
+
   it("requires 8+ characters for new passwords and reports a signed-out account when email confirmation is on", async () => {
-    expect((await registerAction({ fullName: "Alice Rao", email: "a@example.com", password: "short" })).success).toBe(false);
-    const ok = await registerAction({ fullName: "Alice Rao", email: "a@example.com", password: "long-enough-pw" });
+    expect((await registerAction({ fullName: "Alice Rao", email: "a@example.com", phone: "9876543210", password: "short" })).success).toBe(false);
+    const ok = await registerAction({ fullName: "Alice Rao", email: "a@example.com", phone: "9876543210", password: "long-enough-pw" });
     expect(ok.success).toBe(true);
     expect(ok.data.signedIn).toBe(false);
   });

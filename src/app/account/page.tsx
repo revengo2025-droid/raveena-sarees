@@ -185,6 +185,12 @@ function Overview() {
                 <dt className="text-[11px] uppercase tracking-wider text-neutral-500">Mobile</dt>
                 <dd className="font-medium">{user.phone ? `+91 ${user.phone}` : <span className="text-neutral-500 font-normal">Not added</span>}</dd>
               </div>
+              {user.secondaryPhone && (
+                <div>
+                  <dt className="text-[11px] uppercase tracking-wider text-neutral-500">Secondary mobile</dt>
+                  <dd className="font-medium">+91 {user.secondaryPhone}</dd>
+                </div>
+              )}
             </dl>
           </section>
 

@@ -180,6 +180,8 @@ export interface UserProfile {
   email: string;
   fullName: string;
   phone: string;
+  /** Optional backup mobile number (visible to staff). */
+  secondaryPhone?: string;
   role: "customer" | "admin";
   avatarUrl?: string;
   joinedDate: string;

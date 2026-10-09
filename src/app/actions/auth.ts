@@ -21,11 +21,11 @@ export interface AuthActionResult<T = any> {
  * Makes sure an auth user has a `profiles` row (role always 'customer' when created here) and returns the
  * stored role. Uses the service role: the role is never taken from user-editable metadata.
  */
-async function loadProfile(user: User): Promise<{ role: AppRole; fullName: string; phone: string; avatarUrl: string | null }> {
+async function loadProfile(user: User): Promise<{ role: AppRole; fullName: string; phone: string; secondaryPhone: string; avatarUrl: string | null }> {
   const admin = createAdminClient();
   let { data: profile } = await admin
     .from("profiles")
-    .select("role, full_name, phone, avatar_url")
+    .select("role, full_name, phone, secondary_phone, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -48,7 +48,7 @@ async function loadProfile(user: User): Promise<{ role: AppRole; fullName: strin
     );
     ({ data: profile } = await admin
       .from("profiles")
-      .select("role, full_name, phone, avatar_url")
+      .select("role, full_name, phone, secondary_phone, avatar_url")
       .eq("id", user.id)
       .maybeSingle());
   }
@@ -59,6 +59,7 @@ async function loadProfile(user: User): Promise<{ role: AppRole; fullName: strin
     role,
     fullName: profile?.full_name || user.user_metadata?.full_name || (user.email || "").split("@")[0],
     phone: profile?.phone || "",
+    secondaryPhone: profile?.secondary_phone || "",
     avatarUrl: profile?.avatar_url || null,
   };
 }
@@ -303,6 +304,7 @@ export async function getCurrentUserAction(): Promise<AuthActionResult> {
           fullName: profile.fullName,
           role: profile.role,
           phone: profile.phone,
+          secondaryPhone: profile.secondaryPhone,
           avatarUrl: profile.avatarUrl,
           joinedAt: user.created_at,
         },
@@ -333,9 +335,10 @@ export async function updateProfileAction(values: unknown): Promise<AuthActionRe
     const limit = await rateLimit("profileUpdate", user.id);
     if (!limit.ok) return { success: false, error: tooManyMessage(limit.retryAfter, "changes") };
 
-    const changes: { full_name: string; phone: string | null; avatar_url?: string | null } = {
+    const changes: { full_name: string; phone: string; secondary_phone: string | null; avatar_url?: string | null } = {
       full_name: validated.data.fullName,
-      phone: validated.data.phone || null,
+      phone: validated.data.phone,
+      secondary_phone: validated.data.secondaryPhone || null,
     };
     // Only touch the photo when the form actually sends one, so saving the name never wipes it
     if (validated.data.avatarUrl !== undefined) changes.avatar_url = validated.data.avatarUrl || null;
@@ -344,7 +347,7 @@ export async function updateProfileAction(values: unknown): Promise<AuthActionRe
       .from("profiles")
       .update(changes)
       .eq("id", user.id)
-      .select("full_name, phone")
+      .select("full_name, phone, secondary_phone")
       .maybeSingle();
 
     if (error || !saved) {
@@ -352,7 +355,10 @@ export async function updateProfileAction(values: unknown): Promise<AuthActionRe
       return { success: false, error: "We could not save your profile. Please try again." };
     }
 
-    return { success: true, data: { fullName: saved.full_name || validated.data.fullName, phone: saved.phone || "" } };
+    return {
+      success: true,
+      data: { fullName: saved.full_name || validated.data.fullName, phone: saved.phone || "", secondaryPhone: saved.secondary_phone || "" },
+    };
   } catch (err: any) {
     log.error("auth.profile_update_error", { error: err?.message });
     return { success: false, error: "We could not save your profile. Please try again." };

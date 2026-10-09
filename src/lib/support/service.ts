@@ -444,7 +444,9 @@ export async function listTicketsForStaff(f: TicketFilters) {
     let q = createAdminClient()
       .from("support_tickets")
       .select("id, ticket_number, customer_name, customer_email, category, subject, order_number, status, created_at, last_message_at", { count: "exact" });
-    if (f.status && TICKET_STATUS_VALUES.includes(f.status as TicketStatus)) q = q.eq("status", f.status);
+    // "needs_reply" = everything still waiting on the shop (new or being worked on)
+    if (f.status === "needs_reply") q = q.in("status", ["open", "in_progress"]);
+    else if (f.status && TICKET_STATUS_VALUES.includes(f.status as TicketStatus)) q = q.eq("status", f.status);
     if (f.category && /^[a-z_]{3,20}$/.test(f.category)) q = q.eq("category", f.category);
     if (f.from && DATE_RE.test(f.from)) q = q.gte("created_at", dayStart(f.from));
     if (f.to && DATE_RE.test(f.to)) q = q.lte("created_at", dayEnd(f.to));
@@ -516,6 +518,15 @@ export async function getTicketForStaff(ticketId: unknown) {
     }
     const alert = (await getAlertStates("ticket_admin", [t.id]))[t.id] ?? "none";
 
+    // Contact numbers so staff can call back (nothing else from the profile)
+    let customerPhone: string | null = null;
+    let customerSecondaryPhone: string | null = null;
+    if (t.user_id) {
+      const { data: cp } = await db.from("profiles").select("phone, secondary_phone").eq("id", t.user_id).maybeSingle();
+      customerPhone = cp?.phone || null;
+      customerSecondaryPhone = cp?.secondary_phone || null;
+    }
+
     return {
       success: true as const,
       ticket: {
@@ -523,6 +534,8 @@ export async function getTicketForStaff(ticketId: unknown) {
         ticketNumber: t.ticket_number as string,
         customerName: t.customer_name as string,
         customerEmail: t.customer_email as string,
+        customerPhone,
+        customerSecondaryPhone,
         accountDeleted: !t.user_id,
         category: t.category as string,
         subject: t.subject as string,

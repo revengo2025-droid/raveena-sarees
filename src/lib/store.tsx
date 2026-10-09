@@ -97,7 +97,7 @@ interface AppContextType {
   /** Re-reads the signed-in user from the server session (real id, role, profile details, member-since date). */
   refreshUser: () => Promise<void>;
   /** Applies details the server has just saved, so every page shows them without a reload. */
-  applyUserDetails: (details: Partial<Pick<UserProfile, "fullName" | "phone">>) => void;
+  applyUserDetails: (details: Partial<Pick<UserProfile, "fullName" | "phone" | "secondaryPhone">>) => void;
   savedAddresses: SavedAddress[];
   /** True once the signed-in customer's saved addresses have been loaded from the database. */
   addressesLoaded: boolean;
@@ -210,6 +210,7 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
     email: u.email,
     fullName: u.fullName || u.email.split("@")[0],
     phone: u.phone || "",
+    secondaryPhone: u.secondaryPhone || "",
     role: u.role === "admin" || u.role === "staff" ? "admin" : "customer",
     avatarUrl: u.avatarUrl || undefined,
     joinedDate: u.joinedAt ? new Date(u.joinedAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "",
@@ -224,7 +225,7 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
     }
   };
 
-  const applyUserDetails = (details: Partial<Pick<UserProfile, "fullName" | "phone">>) => {
+  const applyUserDetails = (details: Partial<Pick<UserProfile, "fullName" | "phone" | "secondaryPhone">>) => {
     setUser((prev) => (prev ? { ...prev, ...details } : prev));
   };
 

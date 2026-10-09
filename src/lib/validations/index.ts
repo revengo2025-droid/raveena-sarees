@@ -12,11 +12,7 @@ export const loginSchema = z.object({
 export const registerSchema = z.object({
   fullName: z.string().trim().min(2, "Full name must be at least 2 characters").max(100, "Full name is too long"),
   email: z.string().trim().email("Please enter a valid email address").max(255),
-  phone: z
-    .string()
-    .regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian mobile number")
-    .optional()
-    .or(z.literal("")),
+  phone: z.string("Please enter your 10-digit mobile number").regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian mobile number"),
   password: z.string().min(8, "Password must be at least 8 characters").max(128, "Password is too long"),
 });
 
@@ -34,12 +30,18 @@ export const resetPasswordSchema = z.object({
 
 export const profileUpdateSchema = z.object({
   fullName: z.string().trim().min(2, "Full name must be at least 2 characters").max(100, "Full name is too long"),
-  phone: z
+  // Required: the courier and our team use it for delivery updates
+  phone: z.string().regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian mobile number"),
+  // Optional backup number, visible to staff for deliveries and support
+  secondaryPhone: z
     .string()
     .regex(/^[6-9]\d{9}$/, "Please enter a valid 10-digit Indian mobile number")
     .optional()
     .or(z.literal("")),
   avatarUrl: z.string().url().optional().or(z.literal("")),
+}).refine((v) => !v.secondaryPhone || v.secondaryPhone !== v.phone, {
+  message: "The secondary number must be different from your main mobile number",
+  path: ["secondaryPhone"],
 });
 
 // =============================================================================

@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, MessageSquareReply } from "lucide-react";
 import { listTicketsAction } from "@/app/actions/admin-support";
 import { TICKET_CATEGORIES, TICKET_STATUSES, ticketCategoryLabel, ticketStatusLabel } from "@/lib/support/constants";
 import { formatDateTime, withTimeout, RequestTimeoutError, TIMEOUT_MESSAGE, NETWORK_MESSAGE } from "@/lib/support/client";
@@ -10,8 +11,17 @@ import { AdminChip, AdminPageHeader, ErrorBlock, LoadingBlock, Pager, adminInput
 
 type Row = { id: string; ticketNumber: string; customerName: string; customerEmail: string; category: string; subject: string; orderNumber: string | null; status: string; createdAt: string; lastActivityAt: string };
 
+const QUICK_TABS = [
+  { value: "needs_reply", label: "Needs reply" },
+  { value: "", label: "All" },
+  { value: "waiting_for_customer", label: "Waiting for customer" },
+  { value: "resolved", label: "Resolved" },
+  { value: "closed", label: "Closed" },
+];
+
 export default function AdminQueriesPage() {
-  const [filters, setFilters] = useState({ search: "", status: "", category: "", from: "", to: "" });
+  const router = useRouter();
+  const [filters, setFilters] = useState({ search: "", status: "needs_reply", category: "", from: "", to: "" });
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<Row[]>([]);
@@ -60,9 +70,31 @@ export default function AdminQueriesPage() {
 
   return (
     <div className="space-y-6 font-sans">
-      <AdminPageHeader title="Customer Queries" subtitle="Support tickets raised by customers from their account. Open one to reply, change its status or add internal notes." />
+      <AdminPageHeader title="Customer Queries" subtitle="Support tickets raised by customers. Click any query to read it, reply, and mark it resolved or closed. The customer sees your reply in their account and by email." />
 
-      <div className="bg-adm-surface p-4 rounded-2xl border border-adm-line grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div role="group" aria-label="Quick filter" className="flex gap-2 overflow-x-auto pb-1">
+        {QUICK_TABS.map((t) => {
+          const on = filters.status === t.value;
+          return (
+            <button
+              key={t.label}
+              type="button"
+              aria-pressed={on}
+              onClick={() => {
+                setFilters((f) => ({ ...f, status: t.value }));
+                setPage(1);
+              }}
+              className={`shrink-0 min-h-[40px] px-4 rounded-full text-xs font-semibold border transition-colors ${
+                on ? "bg-adm-gold text-black border-adm-gold" : "bg-adm-surface text-adm-text border-adm-line2 hover:border-adm-gold"
+              }`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="bg-adm-surface p-4 rounded-2xl border border-adm-line grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <div className="relative sm:col-span-2 lg:col-span-2">
           <label htmlFor="q-search" className="sr-only">Search queries</label>
           <Search className="w-4 h-4 text-adm-muted absolute left-3 top-3" aria-hidden="true" />
@@ -72,6 +104,7 @@ export default function AdminQueriesPage() {
           <label htmlFor="q-status" className="sr-only">Status</label>
           <select id="q-status" value={filters.status} onChange={setFilter("status")} className={`${adminInput} w-full`}>
             <option value="">All statuses</option>
+            <option value="needs_reply">Needs reply</option>
             {TICKET_STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
@@ -82,7 +115,7 @@ export default function AdminQueriesPage() {
             {TICKET_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 sm:col-span-2 lg:col-span-2">
           <div className="flex-1">
             <label htmlFor="q-from" className="sr-only">From date</label>
             <input id="q-from" type="date" value={filters.from} onChange={setFilter("from")} className={`${adminInput} w-full`} />
@@ -100,7 +133,9 @@ export default function AdminQueriesPage() {
       {!error && !(loading && rows.length === 0) && (
         <div className={`bg-adm-surface border border-adm-line rounded-2xl overflow-hidden transition-opacity ${loading ? "opacity-60" : ""}`} aria-busy={loading}>
           {rows.length === 0 ? (
-            <p className="p-10 text-center text-sm text-adm-muted">No queries match these filters.</p>
+            <p className="p-10 text-center text-sm text-adm-muted">
+              {filters.status === "needs_reply" && !debouncedSearch ? "All caught up: no queries are waiting for a reply." : "No queries match these filters."}
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
@@ -111,13 +146,15 @@ export default function AdminQueriesPage() {
                     <th scope="col" className="py-3 px-4">Category</th>
                     <th scope="col" className="py-3 px-4">Status</th>
                     <th scope="col" className="py-3 px-4">Last activity</th>
+                    <th scope="col" className="py-3 px-4"><span className="sr-only">Action</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-adm-line">
                   {rows.map((t) => (
-                    <tr key={t.id} className="hover:bg-adm-surface">
+                    // The whole row opens the query (mouse); the link and button inside keep it keyboard and screen-reader friendly
+                    <tr key={t.id} onClick={() => router.push(`/admin/queries/${t.id}`)} className="hover:bg-adm-hover cursor-pointer">
                       <td className="py-3 px-4 max-w-[280px]">
-                        <Link href={`/admin/queries/${t.id}`} className="text-adm-goldsoft font-mono hover:underline">{t.ticketNumber}</Link>
+                        <Link href={`/admin/queries/${t.id}`} onClick={(e) => e.stopPropagation()} className="text-adm-goldsoft font-mono hover:underline">{t.ticketNumber}</Link>
                         <p className="text-adm-text truncate" title={t.subject}>{t.subject}</p>
                         {t.orderNumber && <p className="text-[10px] text-adm-faint">Order {t.orderNumber}</p>}
                       </td>
@@ -125,6 +162,17 @@ export default function AdminQueriesPage() {
                       <td className="py-3 px-4 text-adm-text">{ticketCategoryLabel(t.category)}</td>
                       <td className="py-3 px-4"><AdminChip status={t.status} label={ticketStatusLabel(t.status)} /></td>
                       <td className="py-3 px-4 text-adm-muted whitespace-nowrap">{formatDateTime(t.lastActivityAt)}</td>
+                      <td className="py-3 px-4 text-right">
+                        <Link
+                          href={`/admin/queries/${t.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 rounded-full border border-adm-gold/50 text-adm-gold text-[11px] font-semibold whitespace-nowrap hover:bg-adm-gold hover:text-black"
+                        >
+                          <MessageSquareReply className="w-3.5 h-3.5" aria-hidden="true" />
+                          {t.status === "open" || t.status === "in_progress" ? "Reply" : "Open"}
+                          <span className="sr-only"> to {t.ticketNumber}</span>
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

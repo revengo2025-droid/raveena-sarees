@@ -6,7 +6,7 @@ import { buildShiprocketOrderPayload, isOrderShippable } from "@/lib/services/sh
 import { snapshotFromWebhook, webhookDedupeKey } from "@/lib/services/shipping/tracking";
 import { isValidShiprocketToken } from "@/lib/services/shipping/webhook-handler";
 import { offerPopupSchema } from "@/lib/offers/popup";
-import { orderItemInputSchema, productSchema } from "@/lib/validations";
+import { orderItemInputSchema, productSchema, profileUpdateSchema } from "@/lib/validations";
 import type { ShiprocketConfig } from "@/lib/services/shipping/shiprocket";
 
 describe("auth redirects and roles", () => {
@@ -287,5 +287,20 @@ describe("input validation", () => {
     expect(productSchema.safeParse({ ...validNewProduct, rating: -1 }).success).toBe(false);
     expect(productSchema.safeParse({ ...validNewProduct, reviewCount: -1 }).success).toBe(false);
     expect(productSchema.safeParse({ ...validNewProduct, price: 0 }).success).toBe(false);
+  });
+});
+
+describe("profile details", () => {
+  it("requires a valid main mobile number", () => {
+    expect(profileUpdateSchema.safeParse({ fullName: "Lakshmi Devi", phone: "" }).success).toBe(false);
+    expect(profileUpdateSchema.safeParse({ fullName: "Lakshmi Devi", phone: "12345" }).success).toBe(false);
+    expect(profileUpdateSchema.safeParse({ fullName: "Lakshmi Devi", phone: "9876543210" }).success).toBe(true);
+  });
+
+  it("accepts an optional, different secondary mobile number", () => {
+    expect(profileUpdateSchema.safeParse({ fullName: "Lakshmi Devi", phone: "9876543210", secondaryPhone: "" }).success).toBe(true);
+    expect(profileUpdateSchema.safeParse({ fullName: "Lakshmi Devi", phone: "9876543210", secondaryPhone: "9123456780" }).success).toBe(true);
+    expect(profileUpdateSchema.safeParse({ fullName: "Lakshmi Devi", phone: "9876543210", secondaryPhone: "9876543210" }).success).toBe(false);
+    expect(profileUpdateSchema.safeParse({ fullName: "Lakshmi Devi", phone: "9876543210", secondaryPhone: "555" }).success).toBe(false);
   });
 });

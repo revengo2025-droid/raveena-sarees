@@ -48,10 +48,12 @@ function SettingsContent({ onDeleteClick }: { onDeleteClick: () => void }) {
   const { user, applyUserDetails } = useApp();
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
+  const phone2Ref = useRef<HTMLInputElement>(null);
 
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [phone, setPhone] = useState(user?.phone || "");
-  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
+  const [phone2, setPhone2] = useState(user?.secondaryPhone || "");
+  const [errors, setErrors] = useState<{ name?: string; phone?: string; phone2?: string }>({});
   const [saving, setSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -61,27 +63,37 @@ function SettingsContent({ onDeleteClick }: { onDeleteClick: () => void }) {
   if (!user) return null;
 
   const digits = phone.replace(/\D/g, "").slice(-10);
-  const changed = fullName.trim() !== user.fullName || digits !== (user.phone || "");
+  const digits2 = phone2.replace(/\D/g, "").slice(-10);
+  const changed = fullName.trim() !== user.fullName || digits !== (user.phone || "") || digits2 !== (user.secondaryPhone || "");
 
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
     const found: typeof errors = {};
     if (fullName.trim().length < 2) found.name = "Please enter your full name (at least 2 letters).";
-    if (digits && !/^[6-9]\d{9}$/.test(digits)) found.phone = "Enter a valid 10-digit Indian mobile number, or leave it blank.";
+    if (!digits) found.phone = "Your mobile number is required for delivery updates.";
+    else if (!/^[6-9]\d{9}$/.test(digits)) found.phone = "Enter a valid 10-digit Indian mobile number.";
+    if (digits2 && !/^[6-9]\d{9}$/.test(digits2)) found.phone2 = "Enter a valid 10-digit Indian mobile number, or leave it blank.";
+    else if (digits2 && digits2 === digits) found.phone2 = "This is the same as your main number. Enter a different one, or leave it blank.";
     setErrors(found);
     setProfileMsg(null);
     if (found.name) return nameRef.current?.focus();
     if (found.phone) return phoneRef.current?.focus();
+    if (found.phone2) return phone2Ref.current?.focus();
 
     setSaving(true);
     try {
-      const res = await withTimeout(updateProfileAction({ fullName: fullName.trim(), phone: digits }), 20_000);
+      const res = await withTimeout(updateProfileAction({ fullName: fullName.trim(), phone: digits, secondaryPhone: digits2 }), 20_000);
       if (res.success) {
-        const saved = { fullName: res.data?.fullName ?? fullName.trim(), phone: res.data?.phone ?? digits };
+        const saved = {
+          fullName: res.data?.fullName ?? fullName.trim(),
+          phone: res.data?.phone ?? digits,
+          secondaryPhone: res.data?.secondaryPhone ?? digits2,
+        };
         applyUserDetails(saved);
         setFullName(saved.fullName);
         setPhone(saved.phone);
+        setPhone2(saved.secondaryPhone);
         setProfileMsg({ ok: true, text: "Your details have been saved." });
       } else {
         setProfileMsg({ ok: false, text: res.error || "We could not save your details." });
@@ -161,7 +173,9 @@ function SettingsContent({ onDeleteClick }: { onDeleteClick: () => void }) {
             </div>
 
             <div>
-              <label htmlFor="st-phone" className={lab}>Mobile number</label>
+              <label htmlFor="st-phone" className={lab}>
+                Mobile number <span className="text-red-700" aria-hidden="true">*</span>
+              </label>
               <div className="relative">
                 <Phone className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
                 <span className="absolute left-10 top-1/2 -translate-y-1/2 text-sm text-neutral-500" aria-hidden="true">+91</span>
@@ -174,6 +188,8 @@ function SettingsContent({ onDeleteClick }: { onDeleteClick: () => void }) {
                   autoComplete="tel-national"
                   maxLength={14}
                   placeholder="98765 43210"
+                  required
+                  aria-required="true"
                   aria-invalid={errors.phone ? true : undefined}
                   aria-describedby={errors.phone ? "st-phone-error" : "st-phone-help"}
                   value={phone}
@@ -189,6 +205,40 @@ function SettingsContent({ onDeleteClick }: { onDeleteClick: () => void }) {
                 </p>
               ) : (
                 <p id="st-phone-help" className="mt-1.5 text-xs text-neutral-500">Used only for order and courier updates.</p>
+              )}
+            </div>
+
+            <div className="sm:col-start-2">
+              <label htmlFor="st-phone2" className={lab}>
+                Secondary mobile number <span className="font-normal text-neutral-500">(optional)</span>
+              </label>
+              <div className="relative">
+                <Phone className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
+                <span className="absolute left-10 top-1/2 -translate-y-1/2 text-sm text-neutral-500" aria-hidden="true">+91</span>
+                <input
+                  ref={phone2Ref}
+                  id="st-phone2"
+                  className={`${input} pl-[4.5rem] ${errors.phone2 ? "border-red-500" : "border-brand-border"}`}
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={14}
+                  placeholder="Another number we can call"
+                  aria-invalid={errors.phone2 ? true : undefined}
+                  aria-describedby={errors.phone2 ? "st-phone2-error" : "st-phone2-help"}
+                  value={phone2}
+                  onChange={(e) => {
+                    setPhone2(e.target.value);
+                    if (errors.phone2) setErrors((x) => ({ ...x, phone2: undefined }));
+                  }}
+                />
+              </div>
+              {errors.phone2 ? (
+                <p id="st-phone2-error" className="mt-1.5 text-xs text-red-700 flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" /> {errors.phone2}
+                </p>
+              ) : (
+                <p id="st-phone2-help" className="mt-1.5 text-xs text-neutral-500">A backup number (for example a family member) our team can call if we cannot reach you.</p>
               )}
             </div>
           </div>
@@ -219,6 +269,7 @@ function SettingsContent({ onDeleteClick }: { onDeleteClick: () => void }) {
                 onClick={() => {
                   setFullName(user.fullName);
                   setPhone(user.phone || "");
+                  setPhone2(user.secondaryPhone || "");
                   setErrors({});
                   setProfileMsg(null);
                 }}

@@ -9,6 +9,7 @@ import { createTicketAction } from "@/app/actions/support";
 import { TICKET_CATEGORIES } from "@/lib/support/constants";
 import { TICKET_LIMITS, validateTicket, type TicketField } from "@/lib/support/validate";
 import { newSubmissionToken, withTimeout, RequestTimeoutError, TIMEOUT_MESSAGE, NETWORK_MESSAGE } from "@/lib/support/client";
+import { AccountShell } from "@/components/account/AccountShell";
 
 type Errors = Partial<Record<TicketField, string>>;
 const field = "w-full bg-white border rounded-xl px-4 py-3 text-base sm:text-sm text-brand-text placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-gold/20 min-h-[44px]";
@@ -70,15 +71,7 @@ export default function NewQueryPage() {
   const err = (k: TicketField) => (errors[k] ? <p id={`tk-${k}-err`} className="mt-1 text-xs text-red-700">{errors[k]}</p> : null);
 
   return (
-    <div className="bg-brand-white text-brand-text font-sans">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <nav aria-label="Breadcrumb" className="text-xs text-neutral-500 mb-4 font-poppins">
-          <Link href="/account" className="hover:text-brand-gold">My account</Link> <span aria-hidden="true">/</span>{" "}
-          <Link href="/account/support" className="hover:text-brand-gold">Help &amp; Support</Link> <span aria-hidden="true">/</span> <span className="text-brand-text">Raise a Query</span>
-        </nav>
-        <h1 className="text-2xl sm:text-3xl font-serif mb-1">Raise a Query</h1>
-        <p className="text-sm text-neutral-600 mb-6">Tell us what you need help with. We reply here and by email.</p>
-
+    <AccountShell title="Raise a query" description="Tell us what you need help with. We reply on your account and by email." signInRedirect="/account/support/new">
         <form onSubmit={submit} noValidate aria-busy={sending} className="bg-white border border-brand-border rounded-3xl p-5 sm:p-8 shadow-card space-y-4">
           <div>
             <label htmlFor="tk-category" className={lab}>What is this about? *</label>
@@ -129,7 +122,6 @@ export default function NewQueryPage() {
             {sending ? "Submitting…" : "Submit query"}
           </button>
         </form>
-      </div>
-    </div>
+    </AccountShell>
   );
 }

@@ -24,8 +24,12 @@ function RegisterContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !email || !password) {
-      showToast("Please fill in all mandatory registration fields.", "error");
+    if (!fullName || !email || !password || !phone.trim()) {
+      showToast("Please fill in your name, email, mobile number and password.", "error");
+      return;
+    }
+    if (!/^[6-9]\d{9}$/.test(phone.replace(/\D/g, "").slice(-10))) {
+      showToast("Please enter a valid 10-digit Indian mobile number.", "error");
       return;
     }
     if (!agreed) {
