@@ -365,7 +365,7 @@ export default function ProductDetailPage() {
                 )}
               </div>
               <p className="text-[11px] text-neutral-500 mt-1 font-light">
-                Prices are in ₹. Shipping is calculated at checkout (free on orders of ₹2,500 or more).
+                Prices are in ₹. Delivery is free on every order.
               </p>
             </div>
 
@@ -608,7 +608,7 @@ export default function ProductDetailPage() {
             <div className="space-y-4">
               <h3 className="text-xl font-serif text-brand-text">Shipping &amp; returns</h3>
               <p className="font-light">
-                <strong>Shipping:</strong> Free on orders of ₹2,500 or more; ₹150 below that. When your order ships, the courier and tracking number appear on your order page. See the <Link href="/shipping-policy" className="underline text-brand-maroon">Shipping Policy</Link>.
+                <strong>Shipping:</strong> Free delivery on every order. When your order ships, the courier and tracking number appear on your order page. See the <Link href="/shipping-policy" className="underline text-brand-maroon">Shipping Policy</Link>.
               </p>
               <p className="font-light">
                 <strong>Returns:</strong> You can request a return within {SITE.returnWindowDays} days of delivery if the item is damaged, wrong, or not as described. See the <Link href="/return-policy" className="underline text-brand-maroon">Return Policy</Link> and <Link href="/refund-policy" className="underline text-brand-maroon">Refund Policy</Link>.

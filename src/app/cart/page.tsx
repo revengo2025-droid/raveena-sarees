@@ -32,7 +32,6 @@ export default function CartPage() {
     cartSubtotal,
     cartDiscount,
     cartTotal,
-    freeShippingThreshold,
     appliedCoupon,
     applyCoupon,
     removeCoupon,
@@ -65,12 +64,6 @@ export default function CartPage() {
       setCheckingOut(false);
     }
   };
-
-  const progressPercent = Math.min(
-    100,
-    Math.round((cartSubtotal / freeShippingThreshold) * 100)
-  );
-  const remainingForFree = Math.max(0, freeShippingThreshold - cartSubtotal);
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,27 +116,12 @@ export default function CartPage() {
         </button>
       </div>
 
-      {/* 2. Free Shipping Banner */}
+      {/* 2. Free Delivery Banner */}
       <div className="bg-brand-ivory border border-brand-border rounded-2xl p-4 mb-8 shadow-sm">
-        <div className="flex items-center justify-between text-xs mb-2">
-          <span className="text-neutral-700 flex items-center gap-2 font-light">
-            <Truck className="w-4 h-4 text-brand-gold" />
-            {remainingForFree > 0 ? (
-              <>
-                Add <strong className="text-brand-maroon font-semibold">{formatINR(remainingForFree)}</strong> more to unlock <strong>free shipping</strong>
-              </>
-            ) : (
-              <strong className="text-brand-gold font-semibold">You have unlocked free shipping!</strong>
-            )}
-          </span>
-          <span className="text-[11px] text-neutral-500 font-semibold font-mono">{progressPercent}%</span>
-        </div>
-        <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-brand-gold to-brand-maroon transition-all duration-500 rounded-full"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
+        <span className="text-xs text-neutral-700 flex items-center gap-2 font-light">
+          <Truck className="w-4 h-4 text-brand-gold" />
+          <strong className="text-brand-gold font-semibold">Free delivery on every order</strong>
+        </span>
       </div>
 
       {/* 3. Grid: Item Table & Order Summary */}
@@ -351,13 +329,7 @@ export default function CartPage() {
 
               <div className="flex justify-between text-neutral-600 font-light">
                 <span>Shipping</span>
-                <span>
-                  {cartSubtotal >= freeShippingThreshold ? (
-                    <span className="text-emerald-700 font-semibold font-poppins">FREE</span>
-                  ) : (
-                    formatINR(250)
-                  )}
-                </span>
+                <span className="text-emerald-700 font-semibold font-poppins">FREE</span>
               </div>
 
               <div className="flex justify-between text-neutral-400 text-[11px] font-light">

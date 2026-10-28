@@ -62,7 +62,6 @@ interface AppContextType {
   cartDiscount: number;
   cartTotal: number;
   shippingFee: number;
-  freeShippingThreshold: number;
   appliedCoupon: Coupon | null;
   applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
   removeCoupon: () => void;
@@ -413,7 +412,6 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
     return acc + effectivePrice * item.quantity;
   }, 0);
 
-  const freeShippingThreshold = PRICING.freeShippingThreshold;
   const giftWrapFee = giftWrap ? PRICING.giftWrapFee : 0;
 
   // Calculate discount from applied coupon
@@ -708,7 +706,6 @@ export const AppProvider: React.FC<{ children: ReactNode; initialCatalogue?: Pub
         cartDiscount,
         cartTotal,
         shippingFee,
-        freeShippingThreshold,
         appliedCoupon,
         applyCoupon,
         removeCoupon,

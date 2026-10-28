@@ -333,16 +333,6 @@ export const INITIAL_PRODUCTS: SareeProduct[] = STARTER_PRODUCTS.map((p) => ({ .
 
 export const HERO_SLIDES: HeroSlide[] = [
   {
-    id: "hero-1",
-    tagline: "The Festive & Wedding Edit 2026",
-    title: "Tradition · Grace · For Every You",
-    subtitle: "Handcrafted pure zari sarees, Banarasi masterlooms, and heirloom bridal silks starting at ₹1,794.",
-    
-    imageUrl: "/images/hero/hero-banner-1.png",
-    linkUrl: "/shop",
-    buttonText: "Explore Collection",
-  },
-  {
     id: "hero-2",
     tagline: "Festive Loom Heritage",
     title: "Festive Collection",

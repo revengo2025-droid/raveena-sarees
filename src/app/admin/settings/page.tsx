@@ -17,7 +17,6 @@ export default function AdminSettingsPage() {
   const [conciergePhone, setConciergePhone] = useState("+91 77807 56009");
   const [conciergeEmail, setConciergeEmail] = useState<string>(SITE.email);
   const [whatsappNumber, setWhatsappNumber] = useState("+91 77807 56009");
-  const [freeShippingThreshold, setFreeShippingThreshold] = useState(2500);
   const [gstRate, setGstRate] = useState(12);
   const [silkMarkLicense, setSilkMarkLicense] = useState("SM-IN-TS-98242");
 
@@ -141,13 +140,13 @@ export default function AdminSettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className={labelClasses}>
-                Free Shipping Threshold (₹)
+                Delivery Charge
               </label>
               <input
-                type="number"
-                value={freeShippingThreshold}
-                onChange={(e) => setFreeShippingThreshold(Number(e.target.value))}
-                className={inputClasses}
+                type="text"
+                value="Free on every order"
+                readOnly
+                className={`${inputClasses} opacity-70 cursor-not-allowed`}
               />
             </div>
 

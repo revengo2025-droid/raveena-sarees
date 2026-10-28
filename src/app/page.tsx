@@ -35,13 +35,12 @@ import {
 import { useApp } from "@/lib/store";
 import { HERO_SLIDES } from "@/lib/mockData";
 import { SITE } from "@/lib/site";
-import { PRICING } from "@/lib/pricing";
 import { ShieldCheck as TrustShield, Truck as TrustTruck, RotateCcw as TrustReturn, PackageSearch as TrustTrack } from "lucide-react";
 import { WhatsAppIcon as TrustWhatsApp } from "@/components/WhatsAppButton";
 import { ProductCard } from "@/components/ProductCard";
 import { ScrollReveal } from "@/components/ScrollReveal";
 import { FeaturedFestiveDrops } from "@/components/FeaturedFestiveDrops";
-import { formatINR, calculateDiscountPercentage } from "@/lib/utils";
+import { calculateDiscountPercentage } from "@/lib/utils";
 
 export default function HomePage() {
   const { products, categories, showToast, addToCart, setQuickViewProduct, isInWishlist, toggleWishlist } = useApp();
@@ -137,7 +136,7 @@ export default function HomePage() {
         </button>
 
         {/* Carousel Slide Indicators */}
-        <div className="absolute bottom-1.5 sm:bottom-7 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 sm:gap-2.5 bg-black/40 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-white/20">
+        <div className="absolute bottom-1.5 sm:bottom-7 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 sm:gap-2.5 bg-black/30 sm:bg-black/40 backdrop-blur-md px-1.5 sm:px-4 py-1 sm:py-2 rounded-full border border-white/20">
           {HERO_SLIDES.map((slide, idx) => (
             <button
               key={slide.id}
@@ -146,10 +145,10 @@ export default function HomePage() {
                 e.stopPropagation();
                 setCurrentSlide(idx);
               }}
-              className={`h-2 rounded-full transition-all duration-500 ${
+              className={`h-1 sm:h-2 rounded-full transition-all duration-500 ${
                 currentSlide === idx
-                  ? "w-8 bg-brand-gold shadow-gold"
-                  : "w-2 bg-white/60 hover:bg-white"
+                  ? "w-3 sm:w-8 bg-brand-gold shadow-gold"
+                  : "w-1 sm:w-2 bg-white/60 hover:bg-white"
               }`}
               aria-label={`Go to slide ${idx + 1}`}
             />
@@ -434,7 +433,7 @@ export default function HomePage() {
         <ul className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[
             { icon: TrustShield, title: "Secure payments", text: "Online payments are processed by Razorpay.", href: "/faq#payments" },
-            { icon: TrustTruck, title: "Free shipping", text: `On orders of ${formatINR(PRICING.freeShippingThreshold)} or more.`, href: "/shipping-policy" },
+            { icon: TrustTruck, title: "Free delivery", text: "On every order, with no minimum.", href: "/shipping-policy" },
             { icon: TrustReturn, title: `${SITE.returnWindowDays}-day returns`, text: "Request a return within 7 days of delivery.", href: "/return-policy" },
             { icon: TrustTrack, title: "Order tracking", text: "Follow your order from your account.", href: "/account/orders" },
           ].map(({ icon: Icon, title, text, href }) => (

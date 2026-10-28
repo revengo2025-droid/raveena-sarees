@@ -1,6 +1,4 @@
 import { SITE } from "@/lib/site";
-import { PRICING } from "@/lib/pricing";
-import { formatINR } from "@/lib/utils";
 
 export interface FaqItem {
   q: string;
@@ -70,7 +68,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
       },
       {
         q: "How much does shipping cost?",
-        a: `Orders of ${formatINR(PRICING.freeShippingThreshold)} or more ship free. Below that, shipping is a flat ${formatINR(PRICING.shippingFee)}. The exact amount is shown at checkout.`,
+        a: "Delivery is free on every order, with no minimum order value. Optional gift packaging is the only extra charge, and it is shown at checkout before you pay.",
       },
     ],
   },

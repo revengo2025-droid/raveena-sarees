@@ -15,8 +15,6 @@ import {
 } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { SITE } from "@/lib/site";
-import { PRICING } from "@/lib/pricing";
-import { formatINR } from "@/lib/utils";
 import { subscribeNewsletterAction } from "@/app/actions/newsletter";
 
 export const Footer: React.FC = () => {
@@ -252,7 +250,7 @@ export const Footer: React.FC = () => {
             <ul className="space-y-3.5 text-sm">
               {[
                 "Secure online payments through Razorpay",
-                `Free shipping on orders of ${formatINR(PRICING.freeShippingThreshold)} or more`,
+                "Free delivery on every order across India",
                 `${SITE.returnWindowDays}-day return window from delivery`,
                 "Track your order from your account",
                 "Support by email and WhatsApp",

@@ -7,7 +7,7 @@ import { formatINR } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Shipping Policy",
-  description: `${SITE.name} shipping: where we deliver, shipping charges, dispatch, tracking and what to do about damaged or undelivered parcels.`,
+  description: `${SITE.name} shipping: where we deliver, free delivery, dispatch, tracking and what to do about damaged or undelivered parcels.`,
   alternates: { canonical: "/shipping-policy" },
 };
 
@@ -26,8 +26,7 @@ export default function ShippingPolicyPage() {
 
       <Section title="Shipping charges">
         <ul>
-          <li>Orders with a merchandise value of <strong>{formatINR(PRICING.freeShippingThreshold)} or more</strong> ship free.</li>
-          <li>Orders below {formatINR(PRICING.freeShippingThreshold)} have a flat shipping fee of <strong>{formatINR(PRICING.shippingFee)}</strong>.</li>
+          <li>Delivery is <strong>free on every order</strong>, with no minimum order value.</li>
           <li>Optional gift packaging is {formatINR(PRICING.giftWrapFee)}.</li>
         </ul>
         <p>The exact amount is always shown at checkout before you pay.</p>

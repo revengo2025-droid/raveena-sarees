@@ -33,7 +33,6 @@ export const CartDrawer: React.FC = () => {
     cartSubtotal,
     cartDiscount,
     cartTotal,
-    freeShippingThreshold,
     appliedCoupon,
     applyCoupon,
     removeCoupon,
@@ -49,10 +48,6 @@ export const CartDrawer: React.FC = () => {
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
 
-
-  // Calculate free shipping progress
-  const progressPercent = Math.min(100, Math.round((cartSubtotal / freeShippingThreshold) * 100));
-  const remainingForFreeShipping = Math.max(0, freeShippingThreshold - cartSubtotal);
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,26 +120,12 @@ export const CartDrawer: React.FC = () => {
             </button>
           </div>
 
-          {/* 2. Free Shipping Progress Bar */}
+          {/* 2. Free Delivery Notice */}
           <div className="bg-white px-6 py-3.5 border-b border-brand-border">
-            <div className="flex items-center justify-between text-[11px] mb-2 font-light">
-              <span className="text-neutral-700 flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5 text-brand-gold" />
-                {remainingForFreeShipping > 0 ? (
-                  <>
-                    Add <strong className="text-brand-maroon font-semibold">{formatINR(remainingForFreeShipping)}</strong> more for <strong>free shipping</strong>
-                  </>
-                ) : (
-                  <strong className="text-brand-gold font-semibold">You have unlocked free shipping!</strong>
-                )}
-              </span>
-            </div>
-            <div className="w-full h-1.5 bg-neutral-100 rounded-full overflow-hidden border border-brand-border/60">
-              <div
-                className="h-full bg-gradient-to-r from-brand-gold to-brand-maroon transition-all duration-500 rounded-full"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+            <span className="text-[11px] font-light text-neutral-700 flex items-center gap-1.5">
+              <Truck className="w-3.5 h-3.5 text-brand-gold" />
+              <strong className="text-brand-gold font-semibold">Free delivery on every order</strong>
+            </span>
           </div>
 
           {/* 3. Items List */}
@@ -335,13 +316,7 @@ export const CartDrawer: React.FC = () => {
                 )}
                 <div className="flex justify-between text-neutral-600">
                   <span>Shipping</span>
-                  <span>
-                    {cartSubtotal >= freeShippingThreshold ? (
-                      <span className="text-emerald-700 font-semibold uppercase tracking-wider text-[10px]">FREE</span>
-                    ) : (
-                      formatINR(250)
-                    )}
-                  </span>
+                  <span className="text-emerald-700 font-semibold uppercase tracking-wider text-[10px]">FREE</span>
                 </div>
                 <div className="flex justify-between text-base font-serif font-bold text-brand-text pt-2.5 border-t border-brand-border">
                   <span>Total Due</span>
