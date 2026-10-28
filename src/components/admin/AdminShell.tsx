@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   Sparkles,
+  Images,
   LogOut,
   LifeBuoy,
   Inbox,
@@ -84,6 +85,7 @@ export function AdminShell({ children, role, initialTheme = "light" }: { childre
 
   const navItems: NavItem[] = [
     { label: "Dashboard Overview", href: "/admin", icon: LayoutDashboard },
+    { label: "Hero Banners", href: "/admin/banners", icon: Images, adminOnly: true },
     { label: "Products & Sarees", href: "/admin/products", icon: Package },
     { label: "Featured Festive Drops", href: "/admin/festive-drops", icon: Sparkles },
     { label: "Categories", href: "/admin/categories", icon: Layers },

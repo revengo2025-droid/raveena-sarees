@@ -26,6 +26,7 @@ export type AuditAction =
   | "review.moderate"
   | "settings.offer_popup"
   | "settings.festive_drops"
+  | "settings.hero_banners"
   | "ticket.reply"
   | "ticket.status_change"
   | "ticket.note"

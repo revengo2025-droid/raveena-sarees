@@ -12,13 +12,22 @@ import {
   Grid,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { findOccasionOption, occasionMatches, occasionText } from "@/lib/occasions";
 import { ProductCard } from "@/components/ProductCard";
 import { formatINR } from "@/lib/utils";
+
+const SORT_VALUES = ["featured", "bestseller", "newest", "price-asc", "price-desc", "rating"];
 
 function ShopContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || "";
+  // Deep links from the homepage tiles: ?occasion=Bridal%20%2F%20Wedding, ?price=2000, ?sort=newest
+  const initialOccasion = findOccasionOption(searchParams.get("occasion"));
+  const priceParam = Number(searchParams.get("price"));
+  const initialPrice = Number.isFinite(priceParam) && priceParam >= 100 ? priceParam : null;
+  const sortParam = searchParams.get("sort") || "";
+  const initialSort = SORT_VALUES.includes(sortParam) ? sortParam : "featured";
 
   const { products, categories } = useApp();
 
@@ -28,15 +37,18 @@ function ShopContent() {
     initialCategory ? [initialCategory] : []
   );
   const [selectedFabrics, setSelectedFabrics] = useState<string[]>([]);
-  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
+  const [selectedOccasions, setSelectedOccasions] = useState<string[]>(initialOccasion ? [initialOccasion] : []);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const highestPrice = useMemo(() => {
     return products.length > 0 ? Math.max(5000, ...products.map((p) => p.price)) : 5000;
   }, [products]);
 
-  const [maxPrice, setMaxPrice] = useState<number>(5000);
+  // null = no cap. (This used to start at a fixed 5000, which hid every saree above that price by default.)
+  const [priceCap, setPriceCap] = useState<number | null>(initialPrice);
+  const maxPrice = Math.min(priceCap ?? highestPrice, highestPrice);
+  const setMaxPrice = (value: number) => setPriceCap(value >= highestPrice ? null : value);
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
-  const [sortBy, setSortBy] = useState<string>("featured");
+  const [sortBy, setSortBy] = useState<string>(initialSort);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
   const [columns, setColumns] = useState<3 | 4>(3);
 
@@ -45,6 +57,13 @@ function ShopContent() {
     if (initialQuery) setSearchQuery(initialQuery);
     if (initialCategory) setSelectedCategories([initialCategory]);
   }, [initialQuery, initialCategory]);
+
+  // Links such as /shop?sort=newest followed from inside the shop do not remount the page, so apply them here
+  useEffect(() => {
+    if (initialOccasion) setSelectedOccasions([initialOccasion]);
+    setPriceCap(initialPrice);
+    setSortBy(initialSort);
+  }, [initialOccasion, initialPrice, initialSort]);
 
   const distinctFabrics = useMemo(() => {
     return [
@@ -144,9 +163,7 @@ function ShopContent() {
 
         // Occasion filter
         if (selectedOccasions.length > 0) {
-          const matchesOcc = selectedOccasions.some((occ) =>
-            p.occasion.toLowerCase().includes(occ.toLowerCase())
-          );
+          const matchesOcc = selectedOccasions.some((occ) => occasionMatches(occasionText(p), occ));
           if (!matchesOcc) return false;
         }
 
@@ -354,9 +371,9 @@ function ShopContent() {
               </label>
               <input
                 type="range"
-                min={1000}
+                min={100}
                 max={highestPrice}
-                step={100}
+                step={50}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-brand-gold bg-neutral-200 h-1.5 rounded-lg cursor-pointer"
@@ -528,9 +545,9 @@ function ShopContent() {
                 </label>
                 <input
                   type="range"
-                  min={1000}
+                  min={100}
                   max={highestPrice}
-                  step={100}
+                  step={50}
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
                   className="w-full accent-brand-gold bg-neutral-200 h-1.5 rounded-lg"
